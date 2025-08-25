@@ -40,7 +40,7 @@
   font-weight: 700;
   color: transparent;
   font-size: 24px;
-  letter-spacing: 10px;
+  letter-spacing: 0.72px;
   line-height: normal;
 }
 
@@ -1314,4 +1314,66 @@
 
 .text-wrapper-26:hover {
   color: #4d77ff;
+}
+/* Estilos para a seção de upload */
+.upload-section {
+    padding: 100px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+}
+
+.upload-area {
+    border: 3px dashed rgba(255,255,255,0.3);
+    border-radius: 15px;
+    padding: 40px;
+    margin: 30px auto;
+    max-width: 600px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.1);
+}
+
+.upload-placeholder img {
+    width: 60px;
+    margin-bottom: 15px;
+    opacity: 0.7;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    background: #4d77ff;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Botões */
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.btn-primary:hover {
+    background: #3a5fd9;
+    transform: translateY(-2px);
 }

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados da Análise - The Posture Lab</title>
+    <link rel="stylesheet" href="global.css">
+    <link rel="stylesheet" href="styleguide.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .results-container {
+            padding: 100px 20px 50px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .video-result {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .download-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .status.normal { background: #e8f5e8; color: #2e7d32; }
+        .status.alerta { background: #ffecb3; color: #f57c00; }
+        .status.bom { background: #e3f2fd; color: #1565c0; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="frame-16">
+            <p class="the-posture-lab">
+                <span class="text-wrapper">The Posture </span> 
+                <span class="span">Lab</span>
+            </p>
+            <div class="frame-17">
+                <a href="index.html" class="text-wrapper-26">Home</a>
+                <a href="review.html" class="text-wrapper-26">Review</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-container">
+        <h1>Resultados da Análise Postural</h1>
+        
+        <div class="video-result">
+            <h2>Vídeo Analisado com Pontos de Referência</h2>
+            <video id="resultVideo" controls width="100%">
+                Seu navegador não suporta vídeos HTML5.
+            </video>
+        </div>
+        
+        <div class="metrics-grid" id="metricsGrid">
+            <!-- Métricas serão preenchidas via JavaScript -->
+        </div>
+        
+        <div class="download-buttons">
+            <button class="btn-primary" onclick="downloadCSV()">
+                📊 Baixar Dados Completos
+            </button>
+            <button class="btn-primary" onclick="downloadVideo()">
+                🎬 Baixar Vídeo com Pontos
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Simulação de dados (substituir com dados reais da API)
+        const sampleMetrics = [
+            { name: 'Ângulo do Ombro', value: '45°', status: 'normal' },
+            { name: 'Ângulo do Joelho', value: '175°', status: 'alerta' },
+            { name: 'Inclinação da Coluna', value: '5°', status: 'normal' },
+            { name: 'Alinhamento Postural', value: '92%', status: 'bom' }
+        ];
+        
+        function displayMetrics(metrics) {
+            const metricsGrid = document.getElementById('metricsGrid');
+            
+            metricsGrid.innerHTML = metrics.map(metric => `
+                <div class="metric-card">
+                    <h3>${metric.name}</h3>
+                    <div class="metric-value">${metric.value}</div>
+                    <span class="status ${metric.status}">
+                        ${metric.status.toUpperCase()}
+                    </span>
+                </div>
+            `).join('');
+        }
+        
+        function downloadCSV() {
+            // Simular download
+            alert('Download do CSV iniciado! Em produção, isso baixaria dados_posturais_completos.csv');
+        }
+        
+        function downloadVideo() {
+            // Simular download
+            alert('Download do vídeo iniciado! Em produção, isso baixaria video_com_pontos.mp4');
+        }
+        
+        // Carregar vídeo de exemplo (substituir com URL real da API)
+        document.getElementById('resultVideo').src = 'img/homen.png';
+        
+        // Exibir métricas de exemplo
+        displayMetrics(sampleMetrics);
+    </script>
+</body>
+</html>
