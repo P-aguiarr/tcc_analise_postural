@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="/site/globals.css" />
+    <link rel="stylesheet" href="/site/styleguide.css" />
+    <link rel="stylesheet" href="/site/style.css" />
+    <style>
+      /* Estilos para a seção de upload */
+      .upload-section {
+        padding: 100px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+      }
+
+      .upload-container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .upload-area {
+        border: 3px dashed rgba(255,255,255,0.3);
+        border-radius: 15px;
+        padding: 40px;
+        margin: 30px auto;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: rgba(255,255,255,0.05);
+      }
+
+      .upload-area:hover {
+        border-color: rgba(255,255,255,0.6);
+        background: rgba(255,255,255,0.1);
+      }
+
+      .upload-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .upload-placeholder img {
+        width: 60px;
+        opacity: 0.7;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 4px;
+        margin-top: 20px;
+        overflow: hidden;
+        display: none;
+      }
+
+      .progress {
+        height: 100%;
+        background: #4d77ff;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      /* Botões */
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 20px;
+        display: none;
+      }
+
+      .btn-primary:hover {
+        background: #3a5fd9;
+        transform: translateY(-2px);
+      }
+
+      .file-info {
+        margin-top: 15px;
+        font-size: 14px;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="landing-page">
+      <div class="div">
+        <!-- Seção de Upload -->
+        <section class="upload-section">
+          <div class="upload-container">
+            <h2>Faça sua Análise Postural</h2>
+            <div class="upload-area" id="uploadArea">
+              <input type="file" id="videoInput" accept="video/*" hidden>
+              <div class="upload-placeholder" onclick="document.getElementById('videoInput').click()">
+                <img src="/site/img/upload-icon.png" alt="Upload">
+                <p>Clique para selecionar um vídeo ou arraste aqui</p>
+                <small>Apenas arquivos MP4, MOV ou AVI são aceitos</small>
+              </div>
+              <div class="progress-bar" id="progressBar">
+                <div class="progress" id="progressFill"></div>
+              </div>
+            </div>
+            <div class="file-info" id="fileInfo"></div>
+            <button id="analyzeBtn" class="btn-primary">
+              🚀 Iniciar Análise
+            </button>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <div class="frame">
+            <p class="the-posture-lab"><span class="text-wrapper">The Posture </span> <span class="span">Lab</span></p>
+            <p class="p">
+              Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
+              sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu bem-estar
+            </p>
+          </div>
+          <div class="frame-2">
+            <div class="frame-3">
+              <div class="text-wrapper-2">Overview</div>
+              <div class="frame-4">
+                <div class="text-wrapper-3">Saúde</div>
+                <div class="text-wrapper-4">Postura</div>
+                <div class="text-wrapper-4">IA</div>
+              </div>
+            </div>
+            <div class="frame-3">
+              <div class="text-wrapper-2">Explore</div>
+              <div class="frame-4">
+                <div class="text-wrapper-3">Termos &amp; Condições</div>
+                <div class="text-wrapper-4">Políticas de Privacidade</div>
+                <div class="text-wrapper-4">Cookies</div>
+              </div>
+            </div>
+          </div>
+        </footer>
+        <div class="testimonial">
+          <div class="overlap-wrapper">
+            <div class="overlap">
+              <div class="overlap-group">
+                <div class="rectangle"></div>
+                <p class="healthycarely-is-an">
+                  "O The Posture Lab revolucionou minha prática clínica. Agora consigo oferecer<br>
+                  análises posturais precisas e acessíveis para todos os meus pacientes, com<br>
+                  resultados em tempo real e relatórios detalhados que facilitam o diagnóstico."
+                </p>
+                <div class="group">
+                  <div class="overlap-group-2">
+                    <div class="rectangle-2"></div>
+                    <img class="image" src="/site/img/homen.png" />
+                  </div>
+                </div>
+              </div>
+              <div class="text-wrapper-5">Dr. Carlos Silva</div>
+              <p class="text-wrapper-6">Fisioterapeuta Especialista em Postura</p>
+              <img class="arrow-long-right" src="/site/img/long_right.png" />
+              <img class="arrow-long-right-2" src="/site/img/long_right-1.png" />
+            </div>
+          </div>
+          <div class="title">
+            <p class="text-wrapper-7">Experimente e se surpreenda com as funcionalidades</p>
+            <p class="text-wrapper-8">Feedback de profissionais que já utilizam</p>
+          </div>
+        </div>
+        <div class="our-rating">
+          <div class="frame-5">
+            <div class="card">
+              <div class="frame-wrapper">
+                <div class="frame-6">
+                  <div class="text-wrapper-9">98%</div>
+                  <div class="frame-7">
+                    <div class="text-wrapper-10">Precisão</div>
+                    <div class="text-wrapper-11">Na detecção de landmarks</div>
+                  </div>
+                </div>
+              </div>
+              <div class="rectangle-3"></div>
+            </div>
+            <div class="card">
+              <div class="frame-wrapper">
+                <div class="frame-8">
+                  <div class="text-wrapper-9">5min</div>
+                  <div class="frame-7">
+                    <div class="text-wrapper-10">Tempo médio</div>
+                    <p class="text-wrapper-11">Para análise completa</p>
+                  </div>
+                </div>
+              </div>
+              <div class="rectangle-3"></div>
+            </div>
+            <div class="card">
+              <div class="frame-wrapper">
+                <div class="frame-9">
+                  <div class="text-wrapper-9">1000+</div>
+                  <div class="frame-7">
+                    <p class="text-wrapper-10">Análises realizadas</p>
+                    <p class="text-wrapper-11">Com sucesso</p>
+                  </div>
+                </div>
+              </div>
+              <div class="rectangle-3"></div>
+            </div>
+          </div>
+          <div class="frame-10">
+            <div class="text-wrapper-12">Números</div>
+            <p class="text-wrapper-13">Nossa eficiência comprovada</p>
+          </div>
+        </div>
+        <div class="overlap-2">
+          <div class="schedule-section">
+            <div class="frame-11">
+              <div class="frame-4">
+                <div class="text-wrapper-12">Tecnologia</div>
+                <div class="text-wrapper-14">Como Funciona Nossa Análise</div>
+              </div>
+              <p class="a-avalia-o-postural">
+                Utilizamos algoritmos avançados de visão computacional e inteligência artificial para detectar<br>
+                automaticamente 33 pontos-chave do corpo humano. Nosso sistema analisa ângulos articulares,<br>
+                alinhamento postural e identifica possíveis desvios com precisão milimétrica.<br><br>
+                A tecnologia MediaPipe Pose, desenvolvida pelo Google, combinada com nosso próprio modelo<br>
+                de análise, oferece resultados confiáveis e detalhados em tempo real.
+              </p>
+              <div class="frame-12">
+                <div class="frame-13">
+                  <div class="check-wrapper">
+                    <div class="check"><img class="vector" src="/site/img/image.svg" /></div>
+                  </div>
+                  <p class="text-wrapper-15">Detecção de 33 pontos corporais</p>
+                </div>
+                <div class="frame-13">
+                  <div class="check-wrapper">
+                    <div class="check"><img class="vector" src="/site/img/vector.svg" /></div>
+                  </div>
+                  <p class="text-wrapper-15">Análise de ângulos articulares</p>
+                </div>
+                <div class="frame-13">
+                  <div class="check-wrapper">
+                    <div class="check"><img class="vector" src="/site/img/check.svg" /></div>
+                  </div>
+                  <p class="text-wrapper-15">Relatórios detalhados em PDF</p>
+                </div>
+              </div>
+              <div class="div-wrapper"><div class="text-wrapper-16">Experimente Agora</div></div>
+            </div>
+            <img class="group-2" src="/site/img/group-4.png" />
+          </div>
+          <img class="kisspng-physician" src="/site/img/medico.png" />
+        </div>
+        <div class="step-section">
+          <div class="card-2">
+            <div class="frame-14">
+              <div class="text-wrapper-17">Capture com o Celular</div>
+              <p class="text-wrapper-18">Use a câmera do seu próprio celular para gravar um vídeo rápido e prático.</p>
+              <img class="img-2" src="/site/img/Search.png" />
+            </div>
+            <div class="rectangle-3"></div>
+          </div>
+          <div class="card-3">
+            <div class="frame-15">
+              <div class="text-wrapper-17">Análise por IA</div>
+              <p class="text-wrapper-19">
+                Nossa inteligência artificial analisa automaticamente sua postura, identificando desvios com precisão.
+              </p>
+              <img class="img-2" src="/site/img/Profile.png" />
+            </div>
+            <div class="rectangle-3"></div>
+          </div>
+          <div class="card-4">
+            <div class="frame-15">
+              <div class="text-wrapper-17">Acompanhe sua Evolução</div>
+              <p class="text-wrapper-20">
+                Monte um histórico de suas análises para acompanhar seu progresso e evolução ao longo do tempo
+              </p>
+              <div class="img-2"><img class="calendar" src="/site/img/Calendar.png" /></div>
+            </div>
+            <div class="rectangle-3"></div>
+          </div>
+          <div class="card-5">
+            <div class="frame-15">
+              <div class="text-wrapper-17">Compartilhe com o Médico</div>
+              <div class="overlap-group-3">
+                <div class="text"></div>
+                <p class="text-wrapper-21">
+                  Envie os resultados da sua análise de forma segura e instantânea para o seu médico ou fisioterapeuta.
+                </p>
+              </div>
+              <img class="img-2" src="/site/img/Search.png" />
+            </div>
+            <div class="rectangle-3"></div>
+          </div>
+          <div class="title-2">
+            <div class="text-wrapper-12">Simples, rápido e eficaz</div>
+            <div class="text-wrapper-22">Como Funciona a Análise</div>
+          </div>
+        </div>
+        
+        <header class="header">
+          <div class="overlap-3">
+            <div class="overlap-4">
+              <div class="ellipse"></div>
+              <img class="female-doctor" src="/site/img/mulher.png" />
+              <p class="agora-poss-vel">
+                <span class="text-wrapper-23"
+                  >Agora é possível receber uma análise postural de graça para&nbsp;&nbsp;</span
+                >
+                <span class="text-wrapper-24">todos</span>
+              </p>
+              <p class="text-wrapper-25">
+                Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
+                sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu
+                bem-estar
+              </p>
+            </div>
+            <div class="btn-primary"><div class="text-wrapper-16">Consulte sua análise</div></div>
+          </div>
+          <div class="navbar">
+            <div class="frame-16">
+              <p class="the-posture-lab">
+                <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+              </p>
+              <div class="frame-17">
+                <a href="/index.html" class="text-wrapper-26">Home</a>
+                <a href="/review.html" class="text-wrapper-26">Review</a>
+              </div>
+            </div>
+          </div>
+        </header>
+      </div>
+    </div>
+
+    <script>
+      // Configurações
+      const API_URL = 'http://localhost:5000/api/analyze';
+      
+      // Elementos DOM
+      const videoInput = document.getElementById('videoInput');
+      const uploadArea = document.getElementById('uploadArea');
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      const fileInfo = document.getElementById('fileInfo');
+
+      // Event Listeners
+      videoInput.addEventListener('change', handleFileSelect);
+      analyzeBtn.addEventListener('click', analyzeVideo);
+      
+      // Drag and drop
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'rgba(255,255,255,0.6)';
+        uploadArea.style.background = 'rgba(255,255,255,0.1)';
+      });
+
+      uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'rgba(255,255,255,0.3)';
+        uploadArea.style.background = 'rgba(255,255,255,0.05)';
+      });
+
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'rgba(255,255,255,0.3)';
+        uploadArea.style.background = 'rgba(255,255,255,0.05)';
+        
+        if (e.dataTransfer.files.length) {
+          videoInput.files = e.dataTransfer.files;
+          handleFileSelect({ target: videoInput });
+        }
+      });
+
+      // Funções
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validar tipo de arquivo
+        const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
+        if (!allowedTypes.includes(file.type)) {
+          alert('Por favor, selecione um arquivo de vídeo (MP4, MOV ou AVI)');
+          return;
+        }
+
+        // Mostrar informações do arquivo
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        fileInfo.innerHTML = `
+          <strong>Arquivo selecionado:</strong> ${file.name}<br>
+          <strong>Tamanho:</strong> ${fileSizeMB} MB<br>
+          <strong>Tipo:</strong> ${file.type}
+        `;
+
+        // Mostrar botão de análise
+        analyzeBtn.style.display = 'block';
+      }
+
+      async function analyzeVideo() {
+        const file = videoInput.files[0];
+        if (!file) {
+          alert('Por favor, selecione um vídeo primeiro');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('video', file);
+
+        // Mostrar barra de progresso
+        progressBar.style.display = 'block';
+        analyzeBtn.disabled = true;
+        analyzeBtn.textContent = 'Analisando...';
+
+        try {
+          // Simular progresso (remover em produção)
+          simulateProgress();
+
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Redirecionar para página de resultados
+            window.location.href = `/review.html?video=${data.results.output_video}&data=${data.results.csv_data}`;
+          } else {
+            alert('Erro na análise: ' + data.error);
+          }
+        } catch (error) {
+          console.error('Erro:', error);
+          alert('Erro de conexão com o servidor. Certifique-se de que o backend está rodando na porta 5000.');
+        } finally {
+          progressBar.style.display = 'none';
+          analyzeBtn.disabled = false;
+          analyzeBtn.textContent = '🚀 Iniciar Análise';
+        }
+      }
+
+      function simulateProgress() {
+        let width = 0;
+        const interval = setInterval(() => {
+          if (width >= 100) {
+            clearInterval(interval);
+          } else {
+            width += 5;
+            progressFill.style.width = width + '%';
+          }
+        }, 100);
+      }
+    </script>
+  </body>
+</html>
