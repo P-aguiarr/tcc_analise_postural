@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="globals.css" />
+    <link rel="stylesheet" href="styleguide.css" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Login - The Posture Lab</title>
+  </head>
+  <body>
+    <div class="landing-page">
+      <div class="div">
+        <!-- NAVBAR -->
+        <div class="navbar">
+          <div class="frame-16">
+            <p class="the-posture-lab">
+              <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+            </p>
+            <div class="frame-17">
+              <a href="index.html" class="text-wrapper-26">Home</a>
+              <a href="login.html" class="text-wrapper-26">Login</a>
+              <a href="index.html" class="text-wrapper-26">Configurações</a>
+            </div>
+          </div>
+        </div>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: white;
+      }
+
+      .dashboard {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 50px;
+        margin-top: 150px;
+      }
+
+      .card {
+        background: #4a7dff;
+        color: white;
+        width: 250px;
+        height: 150px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+
+      .card:hover {
+        transform: scale(1.05);
+      }
+
+      .decor {
+        position: absolute;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6ea0ff, #4a7dff);
+        z-index: -1;
+      }
+
+      .decor.small {
+        width: 40px;
+        height: 40px;
+        top: 150px;
+        left: 100px;
+      }
+
+      .decor.medium {
+        width: 150px;
+        height: 150px;
+        top: 80px;
+        left: 20px;
+      }
+
+      .decor.large {
+        width: 180px;
+        height: 180px;
+        bottom: 20px;
+        right: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard">
+      <div class="card" onclick="window.location.href='historico.html'">
+        🔍 Consultar histórico
+      </div>
+      <div class="card" onclick="window.location.href='nova-analise.html'">
+        ☁️ Nova Análise
+      </div>
+    </div>
+
+    <div class="decor small"></div>
+    <div class="decor medium"></div>
+    <div class="decor large"></div>
+  </body>
+</html>
