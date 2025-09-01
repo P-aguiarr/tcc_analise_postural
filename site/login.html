@@ -1,53 +1,169 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="/site/globals.css" />
-    <link rel="stylesheet" href="/site/styleguide.css" />
-    <link rel="stylesheet" href="/site/style.css" />
-    <title>Login - The Posture Lab</title>
-  </head>
-  <body>
-    <div class="landing-page">
-      <div class="div">
-        <!-- NAVBAR -->
-        <div class="navbar">
-          <div class="frame-16">
-            <p class="the-posture-lab">
-              <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-            </p>
-            <div class="frame-17">
-              <a href="index.html" class="text-wrapper-26">Home</a>
-              <a href="login.html" class="text-wrapper-26">Login</a>
-              <a href="index.html" class="text-wrapper-26">Configurações</a>
-            </div>
-          </div>
-        </div>
+<html lang="pt-br">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/sites/globals.css" />
+  <link rel="stylesheet" href="/sites/styleguide.css" />
+  <link rel="stylesheet" href="/sites/style.css" />
+  <title>Login - The Posture Lab</title>
+  <style>
+    /* Seção centralizada */
+    .login-section {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: calc(100vh - 160px); /* Ajusta altura considerando navbar e footer */
+      text-align: center;
+      padding: 20px;
+    }
 
-        <!-- CONTEÚDO LOGIN -->
-        <div class="login-section">
-          <div class="login-box">
-            <div class="input-section">
-              <label for="identificador" class="label-identificador">Identificador</label>
-              <div class="input-wrapper">
-                <img src="/site/img/Icon.png" alt="Ícone usuário" class="input-icon" />
-                <div class="input-line">
-                  <input type="text" id="identificador" name="identificador" />
-                </div>
-              </div>
-            </div>
-            
-            <!-- BOTÃO COM REDIRECIONAMENTO -->
-            <a href="poslogin.html">
-              <button class="login-button">LOGIN</button>
-            </a>
-          </div>
-        </div>
+    /* Frase central com largura maior e fonte grande */
+    .landing-page .central-login {
+      position: relative;
+      width: 720px;
+      font-family: "Manrope-Regular", Helvetica, sans-serif;
+      font-weight: 700; /* negrito */
+      color: var(--black, #000);
+      font-size: 40px;
+      letter-spacing: 0.25px;
+      line-height: 48px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
 
-        <!-- IMAGEM NO CANTO INFERIOR ESQUERDO -->
-        <img src="/site/img/Group 6.png" alt="Decoração" class="corner-image" />
+    /* Botão Google */
+    .google-login-img {
+      width: 277px;
+      height: 80px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .google-login-img:hover {
+      transform: scale(1.05);
+    }
+
+    /* Navbar fixa no topo */
+    .navbar {
+      background: #fff;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .frame-17 a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #333;
+      font-weight: bold;
+    }
+
+    /* Imagem no canto inferior esquerdo */
+    .corner-image {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 100px;
+      opacity: 0.8;
+    }
+
+    /* FOOTER COM O PADRÃO SOLICITADO */
+    .footer {
+      text-align: center;
+      font-family: "Manrope-Regular", Helvetica, sans-serif;
+      color: #333;
+      padding: 20px 0;
+      width: 100%;
+    }
+
+    .footer-links {
+      margin-bottom: 0.8rem;
+    }
+        
+    .footer-links a {
+      color: #718096;
+      text-decoration: none;
+      margin: 0 0.8rem;
+      font-size: 0.9rem;
+    }
+    
+    .footer-links a:hover {
+      color: #4e73df;
+      text-decoration: underline;
+    }
+
+    .copyright {
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #718096;
+    }
+
+    /* Responsivo: reduzir largura em telas menores */
+    @media (max-width: 800px) {
+      .landing-page .central-login {
+        width: 90%;
+        font-size: 32px;
+        line-height: 40px;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .landing-page .central-login {
+        font-size: 24px;
+        line-height: 32px;
+      }
+      
+      .footer-links a {
+        display: block;
+        margin: 0.5rem 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-page">
+    <!-- NAVBAR -->
+    <div class="navbar">
+      <div class="frame-16">
+        <p class="the-posture-lab">
+          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+        </p>
+        <div class="frame-17">
+          <a href="index.html" class="text-wrapper-26">Home</a>
+          <a href="login.html" class="text-wrapper-26">Login</a>
+          <a href="index.html" class="text-wrapper-26">Configurações</a>
+        </div>
       </div>
     </div>
-  </body>
+
+    <!-- CONTEÚDO LOGIN -->
+    <div class="login-section">
+      <p class="central-login">
+        Entre na plataforma e descubra um mundo de possibilidades!
+      </p>
+      <a href="poslogin.html">
+        <img src="/sites/img/google.png" alt="Login com Google" class="google-login-img" />
+      </a>
+    </div>
+    
+    <!-- IMAGEM DECORATIVA -->
+    <img src="/sites/img/Group 6.png" alt="Decoração" class="corner-image" />
+
+    <!-- FOOTER COM O PADRÃO SOLICITADO -->
+    <div class="footer">
+      <div class="footer-links">
+        <a href="#">Careers</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms & Conditions</a>
+      </div>
+      <div class="copyright">
+        © 2025 Analíse Postural 
+      </div>
+    </div>
+  </div>
+</body>
 </html>
