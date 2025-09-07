@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/", "destination": "/site/index.html" },
     { "source": "/review", "destination": "/site/review.html" },
+    { "source": "/review", "destination": "/site/api/auth/callback.js" },
     { "source": "/(.*)", "destination": "/site/index.html" }
   ]
 }
