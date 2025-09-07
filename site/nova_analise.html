@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="utf-8" />
   <link rel="stylesheet" href="/style.css" />
-  <title>Upload de Arquivos - The Posture Lab</title>
+  <title>Upload de Vídeos - Análise Postural</title>
 </head>
 <body>
   <div class="landing-page">
@@ -24,27 +24,32 @@
 
     <!-- CONTEÚDO PRINCIPAL -->
     <div class="upload-container">
-      <h1 class="upload-title">Upload de Conteúdo</h1>
+      <h1 class="upload-title">Upload para Análise Postural</h1>
+      <p class="upload-subtitle">Selecione o tipo de vídeo de acordo com a orientação da câmera durante a gravação</p>
       
       <div class="upload-grid">
-        <!-- UPLOAD VERTICAL (VÍDEO) -->
-        <div class="upload-area vertical" id="verticalUploadArea">
-          <div class="upload-icon">🎬</div>
-          <h2 class="upload-text">Upload de Vídeo Vertical</h2>
-          <p class="upload-subtext">Para stories, reels e conteúdo mobile</p>
-          <p class="upload-instruction">Proporção recomendada: 9:16</p>
+        <!-- UPLOAD VERTICAL (Câmera na vertical) -->
+        <div class="upload-area" id="verticalUploadArea">
+          <div class="upload-icon">📱</div>
+          <h2 class="upload-text">Câmera Vertical</h2>
+          <p class="upload-subtext">Para quando a câmera estava posicionada na vertical durante a gravação do exame</p>
+          <div class="upload-dimensions">720x1280 pixels</div>
+          <div class="orientation-visual"></div>
+          <p class="upload-instruction">Posicione a câmera na vertical para capturar todo o corpo</p>
           <button class="upload-button" onclick="document.getElementById('verticalFileInput').click()">
             Selecionar Vídeo
           </button>
           <input type="file" id="verticalFileInput" class="file-input" accept="video/*">
         </div>
 
-        <!-- UPLOAD HORIZONTAL (VÍDEO) -->
-        <div class="upload-area horizontal" id="horizontalUploadArea">
+        <!-- UPLOAD HORIZONTAL (Câmera na horizontal) -->
+        <div class="upload-area" id="horizontalUploadArea">
           <div class="upload-icon">🎥</div>
-          <h2 class="upload-text">Upload de Vídeo Horizontal</h2>
-          <p class="upload-subtext">Para YouTube, filmes e conteúdo tradicional</p>
-          <p class="upload-instruction">Proporção recomendada: 16:9</p>
+          <h2 class="upload-text">Câmera Horizontal</h2>
+          <p class="upload-subtext">Para quando a câmera estava posicionada na horizontal durante a gravação do exame</p>
+          <div class="upload-dimensions">720x1280 pixels</div>
+          <div class="orientation-visual horizontal"></div>
+          <p class="upload-instruction">Posicione a câmera na horizontal para uma visão mais ampla</p>
           <button class="upload-button" onclick="document.getElementById('horizontalFileInput').click()">
             Selecionar Vídeo
           </button>
@@ -53,11 +58,11 @@
       </div>
       
       <div class="uploaded-files">
-        <h2 class="files-title">Arquivos para Upload</h2>
+        <h2 class="files-title">Vídeos para Análise</h2>
         <div class="file-list" id="fileList">
           <div class="file-item empty">
             <div class="file-info">
-              <span>Nenhum arquivo selecionado</span>
+              <span>Nenhum vídeo selecionado</span>
             </div>
           </div>
         </div>
@@ -161,7 +166,7 @@
         <div class="file-info">
           <div>
             <span class="file-name">${file.name}</span>
-            <span class="file-type">${type === 'vertical' ? 'Vertical' : 'Horizontal'}</span>
+            <span class="file-type">${type === 'vertical' ? 'Câmera Vertical' : 'Câmera Horizontal'}</span>
           </div>
           <div class="file-size">${formatFileSize(file.size)}</div>
           <div class="progress-bar">
@@ -202,7 +207,7 @@
     // Atualizar lista de arquivos
     function updateFileList() {
       if (files.length === 0) {
-        fileList.innerHTML = '<div class="file-item empty"><div class="file-info"><span>Nenhum arquivo selecionado</span></div></div>';
+        fileList.innerHTML = '<div class="file-item empty"><div class="file-info"><span>Nenhum vídeo selecionado</span></div></div>';
       }
     }
     
