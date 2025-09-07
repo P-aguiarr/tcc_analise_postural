@@ -69,6 +69,8 @@ module.exports = async (req, res) => {
         const name = payload['name'];
         const picture = payload['picture'];
         
+        console.log('👤 Usuário autenticado:', email);
+        
         // Dados do usuário
         const userData = {
           id: userid,
@@ -77,25 +79,32 @@ module.exports = async (req, res) => {
           picture: picture,
           loginTimestamp: new Date().toISOString(),
           lastAccess: new Date().toISOString(),
-          accessCount: 1 // Iniciar contador de acessos
+          accessCount: 1
         };
         
         try {
-          // Tentar recuperar dados existentes do usuário
+          // 🔥 CORREÇÃO 1: Consulta com autenticação
           const existingUserUrl = `https://zxj7fzj8olieg9ix.public.blob.vercel-storage.com/users/${userid}.json`;
-          const existingResponse = await fetch(existingUserUrl);
+          console.log('🔍 Verificando usuário existente:', existingUserUrl);
+          
+          const existingResponse = await fetch(existingUserUrl, {
+            headers: {
+              'Authorization': `Bearer ${BLOB_TOKEN}`
+            }
+          });
           
           if (existingResponse.ok) {
             const existingData = await existingResponse.json();
-            // Atualizar dados existentes
+            console.log('✅ Usuário existente encontrado, atualizando...');
             userData.accessCount = (existingData.accessCount || 0) + 1;
             userData.firstLogin = existingData.firstLogin || userData.loginTimestamp;
           } else {
-            // Primeiro login
+            console.log('🆕 Novo usuário, criando registro...');
             userData.firstLogin = userData.loginTimestamp;
           }
           
-          // 🔥🔥🔥 CORREÇÃO AQUI: PASSAR O TOKEN! 🔥🔥🔥
+          // 🔥 CORREÇÃO 2: Salvar no Blob Storage
+          console.log('💾 Salvando no Blob Storage...');
           const blob = await put(
             `users/${userid}.json`,
             JSON.stringify(userData, null, 2),
@@ -103,7 +112,7 @@ module.exports = async (req, res) => {
               access: 'public',
               contentType: 'application/json',
               addRandomSuffix: false,
-              token: BLOB_TOKEN // ✅ TOKEN ADICIONADO AQUI!
+              token: BLOB_TOKEN
             }
           );
           
@@ -114,17 +123,21 @@ module.exports = async (req, res) => {
             success: true,
             user: userData,
             message: 'Login realizado e dados salvos com sucesso!',
-            blobUrl: blob.url
+            blobUrl: blob.url,
+            saved: true // 🔥 Nova flag para confirmar salvamento
           });
           
         } catch (blobError) {
           console.error('❌ Erro ao salvar no Blob Storage:', blobError);
-          // Mesmo com erro no blob, retornar sucesso para o usuário
+          
+          // 🔥 CORREÇÃO 3: Retornar info mesmo com erro no blob
           res.status(200).json({
             success: true,
             user: userData,
             message: 'Login realizado (erro ao salvar histórico)',
-            warning: 'Dados não foram salvos no storage'
+            warning: 'Dados não foram salvos no storage',
+            saved: false,
+            error: blobError.message
           });
         }
         
@@ -132,7 +145,7 @@ module.exports = async (req, res) => {
         console.error('Erro no processamento:', error);
         res.status(500).json({
           success: false,
-          error: 'Erro interno do servidor'
+          error: 'Erro interno do servidor: ' + error.message
         });
       }
     });
@@ -141,7 +154,7 @@ module.exports = async (req, res) => {
     console.error('Erro na verificação do token:', error);
     res.status(401).json({
       success: false,
-      error: 'Token inválido'
+      error: 'Token inválido: ' + error.message
     });
   }
 };
