@@ -1,4 +1,5 @@
 const { OAuth2Client } = require('google-auth-library');
+const { put } = require('@vercel/blob');
 
 // Seu Client ID do Google
 const CLIENT_ID = '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com';
@@ -72,15 +73,56 @@ module.exports = async (req, res) => {
           name: name,
           picture: picture,
           loginTimestamp: new Date().toISOString(),
-          lastAccess: new Date().toISOString()
+          lastAccess: new Date().toISOString(),
+          accessCount: 1 // Iniciar contador de acessos
         };
         
-        // Retornar resposta de sucesso
-        res.status(200).json({
-          success: true,
-          user: userData,
-          message: 'Login realizado com sucesso!'
-        });
+        try {
+          // Tentar recuperar dados existentes do usuário
+          const existingUserUrl = `https://zxj7fzj8olieg9ix.public.blob.vercel-storage.com/users/${userid}.json`;
+          const existingResponse = await fetch(existingUserUrl);
+          
+          if (existingResponse.ok) {
+            const existingData = await existingResponse.json();
+            // Atualizar dados existentes
+            userData.accessCount = (existingData.accessCount || 0) + 1;
+            userData.firstLogin = existingData.firstLogin || userData.loginTimestamp;
+          } else {
+            // Primeiro login
+            userData.firstLogin = userData.loginTimestamp;
+          }
+          
+          // Salvar/atualizar no Blob Storage
+          const blob = await put(
+            `users/${userid}.json`,
+            JSON.stringify(userData, null, 2),
+            {
+              access: 'public',
+              contentType: 'application/json',
+              addRandomSuffix: false
+            }
+          );
+          
+          console.log('Dados salvos no Blob Storage:', blob.url);
+          
+          // Retornar resposta de sucesso
+          res.status(200).json({
+            success: true,
+            user: userData,
+            message: 'Login realizado e dados salvos com sucesso!',
+            blobUrl: blob.url
+          });
+          
+        } catch (blobError) {
+          console.error('Erro ao salvar no Blob Storage:', blobError);
+          // Mesmo com erro no blob, retornar sucesso para o usuário
+          res.status(200).json({
+            success: true,
+            user: userData,
+            message: 'Login realizado (erro ao salvar histórico)',
+            warning: 'Dados não foram salvos no storage'
+          });
+        }
         
       } catch (error) {
         console.error('Erro no processamento:', error);
