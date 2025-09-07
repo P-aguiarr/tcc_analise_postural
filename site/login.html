@@ -3,9 +3,9 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="utf-8" />
-  <link rel="stylesheet" href="/site/globals.css" />
-  <link rel="stylesheet" href="/site/styleguide.css" />
-  <link rel="stylesheet" href="/site/style.css" />
+  <link rel="stylesheet" href="globals.css" />
+  <link rel="stylesheet" href="styleguide.css" />
+  <link rel="stylesheet" href="style.css" />
   <title>Login - The Posture Lab</title>
   <style>
     /* Seção centralizada */
@@ -190,9 +190,9 @@
           <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
         </p>
         <div class="frame-17">
-          <a href="/site/index.html" class="text-wrapper-26">Home</a>
-          <a href="/site/login.html" class="text-wrapper-26">Login</a>
-          <a href="/site/index.html" class="text-wrapper-26">Configurações</a>
+          <a href="index.html" class="text-wrapper-26">Home</a>
+          <a href="login.html" class="text-wrapper-26">Login</a>
+          <a href="index.html" class="text-wrapper-26">Configurações</a>
         </div>
       </div>
     </div>
@@ -207,7 +207,7 @@
       <div class="google-login-container">
         <!-- Botão personalizado que o usuário vê -->
         <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
-          <img src="/site/img/google.png" alt="Login com Google" class="google-login-img" />
+          <img src="img/google.png" alt="Login com Google" class="google-login-img" />
         </div>
         
         <!-- Div onde o botão oficial do Google será renderizado (escondido) -->
@@ -241,7 +241,7 @@
     </div>
     
     <!-- IMAGEM DECORATIVA -->
-    <img src="/site/img/Group 6.png" alt="Decoração" class="corner-image" />
+    <img src="img/Group 6.png" alt="Decoração" class="corner-image" />
 
     <!-- FOOTER -->
     <div class="footer">
@@ -262,7 +262,7 @@
   <script>
     // URL base da API
     const API_BASE_URL = 'https://ttc-analise-postural.vercel.app';
-    const API_AUTH_URL = `${API_BASE_URL}/site/api/auth/callback`;
+    const API_AUTH_URL = `${API_BASE_URL}api/auth/callback`;
 
     // Configuração do Google Sign-In
     window.onload = function () {
@@ -327,7 +327,7 @@
           console.log('Usuário já logado recentemente, redirecionando...');
           showSuccess();
           setTimeout(() => {
-            window.location.href = '/site/poslogin.html';
+            window.location.href = 'poslogin.html';
           }, 1500);
         }
       }
@@ -370,7 +370,7 @@
           
           // Redireciona só depois da API confirmar
           setTimeout(() => {
-            window.location.href = '/site/poslogin.html';
+            window.location.href = 'poslogin.html';
           }, 2000);
         } else {
           showAPIStatus('❌ Erro no servidor - login local realizado');
