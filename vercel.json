@@ -6,7 +6,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "site/login.html", 
+      "src": "site/login.html",
       "use": "@vercel/static"
     },
     {
