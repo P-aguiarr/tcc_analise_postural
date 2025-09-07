@@ -79,12 +79,14 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
   <script>
-    // URL base da API
-    const API_BASE_URL = 'https://ttc-analise-postural.vercel.app';
+    // URL base da API - CORRIGIDA para apontar para a rota correta
+    const API_BASE_URL = window.location.origin; // Usa a origem atual
     const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
 
     // Configuração do Google Sign-In
     window.onload = function () {
+      console.log('Página carregada, URL da API:', API_AUTH_URL);
+      
       // Verificar se já está logado primeiro
       checkExistingLogin();
       
@@ -174,6 +176,13 @@
         localStorage.setItem('userId', userData.id);
         localStorage.setItem('loginTime', new Date().getTime().toString());
         
+        // 🔥 TESTAR PRIMEIRO SE A API ESTÁ ACESSÍVEL
+        const apiAvailable = await testAPIConnection();
+        
+        if (!apiAvailable) {
+          throw new Error('Servidor indisponível no momento. Tente novamente mais tarde.');
+        }
+        
         // 🔥 AGORA: Esperar a API completar antes de redirecionar
         const apiSuccess = await sendToAPI(response.credential, userData);
         
@@ -200,9 +209,31 @@
       }
     }
 
-    // Função para enviar dados para API (AGORA BLOQUEANTE)
+    // Função para testar conexão com API
+    async function testAPIConnection() {
+      try {
+        console.log('Testando conexão com API:', API_AUTH_URL);
+        const response = await fetch(API_AUTH_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ test: true })
+        });
+        
+        const data = await response.json();
+        console.log('Teste de API:', data);
+        return data.success === true;
+      } catch (error) {
+        console.error('API não disponível:', error);
+        return false;
+      }
+    }
+
+    // Função para enviar dados para API
     async function sendToAPI(token, userData) {
       try {
+        console.log('Enviando para API:', API_AUTH_URL);
         const response = await fetch(API_AUTH_URL, {
           method: 'POST',
           headers: {
@@ -286,8 +317,16 @@
       }
     }
 
-    // Expor função de debug para console
+    // Testar API manualmente
+    function testAPI() {
+      testAPIConnection().then(available => {
+        alert('API disponível: ' + available);
+      });
+    }
+
+    // Expor funções para console
     window.debugAuth = debugAuth;
+    window.testAPI = testAPI;
   </script>
 </body>
 </html>
