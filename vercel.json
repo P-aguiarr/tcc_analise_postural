@@ -18,7 +18,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "site/api/auth/callback.js",  // CAMINHO CORRETO!
+      "src": "site/api/auth/callback.js",  
       "use": "@vercel/node"
     },
     {
@@ -48,7 +48,7 @@
       "dest": "/site/review_new.html"
     },
     {
-      "src": "/api/auth/callback",  // ROTA CORRETA!
+      "src": "/api/auth/callback",  
       "dest": "/site/api/auth/callback.js"
     },
     {
