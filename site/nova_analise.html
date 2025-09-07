@@ -22,55 +22,41 @@
       </div>
     </div>
 
-    <!-- CABEÇALHO AZUL -->
-    <div class="upload-header">
-      <h1 class="upload-header-title">Upload para Análise Postural</h1>
-      <p class="upload-header-subtitle">Selecione o tipo de vídeo de acordo com a orientação da câmera durante a gravação</p>
+    <!-- FAIXA AZUL HORIZONTAL -->
+    <div class="blue-banner">
+      <h1 class="banner-title">Upload para Análise Postural</h1>
+      <p class="banner-subtitle">Selecione o tipo de vídeo de acordo com a orientação da câmera durante a gravação</p>
     </div>
 
     <!-- CONTEÚDO PRINCIPAL -->
     <div class="upload-container">
-      <div class="upload-content">
-        <div class="upload-grid">
-          <!-- UPLOAD VERTICAL (Câmera na vertical) -->
-          <div class="upload-area" id="verticalUploadArea">
-            <div class="upload-icon">📱</div>
-            <h2 class="upload-text">Câmera Vertical</h2>
-            <p class="upload-subtext">Para quando a câmera estava posicionada na vertical durante a gravação do exame</p>
-            <div class="upload-dimensions">720x1280 pixels</div>
-            <div class="orientation-visual"></div>
-            <p class="upload-instruction">Posicione a câmera na vertical para capturar todo o corpo</p>
-            <button class="upload-button" onclick="document.getElementById('verticalFileInput').click()">
-              Selecionar Vídeo
-            </button>
-            <input type="file" id="verticalFileInput" class="file-input" accept="video/*">
-          </div>
+      <div class="upload-grid">
+        <!-- UPLOAD VERTICAL -->
+        <div class="upload-area" id="verticalUpload">
+          <div class="upload-icon">📱</div>
+          <h2 class="upload-title">Câmera Vertical</h2>
+          <p class="upload-description">Vídeo gravado com a câmera na posição vertical (90°)</p>
+          <button class="upload-button" onclick="document.getElementById('verticalInput').click()">
+            Selecionar Vídeo MP4
+          </button>
+          <input type="file" id="verticalInput" class="file-input" accept=".mp4" onchange="handleFileSelect(this, 'vertical')">
+        </div>
 
-          <!-- UPLOAD HORIZONTAL (Câmera na horizontal) -->
-          <div class="upload-area" id="horizontalUploadArea">
-            <div class="upload-icon">🎥</div>
-            <h2 class="upload-text">Câmera Horizontal</h2>
-            <p class="upload-subtext">Para quando a câmera estava posicionada na horizontal durante a gravação do exame</p>
-            <div class="upload-dimensions">720x1280 pixels</div>
-            <div class="orientation-visual horizontal"></div>
-            <p class="upload-instruction">Posicione a câmera na horizontal para uma visão mais ampla</p>
-            <button class="upload-button" onclick="document.getElementById('horizontalFileInput').click()">
-              Selecionar Vídeo
-            </button>
-            <input type="file" id="horizontalFileInput" class="file-input" accept="video/*">
-          </div>
+        <!-- UPLOAD HORIZONTAL -->
+        <div class="upload-area" id="horizontalUpload">
+          <div class="upload-icon">🎥</div>
+          <h2 class="upload-title">Câmera Horizontal</h2>
+          <p class="upload-description">Vídeo gravado com a câmera na posição horizontal (0°)</p>
+          <button class="upload-button" onclick="document.getElementById('horizontalInput').click()">
+            Selecionar Vídeo MP4
+          </button>
+          <input type="file" id="horizontalInput" class="file-input" accept=".mp4" onchange="handleFileSelect(this, 'horizontal')">
         </div>
-        
-        <div class="uploaded-files">
-          <h2 class="files-title">Vídeos para Análise</h2>
-          <div class="file-list" id="fileList">
-            <div class="file-item empty">
-              <div class="file-info">
-                <span>Nenhum vídeo selecionado</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      </div>
+
+      <!-- ÁREA DE VISUALIZAÇÃO DOS VÍDEOS -->
+      <div class="file-list" id="fileList">
+        <div class="empty-message">Nenhum vídeo selecionado</div>
       </div>
     </div>
 
@@ -88,142 +74,84 @@
   </div>
 
   <script>
-    // Elementos DOM
-    const verticalUploadArea = document.getElementById('verticalUploadArea');
-    const horizontalUploadArea = document.getElementById('horizontalUploadArea');
-    const verticalFileInput = document.getElementById('verticalFileInput');
-    const horizontalFileInput = document.getElementById('horizontalFileInput');
-    const fileList = document.getElementById('fileList');
-    
-    // Array para armazenar arquivos
-    let files = [];
-    
-    // Configurar eventos para ambas as áreas de upload
-    setupUploadArea(verticalUploadArea, verticalFileInput, 'vertical');
-    setupUploadArea(horizontalUploadArea, horizontalFileInput, 'horizontal');
-    
-    function setupUploadArea(uploadArea, fileInput, type) {
-      // Eventos de arrastar e soltar
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, preventDefaults, false);
-      });
+    // JavaScript permanece o mesmo do código anterior
+    let currentVerticalVideo = null;
+    let currentHorizontalVideo = null;
+
+    function handleFileSelect(input, type) {
+      const file = input.files[0];
       
-      ['dragenter', 'dragover'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, () => highlight(uploadArea), false);
-      });
+      if (!file) return;
       
-      ['dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, () => unhighlight(uploadArea), false);
-      });
-      
-      // Manipular soltar arquivos
-      uploadArea.addEventListener('drop', (e) => handleDrop(e, type), false);
-      
-      // Manipular seleção de arquivos via input
-      fileInput.addEventListener('change', function() {
-        handleFiles(this.files, type);
-      });
-    }
-    
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    function highlight(area) {
-      area.classList.add('dragover');
-    }
-    
-    function unhighlight(area) {
-      area.classList.remove('dragover');
-    }
-    
-    function handleDrop(e, type) {
-      const dt = e.dataTransfer;
-      const droppedFiles = dt.files;
-      handleFiles(droppedFiles, type);
-    }
-    
-    // Processar arquivos
-    function handleFiles(fileList, type) {
-      for (let i = 0; i < fileList.length; i++) {
-        const file = fileList[i];
-        if (!files.some(f => f.name === file.name && f.size === file.size)) {
-          files.push({
-            file: file,
-            type: type
-          });
-          addFileToUI(file, type);
-        }
+      // Verificar se é MP4
+      if (!file.type.includes('mp4')) {
+        alert('Por favor, selecione apenas arquivos MP4');
+        input.value = '';
+        return;
       }
+
+      // Limpar vídeo anterior do mesmo tipo
+      if (type === 'vertical') {
+        currentVerticalVideo = file;
+      } else {
+        currentHorizontalVideo = file;
+      }
+
       updateFileList();
     }
-    
-    // Adicionar arquivo à interface
-    function addFileToUI(file, type) {
-      if (fileList.querySelector('.empty')) {
-        fileList.innerHTML = '';
+
+    function updateFileList() {
+      const fileList = document.getElementById('fileList');
+      fileList.innerHTML = '';
+
+      if (currentVerticalVideo) {
+        addFileToUI(currentVerticalVideo, 'vertical');
       }
+
+      if (currentHorizontalVideo) {
+        addFileToUI(currentHorizontalVideo, 'horizontal');
+      }
+
+      if (!currentVerticalVideo && !currentHorizontalVideo) {
+        fileList.innerHTML = '<div class="empty-message">Nenhum vídeo selecionado</div>';
+      }
+    }
+
+    function addFileToUI(file, type) {
+      const fileList = document.getElementById('fileList');
       
       const fileItem = document.createElement('div');
       fileItem.className = 'file-item';
       fileItem.innerHTML = `
         <div class="file-info">
-          <div>
-            <span class="file-name">${file.name}</span>
-            <span class="file-type">${type === 'vertical' ? 'Câmera Vertical' : 'Câmera Horizontal'}</span>
-          </div>
-          <div class="file-size">${formatFileSize(file.size)}</div>
-          <div class="progress-bar">
-            <div class="progress" style="width: 0%"></div>
+          <div class="file-name">${file.name}</div>
+          <div class="file-details">
+            <span class="file-type">${type === 'vertical' ? 'Câmera Vertical' : 'Câmera Horizontal'}</span> • 
+            ${formatFileSize(file.size)}
           </div>
         </div>
-        <div class="file-remove" onclick="removeFile('${file.name}', ${file.size})">✕</div>
+        <button class="remove-btn" onclick="removeFile('${type}')">Remover</button>
       `;
       
       fileList.appendChild(fileItem);
-      
-      // Simular upload
-      simulateUpload(fileItem);
     }
-    
-    // Simular progresso de upload
-    function simulateUpload(fileItem) {
-      const progressBar = fileItem.querySelector('.progress');
-      let width = 0;
-      
-      const interval = setInterval(() => {
-        if (width >= 100) {
-          clearInterval(interval);
-          progressBar.classList.add('complete');
-        } else {
-          width += Math.random() * 15;
-          progressBar.style.width = Math.min(width, 100) + '%';
-        }
-      }, 200);
-    }
-    
-    // Remover arquivo
-    function removeFile(name, size) {
-      files = files.filter(f => !(f.file.name === name && f.file.size === size));
+
+    function removeFile(type) {
+      if (type === 'vertical') {
+        currentVerticalVideo = null;
+        document.getElementById('verticalInput').value = '';
+      } else {
+        currentHorizontalVideo = null;
+        document.getElementById('horizontalInput').value = '';
+      }
       updateFileList();
     }
-    
-    // Atualizar lista de arquivos
-    function updateFileList() {
-      if (files.length === 0) {
-        fileList.innerHTML = '<div class="file-item empty"><div class="file-info"><span>Nenhum vídeo selecionado</span></div></div>';
-      }
-    }
-    
-    // Formatador de tamanho de arquivo
+
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
-      
       const k = 1024;
       const sizes = ['Bytes', 'KB', 'MB', 'GB'];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
-      
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
   </script>
