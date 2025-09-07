@@ -140,6 +140,16 @@
       max-width: 500px;
     }
 
+    .api-status {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #e3f2fd;
+      border: 1px solid #2196f3;
+      border-radius: 5px;
+      max-width: 500px;
+    }
+
     /* Estilo para o botão do Google personalizado */
     .google-login-container {
       position: relative;
@@ -147,7 +157,7 @@
     }
 
     #googleButton {
-      display: none; /* Escondemos o botão padrão */
+      display: none;
     }
 
     @media (max-width: 800px) {
@@ -216,6 +226,12 @@
         <p>Redirecionando para a página principal...</p>
       </div>
 
+      <!-- Status da API -->
+      <div class="api-status" id="apiStatus">
+        <h3>📡 Status do Servidor:</h3>
+        <pre id="apiMessage">Conectando...</pre>
+      </div>
+
       <!-- Detalhes do erro -->
       <div class="error-details" id="errorDetails">
         <h3>❌ Erro no Login:</h3>
@@ -255,6 +271,9 @@
       
       // Inicializar o Google Sign-In quando a biblioteca carregar
       initializeGoogleSignIn();
+
+      // Testar conexão com API ao carregar a página
+      testAPIConnection();
     };
 
     // Função para inicializar o Google Sign-In
@@ -274,7 +293,7 @@
         itp_support: true
       });
       
-      // Renderizar o botão oficial do Google (mas mantê-lo escondido)
+      // Renderizar o botão oficial do Google
       google.accounts.id.renderButton(
         document.getElementById('googleButton'),
         { 
@@ -290,7 +309,6 @@
       // Adicionar evento de clique ao botão personalizado
       document.getElementById('customGoogleButton').addEventListener('click', function() {
         showLoading();
-        // Disparar o clique no botão oficial do Google (que está escondido)
         document.querySelector('#googleButton div[role=button]').click();
       });
     }
@@ -301,7 +319,6 @@
       const loginTime = localStorage.getItem('loginTime');
       
       if (user && loginTime) {
-        // Verificar se o login foi feito há menos de 5 minutos
         const loginTimestamp = parseInt(loginTime);
         const currentTime = new Date().getTime();
         const fiveMinutes = 5 * 60 * 1000;
@@ -316,13 +333,12 @@
       }
     }
 
-    // Função para lidar com a resposta do Google
+    // 🔥 FUNÇÃO PRINCIPAL: Lidar com login do Google
     async function handleGoogleSignIn(response) {
-      console.log('Resposta do Google recebida:', response);
+      console.log('🔑 Resposta do Google recebida');
       
-      // Extrair informações do payload do token JWT
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      console.log('Payload do token:', payload);
+      console.log('📋 Payload do token:', payload);
       
       const userData = {
         id: payload.sub,
@@ -337,24 +353,38 @@
       localStorage.setItem('userId', userData.id);
       localStorage.setItem('loginTime', new Date().getTime().toString());
       
-      // Mostrar mensagem de sucesso
       showSuccess();
+      showAPIStatus('🔄 Enviando dados para o servidor...');
       
-      // 🔥 AGORA ESPERA a API completar antes de redirecionar
       try {
-        await sendToAPI(response.credential, userData);
-        console.log('✅ Processo de login completo!');
+        // 🔥 AGORA: Espera a API completar
+        const apiResponse = await sendToAPI(response.credential, userData);
+        console.log('✅ Resposta da API:', apiResponse);
+        
+        if (apiResponse && apiResponse.success) {
+          if (apiResponse.saved) {
+            showAPIStatus('✅ Dados salvos no servidor com sucesso!');
+          } else {
+            showAPIStatus('⚠️ Login OK, mas dados não salvos no servidor');
+          }
+          
+          // Redireciona só depois da API confirmar
+          setTimeout(() => {
+            window.location.href = '/site/poslogin.html';
+          }, 2000);
+        } else {
+          showAPIStatus('❌ Erro no servidor - login local realizado');
+          showError('Erro no servidor, tente novamente');
+        }
+        
       } catch (error) {
-        console.log('⚠️ Erro na API, mas redirecionando mesmo assim...');
+        console.error('❌ Erro grave na API:', error);
+        showAPIStatus('❌ Falha na conexão com o servidor');
+        showError('Erro de conexão com o servidor');
       }
-      
-      // Redirecionar após breve delay
-      setTimeout(() => {
-        window.location.href = '/site/poslogin.html';
-      }, 2000); // 🔥 Aumentei para 2 segundos para dar tempo da API
     }
 
-    // 🔥 AJUSTE 1: Função para enviar dados para API (AGORA É BLOQUEANTE)
+    // 🔥 FUNÇÃO PARA ENVIAR DADOS PARA API
     async function sendToAPI(token, userData) {
       try {
         console.log('📡 Enviando dados para API...');
@@ -367,33 +397,48 @@
           body: JSON.stringify({ token: token })
         });
         
-        const data = await response.json();
-        console.log('📨 Resposta da API:', data);
-        
-        if (data.success) {
-          if (data.saved) {
-            console.log('✅ Dados salvos com sucesso na API e Storage');
-          } else {
-            console.warn('⚠️ Login OK, mas dados não salvos no storage:', data.warning);
-          }
-        } else {
-          console.warn('⚠️ API retornou erro, mas login local foi bem-sucedido');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
         
+        const data = await response.json();
         return data;
         
       } catch (error) {
         console.error('❌ Erro ao conectar com API:', error);
-        // Não mostrar erro para o usuário, pois o login local foi bem-sucedido
         throw error;
       }
     }
 
-    // Funções auxiliares para UI
+    // 🔥 TESTAR CONEXÃO COM API
+    async function testAPIConnection() {
+      try {
+        showAPIStatus('🔍 Testando conexão com servidor...');
+        
+        const response = await fetch(API_AUTH_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ test: true })
+        });
+        
+        const data = await response.json();
+        showAPIStatus('✅ Servidor conectado e respondendo!');
+        console.log('🧪 Teste API:', data);
+        
+      } catch (error) {
+        showAPIStatus('❌ Servidor offline ou com problemas');
+        console.error('❌ Erro no teste API:', error);
+      }
+    }
+
+    // FUNÇÕES DE UI
     function showLoading() {
       document.getElementById('loadingSpinner').style.display = 'block';
       hideError();
       hideSuccess();
+      hideAPIStatus();
     }
 
     function showSuccess() {
@@ -402,12 +447,24 @@
       hideError();
     }
 
+    function showAPIStatus(message) {
+      const apiStatus = document.getElementById('apiStatus');
+      const apiMessage = document.getElementById('apiMessage');
+      
+      apiStatus.style.display = 'block';
+      apiMessage.textContent = message;
+    }
+
+    function hideAPIStatus() {
+      document.getElementById('apiStatus').style.display = 'none';
+    }
+
     function showError(message) {
       document.getElementById('loadingSpinner').style.display = 'none';
       document.getElementById('errorMessage').textContent = message;
       document.getElementById('errorDetails').style.display = 'block';
       hideSuccess();
-      console.error('Erro:', message);
+      hideAPIStatus();
     }
 
     function hideError() {
@@ -418,47 +475,13 @@
       document.getElementById('successMessage').style.display = 'none';
     }
 
-    // Debug: Verificar se o usuário está logado
-    function debugAuth() {
+    // Debug functions
+    window.debugAuth = function() {
       const user = localStorage.getItem('user');
-      console.log('Usuário no localStorage:', user);
-      
-      if (user) {
-        try {
-          const userData = JSON.parse(user);
-          console.log('Dados do usuário:', userData);
-          console.log('Tempo desde o login:', (new Date().getTime() - parseInt(localStorage.getItem('loginTime'))) / 1000 + ' segundos');
-        } catch (e) {
-          console.error('Erro ao parsear usuário:', e);
-        }
-      } else {
-        console.log('Nenhum usuário logado');
-      }
-    }
+      console.log('👤 Usuário no localStorage:', user);
+    };
 
-    // 🔥 AJUSTE 2: Função para testar a API
-    async function testAPI() {
-      try {
-        console.log('🧪 Testando conexão com API...');
-        const response = await fetch(API_AUTH_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ test: true })
-        });
-        
-        const data = await response.json();
-        console.log('✅ Teste API:', data);
-        return data;
-      } catch (error) {
-        console.error('❌ Erro no teste API:', error);
-      }
-    }
-
-    // Expor funções para console
-    window.debugAuth = debugAuth;
-    window.testAPI = testAPI;
+    window.testAPI = testAPIConnection;
   </script>
 </body>
 </html>
