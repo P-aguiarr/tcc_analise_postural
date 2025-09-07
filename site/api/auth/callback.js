@@ -5,7 +5,7 @@ const { put } = require('@vercel/blob');
 const CLIENT_ID = '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com';
 const client = new OAuth2Client(CLIENT_ID);
 
-// TOKEN DO BLOB - COLOCA DIRETO NO CÓDIGO! 🔥
+// TOKEN DO BLOB - substitua com seu token real
 const BLOB_TOKEN = "vercel_blob_rw_ZXJ7FzJ8oliEG9Ix_EMKmWfzml1W0Y0Ni1CbSdR4Em1A8X2";
 
 function log(message) {
@@ -16,30 +16,32 @@ function log(message) {
 }
 
 module.exports = async (req, res) => {
-  // 🔥 CONFIGURAÇÃO CORS - IMPORTANTE!
+  // CONFIGURAÇÃO CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
-  // 🔥 RESPONDER OPÇÕES CORS IMEDIATAMENTE
+  // RESPONDER OPÇÕES CORS
   if (req.method === 'OPTIONS') {
     log('✅ Pré-voo CORS atendido');
     return res.status(200).end();
   }
   
-  // 🔥 VERIFICAR MÉTODO HTTP
+  // VERIFICAR MÉTODO HTTP
   if (req.method === 'GET') {
     log('✅ Requisição GET recebida');
     return res.status(200).json({ 
+      success: true,
       message: 'API de autenticação do The Posture Lab',
       status: 'active',
-      method: 'Use POST para autenticar'
+      timestamp: new Date().toISOString()
     });
   }
   
   if (req.method !== 'POST') {
     log(`❌ Método não permitido: ${req.method}`);
     return res.status(405).json({ 
+      success: false,
       error: 'Método não permitido',
       allowed: ['POST', 'OPTIONS', 'GET']
     });
@@ -57,6 +59,7 @@ module.exports = async (req, res) => {
     if (!body.trim()) {
       log('❌ Corpo da requisição vazio');
       return res.status(400).json({ 
+        success: false,
         error: 'Corpo da requisição vazio'
       });
     }
@@ -70,13 +73,15 @@ module.exports = async (req, res) => {
       return res.status(200).json({ 
         success: true, 
         message: 'API conectada com sucesso',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        blobTokenConfigured: !!BLOB_TOKEN
       });
     }
     
     if (!token) {
       log('❌ Token não fornecido');
       return res.status(400).json({ 
+        success: false,
         error: 'Token não fornecido'
       });
     }
@@ -94,45 +99,44 @@ module.exports = async (req, res) => {
     const email = payload['email'];
     const name = payload['name'];
     const picture = payload['picture'];
+    const email_verified = payload['email_verified'];
     
     log(`👤 Usuário autenticado: ${email} (ID: ${userid})`);
     
-    // Dados do usuário
+    // Dados completos do usuário baseados no Google SSO
     const userData = {
+      // Dados principais do Google
       id: userid,
       email: email,
       name: name,
       picture: picture,
+      email_verified: email_verified,
+      
+      // Dados de autenticação
+      provider: 'google',
+      google_id: userid,
+      
+      // Metadados da aplicação
       loginTimestamp: new Date().toISOString(),
       lastAccess: new Date().toISOString(),
-      accessCount: 1
+      accessCount: 1,
+      firstLogin: new Date().toISOString(),
+      
+      // Informações adicionais do perfil Google
+      given_name: payload['given_name'],
+      family_name: payload['family_name'],
+      locale: payload['locale'],
+      hd: payload['hd'] || null
     };
     
     try {
-      // Tentar recuperar dados existentes do usuário
-      const existingUserUrl = `https://zxj7fzj8olieg9ix.public.blob.vercel-storage.com/users/${userid}.json`;
-      log(`🔍 Verificando usuário existente: ${existingUserUrl}`);
-      
-      const existingResponse = await fetch(existingUserUrl, {
-        headers: {
-          'Authorization': `Bearer ${BLOB_TOKEN}`
-        }
-      });
-      
-      if (existingResponse.ok) {
-        const existingData = await existingResponse.json();
-        log('✅ Usuário existente encontrado, atualizando...');
-        userData.accessCount = (existingData.accessCount || 0) + 1;
-        userData.firstLogin = existingData.firstLogin || userData.loginTimestamp;
-      } else {
-        log('🆕 Novo usuário, criando registro...');
-        userData.firstLogin = userData.loginTimestamp;
-      }
+      // Nome do arquivo no Blob Storage
+      const filename = `users/${userid}.json`;
+      log(`💾 Salvando usuário em: ${filename}`);
       
       // Salvar/atualizar no Blob Storage
-      log('💾 Salvando no Blob Storage...');
       const blob = await put(
-        `users/${userid}.json`,
+        filename,
         JSON.stringify(userData, null, 2),
         {
           access: 'public',
@@ -144,36 +148,44 @@ module.exports = async (req, res) => {
       
       log(`✅ Dados salvos no Blob Storage: ${blob.url}`);
       
-      // 🔥🔥🔥 RETORNAR RESPOSTA APENAS UMA VEZ!
       return res.status(200).json({
         success: true,
-        user: userData,
-        message: 'Login realizado e dados salvos com sucesso!',
+        saved: true,
+        user: {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name,
+          picture: userData.picture,
+          firstLogin: userData.firstLogin
+        },
+        message: 'Usuário salvo com sucesso no storage!',
         blobUrl: blob.url,
-        saved: true
+        timestamp: new Date().toISOString()
       });
       
     } catch (blobError) {
       log(`❌ Erro ao salvar no Blob Storage: ${blobError.message}`);
       
-      // 🔥🔥🔥 RETORNAR RESPOSTA APENAS UMA VEZ!
-      return res.status(200).json({
-        success: true,
-        user: userData,
-        message: 'Login realizado (erro ao salvar histórico)',
-        warning: 'Dados não foram salvos no storage',
+      return res.status(500).json({
+        success: false,
         saved: false,
-        error: blobError.message
+        error: 'Erro ao salvar usuário no storage',
+        details: blobError.message,
+        user: {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name
+        }
       });
     }
     
   } catch (error) {
     log(`❌ Erro no processamento: ${error.message}`);
     
-    // 🔥🔥🔥 RETORNAR RESPOSTA APENAS UMA VEZ!
     return res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor: ' + error.message
+      error: 'Erro interno do servidor',
+      details: error.message
     });
   }
 };
