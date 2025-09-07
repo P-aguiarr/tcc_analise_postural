@@ -18,7 +18,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "site/nova-analise.html",
+      "src": "site/nova_analise.html",
       "use": "@vercel/static"
     },
     {
@@ -69,7 +69,7 @@
     },
     {
       "src": "/nova-analise",
-      "dest": "/site/nova-analise.html"
+      "dest": "/site/nova_analise.html"
     },
     {
       "src": "/historico",
