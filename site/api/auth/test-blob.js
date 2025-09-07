@@ -1,59 +1,66 @@
-const fs = require('fs');
+// Script para testar a comunicação com o Blob Storage
 const { put } = require('@vercel/blob');
 
 async function testBlobStorage() {
-  const log = [];
-  const addLog = (message) => {
-    console.log(message);
-    log.push(`${new Date().toISOString()} - ${message}`);
-  };
-
   try {
-    addLog('🧪 Testando comunicação com Vercel Blob Storage...');
+    console.log('🧪 Testando comunicação com Vercel Blob Storage...');
     
+    // TOKEN DIRETO NO CÓDIGO (SUPER PRÁTICO!) 🔥
+    const BLOB_TOKEN = "vercel_blob_rw_ZXJ7FzJ8oliEG9Ix_EMKmWfzml1W0Y0Ni1CbSdR4Em1A8X2";
+    
+    // Teste de escrita
     const testData = {
       id: 'test-user-123',
       email: 'test@example.com',
       name: 'Usuário Teste',
-      testTimestamp: new Date().toISOString()
+      testTimestamp: new Date().toISOString(),
+      message: "Funcionou! 🎉"
     };
     
-    addLog('📝 Escrevendo dados de teste...');
+    console.log('📝 Escrevendo dados de teste...');
     const blob = await put(
       'test/user-test.json',
       JSON.stringify(testData, null, 2),
       {
         access: 'public',
         contentType: 'application/json',
-        addRandomSuffix: false
+        addRandomSuffix: false,
+        token: BLOB_TOKEN // Token direto aqui!
       }
     );
     
-    addLog('✅ Dados escritos com sucesso!');
-    addLog(`📋 URL do blob: ${blob.url}`);
+    console.log('✅ Dados escritos com sucesso!');
+    console.log('📋 URL do blob:', blob.url);
     
     // Teste de leitura
-    addLog('📖 Lendo dados de teste...');
+    console.log('📖 Lendo dados de teste...');
     const response = await fetch(blob.url);
     
     if (response.ok) {
       const retrievedData = await response.json();
-      addLog('✅ Dados lidos com sucesso!');
-      addLog(`📋 Dados recuperados: ${JSON.stringify(retrievedData, null, 2)}`);
+      console.log('✅ Dados lidos com sucesso!');
+      console.log('📋 Dados recuperados:', JSON.stringify(retrievedData, null, 2));
+      
+      // Teste extra: verificar se podemos acessar pela URL
+      console.log('\n🌐 Testando acesso pela URL no browser...');
+      console.log(`🔗 Cole isso no seu navegador: ${blob.url}`);
+      
     } else {
-      addLog(`❌ Erro ao ler dados: ${response.status} ${response.statusText}`);
+      console.error('❌ Erro ao ler dados:', response.status, response.statusText);
     }
     
-    // Salvar log em arquivo
-    fs.writeFileSync('blob-test.log', log.join('\n'));
-    addLog('📄 Log salvo em blob-test.log');
-    
   } catch (error) {
-    addLog(`❌ Erro no teste: ${error.message}`);
-    fs.writeFileSync('blob-test.log', log.join('\n'));
+    console.error('❌ Erro no teste:', error.message);
+    
+    // Dica de troubleshooting
+    if (error.message.includes('token')) {
+      console.log('\n💡 Dica: Verifique se o token está correto!');
+      console.log('📋 Token usado:', "vercel_blob_rw_ZXJ7FzJ8oliEG9Ix_EMKmWfzml1W0Y0Ni1CbSdR4Em1A8X2".length, 'caracteres');
+    }
   }
 }
 
+// Executar teste se chamado diretamente
 if (require.main === module) {
   testBlobStorage();
 }
