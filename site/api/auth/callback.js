@@ -45,13 +45,20 @@ module.exports = async (req, res) => {
     });
   }
   
-  // 🔥🔥🔥 CORREÇÃO PRINCIPAL: LER O CORPO UMA ÚNICA VEZ
   try {
     let body = '';
     
     // Coletar todos os dados da requisição
     for await (const chunk of req) {
       body += chunk.toString();
+    }
+    
+    // Verificar se o body está vazio
+    if (!body.trim()) {
+      log('❌ Corpo da requisição vazio');
+      return res.status(400).json({ 
+        error: 'Corpo da requisição vazio'
+      });
     }
     
     const data = JSON.parse(body);
