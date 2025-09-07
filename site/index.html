@@ -24,7 +24,7 @@
                 bem-estar
               </p>
             </div>
-            <a href="/login" class="btn-primary"><div class="text-wrapper-16">Consulte sua análise</div></a>
+            <a href="login.html" class="btn-primary"><div class="text-wrapper-16">Consulte sua análise</div></a>
           </div>
           <div class="navbar">
             <div class="frame-16">
@@ -32,9 +32,9 @@
                 <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
               </p>
               <div class="frame-17">
-                <a href="/" class="text-wrapper-26">Home</a>
-                <a href="/login" class="text-wrapper-26">Login</a>
-                <a href="/index" class="text-wrapper-26">Configurações</a>
+                <a href="index.html" class="text-wrapper-26">Home</a>
+                <a href="login.html" class="text-wrapper-26">Login</a>
+                <a href="index.html" class="text-wrapper-26">Configurações</a>
               </div>
             </div>
           </div>
@@ -134,28 +134,7 @@
             <img class="group-2" src="img/group-4.png" alt="Tecnologia" />
           </div>
           <img class="kisspng-physician" src="img/medico.png" alt="Médico" />
-<html lang="pt-br">
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="/style.css" />
-  <title>Login - The Posture Lab</title>
-</head>
-<body>
-  <div class="landing-page">
-    <!-- NAVBAR -->
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/" class="text-wrapper-26">Configurações</a>
-</div>
-      </div>
-    </div>
+        </div>
 
         <div class="our-rating">
           <div class="frame-10">
@@ -200,28 +179,7 @@
               <div class="rectangle-3"></div>
             </div>
           </div>
-    <!-- CONTEÚDO LOGIN -->
-    <div class="login-section">
-      <p class="central-login">
-        Entre na plataforma e descubra um mundo de possibilidades!
-      </p>
-      
-      <!-- Container para o botão do Google -->
-      <div class="google-login-container">
-        <!-- Botão personalizado que o usuário vê -->
-        <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
-          <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
-</div>
-        
-        <!-- Div onde o botão oficial do Google será renderizado (escondido) -->
-        <div id="googleButton" style="display: none;"></div>
-      </div>
-      
-      <!-- Loading spinner -->
-      <div class="loading" id="loadingSpinner">
-        <div class="spinner"></div>
-        <p>Processando login...</p>
-      </div>
+        </div>
 
         <div class="testimonial">
           <div class="title">
@@ -251,11 +209,6 @@
             </div>
           </div>
         </div>
-      <!-- Mensagem de sucesso -->
-      <div class="success-message" id="successMessage">
-        <h3>✅ Login realizado com sucesso!</h3>
-        <p>Redirecionando para a página principal...</p>
-      </div>
 
         <footer class="footer">
           <div class="frame">
@@ -284,14 +237,9 @@
             </div>
           </div>
         </footer>
-      <!-- Detalhes do erro -->
-      <div class="error-details" id="errorDetails">
-        <h3>❌ Erro no Login:</h3>
-        <pre id="errorMessage">Nenhum detalhe disponível</pre>
-        <button onclick="hideError()">Fechar</button>
-</div>
-</div>
-
+      </div>
+    </div>
+    
     <!-- FOOTER ADICIONAL -->
     <div class="footer-links">
       <a href="#">Careers</a> | 
@@ -300,20 +248,7 @@
     </div>
     <div class="copyright">
       © 2025 Analíse Postural 
-    <!-- IMAGEM DECORATIVA -->
-    <img src="/img/Group 6.png" alt="Decoração" class="corner-image" />
-
-    <!-- FOOTER -->
-    <div class="footer">
-      <div class="footer-links">
-        <a href="#">Careers</a> | 
-        <a href="#">Privacy Policy</a> | 
-        <a href="#">Terms & Conditions</a>
-      </div>
-      <div class="copyright">
-        © 2025 Analíse Postural 
-      </div>
-</div>
+    </div>
     
     <script>
       // Script para verificar se as imagens carregaram corretamente
@@ -325,223 +260,7 @@
             this.style.border = '2px solid red';
           };
         });
-  </div>
-
-  <!-- Google Identity Services -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  
-  <script>
-    // URL base da API
-    const API_BASE_URL = 'https://ttc-analise-postural.vercel.app';
-    const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
-
-    // Configuração do Google Sign-In
-    window.onload = function () {
-      // Verificar se já está logado primeiro
-      checkExistingLogin();
-      
-      // Inicializar o Google Sign-In quando a biblioteca carregar
-      initializeGoogleSignIn();
-    };
-
-    // Função para inicializar o Google Sign-In
-    function initializeGoogleSignIn() {
-      if (typeof google === 'undefined' || typeof google.accounts === 'undefined') {
-        console.log('Google library not loaded yet, retrying...');
-        setTimeout(initializeGoogleSignIn, 100);
-        return;
-      }
-
-      google.accounts.id.initialize({
-        client_id: '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com',
-        callback: handleGoogleSignIn,
-        auto_select: false,
-        context: 'signin',
-        ux_mode: 'popup',
-        itp_support: true
-});
+      });
     </script>
   </body>
-      
-      // Renderizar o botão oficial do Google (mas mantê-lo escondido)
-      google.accounts.id.renderButton(
-        document.getElementById('googleButton'),
-        { 
-          theme: 'filled_blue', 
-          size: 'large',
-          text: 'signin_with',
-          width: 277
-        }
-      );
-      
-      console.log('Google Sign-In initialized successfully');
-      
-      // Adicionar evento de clique ao botão personalizado
-      document.getElementById('customGoogleButton').addEventListener('click', function() {
-        showLoading();
-        // Disparar o clique no botão oficial do Google (que está escondido)
-        document.querySelector('#googleButton div[role=button]').click();
-      });
-    }
-
-    // Função para verificar se já existe login
-    function checkExistingLogin() {
-      const user = localStorage.getItem('user');
-      const loginTime = localStorage.getItem('loginTime');
-      
-      if (user && loginTime) {
-        // Verificar se o login foi feito há menos de 5 minutos
-        const loginTimestamp = parseInt(loginTime);
-        const currentTime = new Date().getTime();
-        const fiveMinutes = 5 * 60 * 1000;
-        
-        if (currentTime - loginTimestamp < fiveMinutes) {
-          console.log('Usuário já logado recentemente, redirecionando...');
-          showSuccess();
-          setTimeout(() => {
-            window.location.href = '/poslogin';
-          }, 1500);
-        }
-      }
-    }
-
-    // Função para lidar com a resposta do Google
-    async function handleGoogleSignIn(response) {
-      console.log('Resposta do Google recebida:', response);
-      showLoading();
-      
-      try {
-        // Extrair informações do payload do token JWT
-        const payload = JSON.parse(atob(response.credential.split('.')[1]));
-        console.log('Payload do token:', payload);
-        
-        const userData = {
-          id: payload.sub,
-          email: payload.email,
-          name: payload.name,
-          picture: payload.picture,
-          loginTimestamp: new Date().toISOString()
-        };
-        
-        // Salvar dados imediatamente no localStorage
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('userId', userData.id);
-        localStorage.setItem('loginTime', new Date().getTime().toString());
-        
-        // 🔥 AGORA: Esperar a API completar antes de redirecionar
-        const apiSuccess = await sendToAPI(response.credential, userData);
-        
-        if (apiSuccess) {
-          // Mostrar mensagem de sucesso
-          showSuccess();
-          
-          // Redirecionar após breve delay para mostrar mensagem de sucesso
-          setTimeout(() => {
-            window.location.href = '/poslogin';
-          }, 1500);
-        } else {
-          // Se a API falhou, mostrar erro
-          showError('Falha ao salvar dados no servidor. Tente novamente.');
-          // Limpar dados locais em caso de falha
-          localStorage.removeItem('user');
-          localStorage.removeItem('userId');
-          localStorage.removeItem('loginTime');
-        }
-        
-      } catch (error) {
-        console.error('Erro no processamento do login:', error);
-        showError('Erro durante o processo de login: ' + error.message);
-      }
-    }
-
-    // Função para enviar dados para API (AGORA BLOQUEANTE)
-    async function sendToAPI(token, userData) {
-      try {
-        const response = await fetch(API_AUTH_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ token: token })
-        });
-        
-        console.log('Resposta da API status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('Resposta da API:', data);
-        
-        if (data.success) {
-          if (data.saved) {
-            console.log('✅ Dados salvos com sucesso na API');
-            return true;
-          } else {
-            console.warn('⚠️ Login OK, mas dados não salvos no servidor');
-            return false;
-          }
-        } else {
-          console.error('❌ API retornou erro:', data.error);
-          return false;
-        }
-        
-      } catch (error) {
-        console.error('❌ Erro ao conectar com API:', error);
-        return false;
-      }
-    }
-
-    // Funções auxiliares para UI
-    function showLoading() {
-      document.getElementById('loadingSpinner').style.display = 'block';
-      hideError();
-      hideSuccess();
-    }
-
-    function showSuccess() {
-      document.getElementById('loadingSpinner').style.display = 'none';
-      document.getElementById('successMessage').style.display = 'block';
-      hideError();
-    }
-
-    function showError(message) {
-      document.getElementById('loadingSpinner').style.display = 'none';
-      document.getElementById('errorMessage').textContent = message;
-      document.getElementById('errorDetails').style.display = 'block';
-      hideSuccess();
-      console.error('Erro:', message);
-    }
-
-    function hideError() {
-      document.getElementById('errorDetails').style.display = 'none';
-    }
-
-    function hideSuccess() {
-      document.getElementById('successMessage').style.display = 'none';
-    }
-
-    // Debug: Verificar se o usuário está logado
-    function debugAuth() {
-      const user = localStorage.getItem('user');
-      console.log('Usuário no localStorage:', user);
-      
-      if (user) {
-        try {
-          const userData = JSON.parse(user);
-          console.log('Dados do usuário:', userData);
-          console.log('Tempo desde o login:', (new Date().getTime() - parseInt(localStorage.getItem('loginTime'))) / 1000 + ' segundos');
-        } catch (e) {
-          console.error('Erro ao parsear usuário:', e);
-        }
-      } else {
-        console.log('Nenhum usuário logado');
-      }
-    }
-
-    // Expor função de debug para console
-    window.debugAuth = debugAuth;
-  </script>
-</body>
 </html>
