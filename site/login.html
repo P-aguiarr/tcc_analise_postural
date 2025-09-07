@@ -8,41 +8,19 @@
   <link rel="stylesheet" href="/site/style.css" />
   <title>Login - The Posture Lab</title>
   <style>
-    /* Seção centralizada */
-    .login-section {
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: calc(100vh - 160px); /* Ajusta altura considerando navbar e footer */
-      text-align: center;
-      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-
-    /* Frase central com largura maior e fonte grande */
-    .landing-page .central-login {
-      position: relative;
-      width: 720px;
-      font-family: "Manrope-Regular", Helvetica, sans-serif;
-      font-weight: 700; /* negrito */
-      color: var(--black, #000);
-      font-size: 40px;
-      letter-spacing: 0.25px;
-      line-height: 48px;
-      margin-bottom: 2rem;
-      text-align: center;
-    }
-
-    /* Botão Google */
-    .google-login-img {
-      width: 277px;
-      height: 80px;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    }
-
-    .google-login-img:hover {
-      transform: scale(1.05);
+    
+    .landing-page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     /* Navbar fixa no topo */
@@ -53,31 +31,115 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #ddd;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
+    .the-posture-lab {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 0;
+    }
+    
+    .text-wrapper {
+      color: #2c3e50;
+    }
+    
+    .span {
+      color: #4CAF50;
+    }
+
+    .frame-17 {
+      display: flex;
+      gap: 20px;
+    }
+    
     .frame-17 a {
-      margin-left: 20px;
       text-decoration: none;
       color: #333;
-      font-weight: bold;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    
+    .frame-17 a:hover {
+      color: #4CAF50;
     }
 
-    /* Imagem no canto inferior esquerdo */
+    /* Seção centralizada */
+    .login-section {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+      text-align: center;
+      padding: 40px 20px;
+      background-color: #f8f9fa;
+    }
+
+    /* Frase central com largura maior e fonte grande */
+    .central-login {
+      width: 720px;
+      max-width: 90%;
+      font-weight: 700;
+      color: #2c3e50;
+      font-size: 40px;
+      letter-spacing: 0.25px;
+      line-height: 48px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    /* Container do botão Google */
+    .google-login-container {
+      margin: 20px 0;
+    }
+
+    /* Botão Google customizado */
+    .google-login-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-size: 16px;
+      font-weight: 500;
+      color: #757575;
+    }
+    
+    .google-login-btn:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+    
+    .google-icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+    }
+
+    /* IMAGEM DECORATIVA */
     .corner-image {
       position: fixed;
-      bottom: 20px;
+      bottom: 80px; /* Ajustado para não sobrepor o footer */
       left: 20px;
       width: 100px;
       opacity: 0.8;
+      z-index: -1;
     }
 
-    /* FOOTER COM O PADRÃO SOLICITADO */
+    /* FOOTER FIXADO NA BASE */
     .footer {
       text-align: center;
-      font-family: "Manrope-Regular", Helvetica, sans-serif;
       color: #333;
-      padding: 20px 0;
-      width: 100%;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-top: 1px solid #ddd;
+      margin-top: auto; /* Empurra o footer para a base */
     }
 
     .footer-links {
@@ -89,6 +151,7 @@
       text-decoration: none;
       margin: 0 0.8rem;
       font-size: 0.9rem;
+      transition: color 0.3s;
     }
     
     .footer-links a:hover {
@@ -102,17 +165,22 @@
       color: #718096;
     }
 
-    /* Responsivo: reduzir largura em telas menores */
+    /* Responsividade */
     @media (max-width: 800px) {
-      .landing-page .central-login {
-        width: 90%;
+      .central-login {
         font-size: 32px;
         line-height: 40px;
+      }
+      
+      .navbar {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
       }
     }
 
     @media (max-width: 500px) {
-      .landing-page .central-login {
+      .central-login {
         font-size: 24px;
         line-height: 32px;
       }
@@ -120,6 +188,10 @@
       .footer-links a {
         display: block;
         margin: 0.5rem 0;
+      }
+      
+      .corner-image {
+        display: none; /* Oculta a imagem em telas muito pequenas */
       }
     }
   </style>
@@ -132,11 +204,11 @@
         <p class="the-posture-lab">
           <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
         </p>
-        <div class="frame-17">
-          <a href="index.html" class="text-wrapper-26">Home</a>
-          <a href="login.html" class="text-wrapper-26">Login</a>
-          <a href="index.html" class="text-wrapper-26">Configurações</a>
-        </div>
+      </div>
+      <div class="frame-17">
+        <a href="index.html" class="text-wrapper-26">Home</a>
+        <a href="login.html" class="text-wrapper-26">Login</a>
+        <a href="index.html" class="text-wrapper-26">Configurações</a>
       </div>
     </div>
 
@@ -145,15 +217,20 @@
       <p class="central-login">
         Entre na plataforma e descubra um mundo de possibilidades!
       </p>
-      <a href="poslogin.html">
-        <img src="/site/img/google.png" alt="Login com Google" class="google-login-img" />
-      </a>
+      
+      <div class="google-login-container">
+        <!-- Botão de Login com Google oficial -->
+        <div id="googleLogin" class="google-login-btn">
+          <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="google-icon">
+          <span>Entrar com Google</span>
+        </div>
+      </div>
     </div>
     
     <!-- IMAGEM DECORATIVA -->
     <img src="/site/img/Group 6.png" alt="Decoração" class="corner-image" />
 
-    <!-- FOOTER COM O PADRÃO SOLICITADO -->
+    <!-- FOOTER FIXADO NA BASE -->
     <div class="footer">
       <div class="footer-links">
         <a href="#">Careers</a> | 
@@ -161,9 +238,49 @@
         <a href="#">Terms & Conditions</a>
       </div>
       <div class="copyright">
-        © 2025 Analíse Postural 
+        © 2025 The Posture Lab
       </div>
     </div>
   </div>
+
+  <!-- Script para integração com Google SSO -->
+  <script>
+    // Função para iniciar o fluxo de autenticação do Google
+    function handleGoogleLogin() {
+      // Configurações do OAuth 2.0 - substitua com suas credenciais reais
+      const clientId = 'SEU_CLIENT_ID_AQUI'; // Obtenha em: https://console.developers.google.com/
+      const redirectUri = encodeURIComponent('http://localhost:3000/auth/google/callback'); // Sua URL de callback
+      const scope = encodeURIComponent('profile email');
+      const responseType = 'code';
+      
+      // URL de autenticação do Google
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?
+        client_id=${clientId}&
+        redirect_uri=${redirectUri}&
+        response_type=${responseType}&
+        scope=${scope}&
+        access_type=offline&
+        include_granted_scopes=true`;
+      
+      // Redireciona para a página de autenticação do Google
+      window.location.href = authUrl;
+    }
+    
+    // Simulação de login para demonstração (remova em produção)
+    function handleDemoLogin() {
+      alert('Em um ambiente real, isso redirecionaria para a autenticação do Google.\n\nPara implementação completa, você precisa:\n\n1. Registrar seu app em https://console.developers.google.com/\n2. Configurar um backend para processar o callback OAuth\n3. Substituir o clientId e redirectUri com seus valores reais');
+      
+      // Redirecionamento simulado para fins de demonstração
+      setTimeout(() => {
+        window.location.href = 'poslogin.html';
+      }, 1000);
+    }
+    
+    // Adiciona o event listener ao botão do Google
+    document.getElementById('googleLogin').addEventListener('click', handleDemoLogin);
+    
+    // Para produção, use:
+    // document.getElementById('googleLogin').addEventListener('click', handleGoogleLogin);
+  </script>
 </body>
 </html>
