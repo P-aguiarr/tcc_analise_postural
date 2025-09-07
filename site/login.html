@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="utf-8" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/style.css" />
   <title>Login - The Posture Lab</title>
 </head>
 <body>
@@ -32,7 +32,7 @@
       <div class="google-login-container">
         <!-- Botão personalizado que o usuário vê -->
         <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
-          <img src="img/google.png" alt="Login com Google" class="google-login-img" />
+          <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
         </div>
         
         <!-- Div onde o botão oficial do Google será renderizado (escondido) -->
@@ -60,7 +60,7 @@
     </div>
     
     <!-- IMAGEM DECORATIVA -->
-    <img src="img/Group 6.png" alt="Decoração" class="corner-image" />
+    <img src="/img/Group 6.png" alt="Decoração" class="corner-image" />
 
     <!-- FOOTER -->
     <div class="footer">
@@ -145,70 +145,98 @@
           console.log('Usuário já logado recentemente, redirecionando...');
           showSuccess();
           setTimeout(() => {
-            window.location.href = 'poslogin.html';
+            window.location.href = '/poslogin';
           }, 1500);
         }
       }
     }
 
     // Função para lidar com a resposta do Google
-    function handleGoogleSignIn(response) {
+    async function handleGoogleSignIn(response) {
       console.log('Resposta do Google recebida:', response);
+      showLoading();
       
-      // Extrair informações do payload do token JWT
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      console.log('Payload do token:', payload);
-      
-      const userData = {
-        id: payload.sub,
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture,
-        loginTimestamp: new Date().toISOString()
-      };
-      
-      // Salvar dados imediatamente no localStorage
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('userId', userData.id);
-      localStorage.setItem('loginTime', new Date().getTime().toString());
-      
-      // Mostrar mensagem de sucesso
-      showSuccess();
-      
-      // Tentar enviar para a API (em segundo plano, não bloqueia o redirecionamento)
-      sendToAPI(response.credential, userData);
-      
-      // Redirecionar após breve delay para mostrar mensagem de sucesso
-      setTimeout(() => {
-        window.location.href = 'poslogin.html';
-      }, 1500);
+      try {
+        // Extrair informações do payload do token JWT
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        console.log('Payload do token:', payload);
+        
+        const userData = {
+          id: payload.sub,
+          email: payload.email,
+          name: payload.name,
+          picture: payload.picture,
+          loginTimestamp: new Date().toISOString()
+        };
+        
+        // Salvar dados imediatamente no localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('userId', userData.id);
+        localStorage.setItem('loginTime', new Date().getTime().toString());
+        
+        // 🔥 AGORA: Esperar a API completar antes de redirecionar
+        const apiSuccess = await sendToAPI(response.credential, userData);
+        
+        if (apiSuccess) {
+          // Mostrar mensagem de sucesso
+          showSuccess();
+          
+          // Redirecionar após breve delay para mostrar mensagem de sucesso
+          setTimeout(() => {
+            window.location.href = '/poslogin';
+          }, 1500);
+        } else {
+          // Se a API falhou, mostrar erro
+          showError('Falha ao salvar dados no servidor. Tente novamente.');
+          // Limpar dados locais em caso de falha
+          localStorage.removeItem('user');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('loginTime');
+        }
+        
+      } catch (error) {
+        console.error('Erro no processamento do login:', error);
+        showError('Erro durante o processo de login: ' + error.message);
+      }
     }
 
-    // Função para enviar dados para API (não bloqueante)
-    function sendToAPI(token, userData) {
-      fetch(API_AUTH_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ token: token })
-      })
-      .then(response => {
+    // Função para enviar dados para API (AGORA BLOQUEANTE)
+    async function sendToAPI(token, userData) {
+      try {
+        const response = await fetch(API_AUTH_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ token: token })
+        });
+        
         console.log('Resposta da API status:', response.status);
-        return response.json();
-      })
-      .then(data => {
-        console.log('Resposta da API:', data);
-        if (data.success) {
-          console.log('✅ Dados salvos com sucesso na API');
-        } else {
-          console.warn('⚠️ API retornou erro, mas login foi bem-sucedido localmente');
+        
+        if (!response.ok) {
+          throw new Error(`Erro HTTP: ${response.status}`);
         }
-      })
-      .catch(error => {
+        
+        const data = await response.json();
+        console.log('Resposta da API:', data);
+        
+        if (data.success) {
+          if (data.saved) {
+            console.log('✅ Dados salvos com sucesso na API');
+            return true;
+          } else {
+            console.warn('⚠️ Login OK, mas dados não salvos no servidor');
+            return false;
+          }
+        } else {
+          console.error('❌ API retornou erro:', data.error);
+          return false;
+        }
+        
+      } catch (error) {
         console.error('❌ Erro ao conectar com API:', error);
-        // Não mostrar erro para o usuário, pois o login local foi bem-sucedido
-      });
+        return false;
+      }
     }
 
     // Funções auxiliares para UI
