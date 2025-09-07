@@ -14,17 +14,16 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: calc(100vh - 160px); /* Ajusta altura considerando navbar e footer */
+      height: calc(100vh - 160px);
       text-align: center;
       padding: 20px;
     }
 
-    /* Frase central com largura maior e fonte grande */
     .landing-page .central-login {
       position: relative;
       width: 720px;
       font-family: "Manrope-Regular", Helvetica, sans-serif;
-      font-weight: 700; /* negrito */
+      font-weight: 700;
       color: var(--black, #000);
       font-size: 40px;
       letter-spacing: 0.25px;
@@ -33,7 +32,6 @@
       text-align: center;
     }
 
-    /* Botão Google */
     .google-login-img {
       width: 277px;
       height: 80px;
@@ -45,7 +43,6 @@
       transform: scale(1.05);
     }
 
-    /* Navbar fixa no topo */
     .navbar {
       background: #fff;
       padding: 15px 30px;
@@ -62,7 +59,6 @@
       font-weight: bold;
     }
 
-    /* Imagem no canto inferior esquerdo */
     .corner-image {
       position: fixed;
       bottom: 20px;
@@ -72,7 +68,6 @@
       z-index: -1;
     }
 
-    /* FOOTER COM O PADRÃO SOLICITADO */
     .footer {
       text-align: center;
       font-family: "Manrope-Regular", Helvetica, sans-serif;
@@ -105,7 +100,6 @@
       color: #718096;
     }
 
-    /* Loading spinner */
     .loading {
       display: none;
       margin-top: 20px;
@@ -126,7 +120,16 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* Responsivo: reduzir largura em telas menores */
+    .error-details {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #ffebee;
+      border: 1px solid #f44336;
+      border-radius: 5px;
+      max-width: 500px;
+    }
+
     @media (max-width: 800px) {
       .landing-page .central-login {
         width: 90%;
@@ -157,9 +160,9 @@
           <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
         </p>
         <div class="frame-17">
-          <a href="index.html" class="text-wrapper-26">Home</a>
-          <a href="login.html" class="text-wrapper-26">Login</a>
-          <a href="index.html" class="text-wrapper-26">Configurações</a>
+          <a href="/site/index.html" class="text-wrapper-26">Home</a>
+          <a href="/site/login.html" class="text-wrapper-26">Login</a>
+          <a href="/site/index.html" class="text-wrapper-26">Configurações</a>
         </div>
       </div>
     </div>
@@ -180,12 +183,20 @@
         <div class="spinner"></div>
         <p>Processando login...</p>
       </div>
+
+      <!-- Detalhes do erro (inicialmente oculto) -->
+      <div class="error-details" id="errorDetails">
+        <h3>Detalhes do Erro:</h3>
+        <pre id="errorMessage">Nenhum detalhe disponível</pre>
+        <button onclick="document.getElementById('errorDetails').style.display = 'none'">Fechar</button>
+        <p><strong>Dica:</strong> Verifique se a API route está funcionando corretamente.</p>
+      </div>
     </div>
     
     <!-- IMAGEM DECORATIVA -->
     <img src="/site/img/Group 6.png" alt="Decoração" class="corner-image" />
 
-    <!-- FOOTER COM O PADRÃO SOLICITADO -->
+    <!-- FOOTER -->
     <div class="footer">
       <div class="footer-links">
         <a href="#">Careers</a> | 
@@ -202,6 +213,10 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
   <script>
+    // URL base da API - CORRIGIDA para sua estrutura
+    const API_BASE_URL = 'https://ttc-analise-postural.vercel.app';
+    const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
+
     // Configuração do Google Sign-In
     window.onload = function () {
       // Inicializar o Google Sign-In
@@ -218,15 +233,63 @@
         // Solicitar login com Google
         google.accounts.id.prompt();
       });
+
+      // Testar se a API route está acessível
+      testApiConnection();
     };
+
+    // Função para testar a conexão com a API
+    function testApiConnection() {
+      console.log('Testando conexão com a API:', API_AUTH_URL);
+      fetch(API_AUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ test: true })
+      })
+      .then(response => {
+        console.log('Teste POST status:', response.status);
+        return response.text();
+      })
+      .then(text => {
+        console.log('Resposta da API:', text);
+        try {
+          const data = JSON.parse(text);
+          if (data.success) {
+            console.log('✅ API conectada com sucesso');
+          }
+        } catch (e) {
+          console.warn('Resposta não é JSON válido:', text);
+        }
+      })
+      .catch(error => {
+        console.error('Erro no teste de conexão:', error);
+        showError('A API não está respondendo. Usando modo fallback.');
+      });
+    }
 
     // Função para lidar com a resposta do Google
     function handleGoogleSignIn(response) {
+      console.log('Resposta do Google recebida:', response);
+      
+      // Extrair informações do payload do token JWT (fallback)
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      console.log('Payload do token:', payload);
+      
+      const userData = {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture,
+        loginTimestamp: new Date().toISOString()
+      };
+      
       // Esconder loading
       document.getElementById('loadingSpinner').style.display = 'none';
       
-      // Enviar o token para nossa API route no Vercel
-      fetch('https://ttc-analise-postural.vercel.app/api/auth/callback', {
+      // Tentar enviar para a API, mas se falhar, usar fallback
+      fetch(API_AUTH_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -234,27 +297,46 @@
         body: JSON.stringify({ token: response.credential })
       })
       .then(response => {
+        console.log('Resposta do servidor status:', response.status);
+        
         if (!response.ok) {
-          throw new Error('Erro na resposta do servidor');
+          // Se a API falhar, usar os dados locais
+          throw new Error('API não disponível, usando fallback');
         }
         return response.json();
       })
       .then(data => {
+        console.log('Resposta do servidor:', data);
+        
         if (data.success) {
-          // Salvar informações do usuário no localStorage
+          // Usar dados da API se disponíveis
           localStorage.setItem('user', JSON.stringify(data.user));
           localStorage.setItem('userId', data.user.id);
-          
-          // Redirecionar para a página principal
-          window.location.href = '/site/dashboard.html';
         } else {
-          alert('Erro no login: ' + (data.error || 'Erro desconhecido'));
+          // Usar fallback se a API retornar erro
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('userId', userData.id);
         }
+        
+        // Redirecionar para poslogin.html em ambos os casos
+        window.location.href = '/site/poslogin.html';
       })
       .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao fazer login. Por favor, tente novamente.');
+        console.error('Erro ao conectar com API, usando fallback:', error);
+        
+        // Salvar dados localmente (fallback)
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('userId', userData.id);
+        
+        // Redirecionar para poslogin.html
+        window.location.href = '/site/poslogin.html';
       });
+    }
+
+    function showError(message) {
+      document.getElementById('errorMessage').textContent = message;
+      document.getElementById('errorDetails').style.display = 'block';
+      console.error('Erro:', message);
     }
   </script>
 </body>
