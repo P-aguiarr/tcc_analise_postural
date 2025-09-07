@@ -1,27 +1,51 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/site/index.html" },
-    { "source": "/review", "destination": "/site/review.html" },
-    { "source": "/(.*)", "destination": "/site/index.html" }
-  ],
-  "functions": {
-    "site/api/auth/callback.js": {
-      "includeFiles": "site/api/**/*.js"
-    }
-  },
-  "routes": [
+  "version": 2,
+  "builds": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "src": "site/index.html",
+      "use": "@vercel/static"
     },
     {
-      "src": "/site/api/(.*)", 
-      "dest": "/site/api/$1",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-      }
+      "src": "site/login.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/poslogin.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/review_new.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/site/index.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/site/login.html"
+    },
+    {
+      "src": "/poslogin",
+      "dest": "/site/poslogin.html"
+    },
+    {
+      "src": "/review_new",
+      "dest": "/site/review_new.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/site/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/site/index.html"
     }
   ]
 }
