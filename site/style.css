@@ -1769,36 +1769,45 @@ body {
   }
 }
 /* ===== UPLOAD DE ARQUIVOS ===== */
-/* ===== CABEÇALHO AZUL ===== */
+/* ===== FAIXA AZUL HORIZONTAL ===== */
 .upload-header {
   background: #4D77FF;
   color: white;
-  padding: 50px 20px 40px 20px;
+  padding: 25px 20px;
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 0;
+  position: relative;
+}
+
+.upload-header-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 15px 0;
 }
 
 .upload-header-title {
-  font-size: 36px;
-  margin-bottom: 15px;
+  font-size: 28px;
+  margin-bottom: 8px;
   font-weight: 700;
+  opacity: 0.95;
+  transform: translateY(5px);
 }
 
 .upload-header-subtitle {
-  font-size: 18px;
-  opacity: 0.9;
+  font-size: 15px;
+  opacity: 0.85;
   max-width: 600px;
   margin: 0 auto;
-  line-height: 1.5;
+  line-height: 1.4;
+  transform: translateY(3px);
 }
 
-/* ===== AJUSTES NO CONTEÚDO ===== */
+/* ===== CONTEÚDO PRINCIPAL ===== */
 .upload-container {
   max-width: 1000px;
-  margin: -30px auto 40px auto;
-  padding: 0 20px;
+  margin: 0 auto 40px auto;
+  padding: 30px 20px 0 20px;
   position: relative;
-  z-index: 2;
 }
 
 .upload-content {
@@ -1806,6 +1815,7 @@ body {
   border-radius: 20px;
   padding: 40px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  margin-top: 15px;
 }
 
 /* ===== UPLOAD GRID ===== */
@@ -2062,22 +2072,23 @@ body {
 
 /* ===== RESPONSIVIDADE ===== */
 @media (max-width: 768px) {
-  .upload-area {
-    padding: 30px 20px;
-    min-height: 350px;
+  .upload-header {
+    padding: 20px 15px;
   }
   
   .upload-header-title {
-    font-size: 28px;
+    font-size: 24px;
+    transform: translateY(3px);
   }
   
   .upload-header-subtitle {
-    font-size: 16px;
-    padding: 0 20px;
+    font-size: 14px;
+    transform: translateY(2px);
   }
   
-  .upload-text {
-    font-size: 20px;
+  .upload-area {
+    padding: 30px 20px;
+    min-height: 350px;
   }
   
   .upload-content {
@@ -2097,24 +2108,25 @@ body {
 
 @media (max-width: 480px) {
   .upload-header {
-    padding: 40px 15px 30px 15px;
+    padding: 18px 12px;
   }
   
   .upload-header-title {
-    font-size: 24px;
+    font-size: 22px;
+    margin-bottom: 6px;
   }
   
   .upload-header-subtitle {
-    font-size: 14px;
+    font-size: 13px;
   }
   
   .upload-container {
-    margin: -20px auto 30px auto;
-    padding: 0 15px;
+    padding: 25px 15px 0 15px;
   }
   
   .upload-content {
     padding: 20px 15px;
+    margin-top: 10px;
   }
   
   .upload-area {
