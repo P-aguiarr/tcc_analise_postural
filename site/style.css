@@ -63,7 +63,9 @@
   font-size: 14px;
   letter-spacing: 0.21px;
   line-height: 20px;
+  text-align: left; /* alinhamento à esquerda */
 }
+
 
 .landing-page .frame-2 {
   display: inline-flex;
