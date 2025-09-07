@@ -1,11 +1,16 @@
-// Script para testar a comunicação com o Blob Storage
-const { put, get } = require('@vercel/blob');
+const fs = require('fs');
+const { put } = require('@vercel/blob');
 
 async function testBlobStorage() {
+  const log = [];
+  const addLog = (message) => {
+    console.log(message);
+    log.push(`${new Date().toISOString()} - ${message}`);
+  };
+
   try {
-    console.log('🧪 Testando comunicação com Vercel Blob Storage...');
+    addLog('🧪 Testando comunicação com Vercel Blob Storage...');
     
-    // Teste de escrita
     const testData = {
       id: 'test-user-123',
       email: 'test@example.com',
@@ -13,7 +18,7 @@ async function testBlobStorage() {
       testTimestamp: new Date().toISOString()
     };
     
-    console.log('📝 Escrevendo dados de teste...');
+    addLog('📝 Escrevendo dados de teste...');
     const blob = await put(
       'test/user-test.json',
       JSON.stringify(testData, null, 2),
@@ -24,27 +29,31 @@ async function testBlobStorage() {
       }
     );
     
-    console.log('✅ Dados escritos com sucesso!');
-    console.log('📋 URL do blob:', blob.url);
+    addLog('✅ Dados escritos com sucesso!');
+    addLog(`📋 URL do blob: ${blob.url}`);
     
     // Teste de leitura
-    console.log('📖 Lendo dados de teste...');
+    addLog('📖 Lendo dados de teste...');
     const response = await fetch(blob.url);
     
     if (response.ok) {
       const retrievedData = await response.json();
-      console.log('✅ Dados lidos com sucesso!');
-      console.log('📋 Dados recuperados:', retrievedData);
+      addLog('✅ Dados lidos com sucesso!');
+      addLog(`📋 Dados recuperados: ${JSON.stringify(retrievedData, null, 2)}`);
     } else {
-      console.error('❌ Erro ao ler dados:', response.status, response.statusText);
+      addLog(`❌ Erro ao ler dados: ${response.status} ${response.statusText}`);
     }
     
+    // Salvar log em arquivo
+    fs.writeFileSync('blob-test.log', log.join('\n'));
+    addLog('📄 Log salvo em blob-test.log');
+    
   } catch (error) {
-    console.error('❌ Erro no teste:', error);
+    addLog(`❌ Erro no teste: ${error.message}`);
+    fs.writeFileSync('blob-test.log', log.join('\n'));
   }
 }
 
-// Executar teste se chamado diretamente
 if (require.main === module) {
   testBlobStorage();
 }
