@@ -1,1 +1,221 @@
-a
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/style.css" />
+  <title>Upload de Arquivos - The Posture Lab</title>
+</head>
+<body>
+  <div class="landing-page">
+    <!-- NAVBAR -->
+    <div class="navbar">
+      <div class="frame-16">
+        <p class="the-posture-lab">
+          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+        </p>
+        <div class="frame-17">
+          <a href="/" class="text-wrapper-26">Home</a>
+          <a href="/login" class="text-wrapper-26">Login</a>
+          <a href="/" class="text-wrapper-26">Configurações</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="upload-container">
+      <h1 class="upload-title">Upload de Conteúdo</h1>
+      
+      <div class="upload-grid">
+        <!-- UPLOAD VERTICAL (VÍDEO) -->
+        <div class="upload-area vertical" id="verticalUploadArea">
+          <div class="upload-icon">🎬</div>
+          <h2 class="upload-text">Upload de Vídeo Vertical</h2>
+          <p class="upload-subtext">Para stories, reels e conteúdo mobile</p>
+          <p class="upload-instruction">Proporção recomendada: 9:16</p>
+          <button class="upload-button" onclick="document.getElementById('verticalFileInput').click()">
+            Selecionar Vídeo
+          </button>
+          <input type="file" id="verticalFileInput" class="file-input" accept="video/*">
+        </div>
+
+        <!-- UPLOAD HORIZONTAL (VÍDEO) -->
+        <div class="upload-area horizontal" id="horizontalUploadArea">
+          <div class="upload-icon">🎥</div>
+          <h2 class="upload-text">Upload de Vídeo Horizontal</h2>
+          <p class="upload-subtext">Para YouTube, filmes e conteúdo tradicional</p>
+          <p class="upload-instruction">Proporção recomendada: 16:9</p>
+          <button class="upload-button" onclick="document.getElementById('horizontalFileInput').click()">
+            Selecionar Vídeo
+          </button>
+          <input type="file" id="horizontalFileInput" class="file-input" accept="video/*">
+        </div>
+      </div>
+      
+      <div class="uploaded-files">
+        <h2 class="files-title">Arquivos para Upload</h2>
+        <div class="file-list" id="fileList">
+          <div class="file-item empty">
+            <div class="file-info">
+              <span>Nenhum arquivo selecionado</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <div class="footer-links">
+        <a href="#">Careers</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms & Conditions</a>
+      </div>
+      <div class="copyright">
+        © 2025 Analíse Postural 
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Elementos DOM
+    const verticalUploadArea = document.getElementById('verticalUploadArea');
+    const horizontalUploadArea = document.getElementById('horizontalUploadArea');
+    const verticalFileInput = document.getElementById('verticalFileInput');
+    const horizontalFileInput = document.getElementById('horizontalFileInput');
+    const fileList = document.getElementById('fileList');
+    
+    // Array para armazenar arquivos
+    let files = [];
+    
+    // Configurar eventos para ambas as áreas de upload
+    setupUploadArea(verticalUploadArea, verticalFileInput, 'vertical');
+    setupUploadArea(horizontalUploadArea, horizontalFileInput, 'horizontal');
+    
+    function setupUploadArea(uploadArea, fileInput, type) {
+      // Eventos de arrastar e soltar
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, () => highlight(uploadArea), false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, () => unhighlight(uploadArea), false);
+      });
+      
+      // Manipular soltar arquivos
+      uploadArea.addEventListener('drop', (e) => handleDrop(e, type), false);
+      
+      // Manipular seleção de arquivos via input
+      fileInput.addEventListener('change', function() {
+        handleFiles(this.files, type);
+      });
+    }
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    function highlight(area) {
+      area.classList.add('dragover');
+    }
+    
+    function unhighlight(area) {
+      area.classList.remove('dragover');
+    }
+    
+    function handleDrop(e, type) {
+      const dt = e.dataTransfer;
+      const droppedFiles = dt.files;
+      handleFiles(droppedFiles, type);
+    }
+    
+    // Processar arquivos
+    function handleFiles(fileList, type) {
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        if (!files.some(f => f.name === file.name && f.size === file.size)) {
+          files.push({
+            file: file,
+            type: type
+          });
+          addFileToUI(file, type);
+        }
+      }
+      updateFileList();
+    }
+    
+    // Adicionar arquivo à interface
+    function addFileToUI(file, type) {
+      if (fileList.querySelector('.empty')) {
+        fileList.innerHTML = '';
+      }
+      
+      const fileItem = document.createElement('div');
+      fileItem.className = 'file-item';
+      fileItem.innerHTML = `
+        <div class="file-info">
+          <div>
+            <span class="file-name">${file.name}</span>
+            <span class="file-type">${type === 'vertical' ? 'Vertical' : 'Horizontal'}</span>
+          </div>
+          <div class="file-size">${formatFileSize(file.size)}</div>
+          <div class="progress-bar">
+            <div class="progress" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="file-remove" onclick="removeFile('${file.name}', ${file.size})">✕</div>
+      `;
+      
+      fileList.appendChild(fileItem);
+      
+      // Simular upload
+      simulateUpload(fileItem);
+    }
+    
+    // Simular progresso de upload
+    function simulateUpload(fileItem) {
+      const progressBar = fileItem.querySelector('.progress');
+      let width = 0;
+      
+      const interval = setInterval(() => {
+        if (width >= 100) {
+          clearInterval(interval);
+          progressBar.classList.add('complete');
+        } else {
+          width += Math.random() * 15;
+          progressBar.style.width = Math.min(width, 100) + '%';
+        }
+      }, 200);
+    }
+    
+    // Remover arquivo
+    function removeFile(name, size) {
+      files = files.filter(f => !(f.file.name === name && f.file.size === size));
+      updateFileList();
+    }
+    
+    // Atualizar lista de arquivos
+    function updateFileList() {
+      if (files.length === 0) {
+        fileList.innerHTML = '<div class="file-item empty"><div class="file-info"><span>Nenhum arquivo selecionado</span></div></div>';
+      }
+    }
+    
+    // Formatador de tamanho de arquivo
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+  </script>
+</body>
+</html>
