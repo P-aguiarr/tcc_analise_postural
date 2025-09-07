@@ -2,50 +2,50 @@
   "version": 2,
   "builds": [
     {
-      "src": "/site/index.html",
+      "src": "site/index.html",
       "use": "@vercel/static"
     },
     {
-      "src": "/site/login.html",
+      "src": "site/login.html",
       "use": "@vercel/static"
     },
     {
-      "src": "/site/poslogin.html",
+      "src": "site/poslogin.html",
       "use": "@vercel/static"
     },
     {
-      "src": "/site/review_new.html",
+      "src": "site/review_new.html",
       "use": "@vercel/static"
     },
     {
-      "src": "/site/api/**/*.js",
+      "src": "site/api/**/*.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/",
-      "dest": "//site/index.html"
+      "dest": "/site/index.html"
     },
     {
       "src": "/login",
-      "dest": "//site/login.html"
+      "dest": "/site/login.html"
     },
     {
       "src": "/poslogin",
-      "dest": "//site/poslogin.html"
+      "dest": "/site/poslogin.html"
     },
     {
       "src": "/review_new",
-      "dest": "//site/review_new.html"
+      "dest": "/site/review_new.html"
     },
     {
       "src": "/api/(.*)",
-      "dest": "//site/api/$1"
+      "dest": "/site/api/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "//site/index.html"
+      "dest": "/site/index.html"
     }
   ]
 }
