@@ -232,44 +232,52 @@
     const API_BASE_URL = 'https://ttc-analise-postural.vercel.app';
     const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
 
+    // Variável para controlar se o Google já foi inicializado
+    let googleInitialized = false;
+
     // Configuração do Google Sign-In
     window.onload = function () {
-      // Inicializar o Google Sign-In com configuração explícita
-      google.accounts.id.initialize({
-        client_id: '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com',
-        callback: handleGoogleSignIn,
-        auto_select: false, // Importante: não selecionar automaticamente
-        context: 'signin',
-        ux_mode: 'popup',   // Usar popup em vez de redirect
-        itp_support: true   // Suporte a Intelligent Tracking Prevention
-      });
-      
       // Adicionar evento de clique à imagem do Google
       document.getElementById('googleLogin').addEventListener('click', function() {
         // Mostrar loading
         showLoading();
         
-        // Solicitar login com Google - método correto para modo anônimo
-        google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // Se o popup não foi mostrado (modo anônimo), usar método alternativo
-            console.log('Popup não mostrado, tentando método alternativo');
-            google.accounts.id.renderButton(
-              document.getElementById('googleLogin'),
-              { 
-                theme: 'filled_blue', 
-                size: 'large',
-                text: 'signin_with',
-                width: 277
-              }
-            );
-          }
-        });
+        // Se o Google já foi inicializado, mostrar o prompt diretamente
+        if (googleInitialized) {
+          google.accounts.id.prompt();
+        } else {
+          // Se ainda não foi inicializado, inicializar e depois mostrar o prompt
+          initializeGoogleSignIn();
+        }
       });
+
+      // Inicializar o Google Sign-In
+      initializeGoogleSignIn();
 
       // Verificar se já está logado
       checkExistingLogin();
     };
+
+    // Função para inicializar o Google Sign-In
+    function initializeGoogleSignIn() {
+      if (typeof google === 'undefined' || typeof google.accounts === 'undefined') {
+        console.log('Google library not loaded yet, retrying...');
+        setTimeout(initializeGoogleSignIn, 100);
+        return;
+      }
+
+      google.accounts.id.initialize({
+        client_id: '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com',
+        callback: handleGoogleSignIn,
+        auto_select: false,
+        context: 'signin',
+        ux_mode: 'popup',
+        itp_support: true
+      });
+      
+      googleInitialized = true;
+      console.log('Google Sign-In initialized successfully');
+    }
 
     // Função para verificar se já existe login
     function checkExistingLogin() {
