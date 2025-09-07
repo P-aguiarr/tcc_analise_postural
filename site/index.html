@@ -6,6 +6,35 @@
     <link rel="stylesheet" href="/site/globals.css" />
     <link rel="stylesheet" href="/site/styleguide.css" />
     <link rel="stylesheet" href="/site/style.css" />
+    <style>
+      /* Estilos adicionais para garantir a aparência do btn-primary */
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #4CAF50;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      
+      .btn-primary:hover {
+        background-color: #3e8e41;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+      }
+      
+      .text-wrapper-16 {
+        font-size: 16px;
+        font-weight: 600;
+      }
+    </style>
   </head>
   <body>
     <div class="landing-page">
@@ -143,7 +172,10 @@
                   <p class="text-wrapper-15">Relatórios detalhados</p>
                 </div>
               </div>
-              <div class="div-wrapper"><a href="/site/login.html" class="text-wrapper-16" style="text-decoration: none; color: inherit; display: block;">Experimente Agora</a></div>
+              <!-- BOTÃO EXPERIMENTE AGORA COM CLASSE BTN-PRIMARY -->
+              <a href="/site/login.html" class="btn-primary" style="text-decoration: none; display: inline-block;">
+                <div class="text-wrapper-16">Experimente Agora</div>
+              </a>
             </div>
             <img class="group-2" src="/site/img/group-4.png" />
           </div>
