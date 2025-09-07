@@ -6,7 +6,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "site/login.html",
+      "src": "site/login.html", 
       "use": "@vercel/static"
     },
     {
@@ -20,6 +20,14 @@
     {
       "src": "site/api/**/*.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "site/*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/img/*",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -42,6 +50,14 @@
     {
       "src": "/api/(.*)",
       "dest": "/site/api/$1"
+    },
+    {
+      "src": "/(.*).css",
+      "dest": "/site/$1.css"
+    },
+    {
+      "src": "/img/(.*)",
+      "dest": "/site/img/$1"
     },
     {
       "src": "/(.*)",
