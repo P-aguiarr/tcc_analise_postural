@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
@@ -7,7 +7,21 @@
     <link rel="stylesheet" href="styleguide.css" />
     <link rel="stylesheet" href="style.css" />
     <style>
-      /* Estilos adicionais para garantir a aparência do btn-primary */
+      /* ESTILOS CORRIGIDOS E OTIMIZADOS */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        overflow-x: hidden;
+      }
+      
+      /* Estilos para garantir a aparência do btn-primary */
       .btn-primary {
         display: inline-flex;
         align-items: center;
@@ -22,6 +36,7 @@
         border: none;
         cursor: pointer;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin: 10px 0;
       }
       
       .btn-primary:hover {
@@ -34,67 +49,183 @@
         font-size: 16px;
         font-weight: 600;
       }
+      
+      /* Correção para imagens */
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+      
+      /* Estilos de fallback para elementos críticos */
+      .landing-page {
+        width: 100%;
+        position: relative;
+      }
+      
+      .div {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      /* Footer adicional estilizado */
+      .footer-links {
+        text-align: center;
+        padding: 20px;
+        background: #f5f5f5;
+        margin-top: 40px;
+      }
+      
+      .footer-links a {
+        color: #4CAF50;
+        text-decoration: none;
+        margin: 0 10px;
+      }
+      
+      .copyright {
+        text-align: center;
+        padding: 10px;
+        background: #e0e0e0;
+        color: #666;
+      }
     </style>
   </head>
   <body>
     <div class="landing-page">
       <div class="div">
-        <footer class="footer">
-          <div class="frame">
-            <p class="the-posture-lab"><span class="text-wrapper">The Posture </span> <span class="span">Lab</span></p>
-            <p class="p">
-              Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
-              sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu bem-estar
-            </p>
+        <header class="header">
+          <div class="overlap-3">
+            <div class="overlap-4">
+              <div class="ellipse"></div>
+              <img class="female-doctor" src="img/mulher.png" alt="Médica" />
+              <p class="agora-poss-vel">
+                <span class="text-wrapper-23">Ferramenta de apoio para análise postural de fisioterapeutas. Além de ser acessível para&nbsp;&nbsp;</span>
+                <span class="text-wrapper-24">todos</span>
+              </p>
+              <p class="text-wrapper-25">
+                Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
+                sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu
+                bem-estar
+              </p>
+            </div>
+            <a href="login.html" class="btn-primary"><div class="text-wrapper-16">Consulte sua análise</div></a>
           </div>
-          <div class="frame-2">
-            <div class="frame-3">
-              <div class="text-wrapper-2">Overview</div>
-              <div class="frame-4">
-                <div class="text-wrapper-3">Saúde</div>
-                <div class="text-wrapper-4">Postura</div>
-                <div class="text-wrapper-4">IA</div>
+          <div class="navbar">
+            <div class="frame-16">
+              <p class="the-posture-lab">
+                <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+              </p>
+              <div class="frame-17">
+                <a href="index.html" class="text-wrapper-26">Home</a>
+                <a href="login.html" class="text-wrapper-26">Login</a>
+                <a href="index.html" class="text-wrapper-26">Configurações</a>
               </div>
             </div>
-            <div class="frame-3">
-              <div class="text-wrapper-2">Explore</div>
-              <div class="frame-4">
-                <div class="text-wrapper-3">Termos &amp; Condições</div>
-                <div class="text-wrapper-4">Políticas de Privacidade</div>
-                <div class="text-wrapper-4">Cookies</div>
-              </div>
-            </div>
           </div>
-        </footer>
-        <div class="testimonial">
-          <div class="overlap-wrapper">
-            <div class="overlap">
-              <div class="overlap-group">
-                <div class="rectangle"></div>
-                <p class="healthycarely-is-an">
-                  "O The Posture Lab revolucionou minha prática clínica. Agora consigo oferecer<br>
-                  análises posturais precisas e acessíveis para todos os meus pacientes, com<br>
-                  resultados em tempo real e relatórios detalhados que facilitam o diagnóstico."
+        </header>
+
+        <div class="step-section">
+          <div class="title-2">
+            <div class="text-wrapper-12">Simples, rápido e eficaz</div>
+            <div class="text-wrapper-22">Como Funciona a Análise</div>
+          </div>
+          
+          <div class="card-2">
+            <div class="frame-14">
+              <div class="text-wrapper-17">Capture com o Celular</div>
+              <p class="text-wrapper-18">Use a câmera do seu próprio celular para gravar um vídeo rápido e prático.</p>
+              <img class="img-2" src="img/Search.png" alt="Captura" />
+            </div>
+            <div class="rectangle-3"></div>
+          </div>
+          
+          <div class="card-3">
+            <div class="frame-15">
+              <div class="text-wrapper-17">Relatórios Detalhados</div>
+              <p class="text-wrapper-19">
+                Monitore sua evolução atraves de dados das últimas análises feitas na ferramenta.
+              </p>
+              <img class="img-2" src="img/Profile.png" alt="Relatórios" />
+            </div>
+            <div class="rectangle-3"></div>
+          </div>
+          
+          <div class="card-4">
+            <div class="frame-15">
+              <div class="text-wrapper-17">Acompanhe sua Evolução</div>
+              <p class="text-wrapper-20">
+                Gere relatórios completos para acompanhamento e documentação da sua evolução.
+              </p>
+              <div class="img-2"><img class="calendar" src="img/Calendar.png" alt="Calendário" /></div>
+            </div>
+            <div class="rectangle-3"></div>
+          </div>
+          
+          <div class="card-5">
+            <div class="frame-15">
+              <div class="text-wrapper-17">Ánalise Profissional</div>
+              <div class="overlap-group-3">
+                <div class="text"></div>
+                <p class="text-wrapper-21">
+                  Envie os resultados da sua análise de forma segura e instantânea para o seu médico ou fisioterapeuta.
                 </p>
-                <div class="group">
-                  <div class="overlap-group-2">
-                    <div class="rectangle-2"></div>
-                    <img class="image" src="/img/homen.png" />
-                  </div>
-                </div>
               </div>
-              <div class="text-wrapper-5">Dr. Carlos Silva</div>
-              <p class="text-wrapper-6">Fisioterapeuta Especialista em Postura</p>
-              <img class="arrow-long-right" src="img/long_right.png" />
-              <img class="arrow-long-right-2" src="img/long_right-1.png" />
+              <img class="img-2" src="img/Search.png" alt="Análise" />
             </div>
-          </div>
-          <div class="title">
-            <p class="text-wrapper-7">Experimente e se surpreenda com as funcionalidades</p>
-            <p class="text-wrapper-8">Feedback de profissionais que já utilizam</p>
+            <div class="rectangle-3"></div>
           </div>
         </div>
+
+        <div class="overlap-2">
+          <div class="schedule-section">
+            <div class="frame-11">
+              <div class="frame-4">
+                <div class="text-wrapper-12">Tecnologia</div>
+                <div class="text-wrapper-14">Como Funciona Nossa Análise</div>
+              </div>
+              <p class="a-avalia-o-postural">
+                Utilizamos algoritmos avançados de visão computacional para detectar
+                automaticamente 33 pontos-chave do corpo humano. Nosso sistema analisa ângulos articulares,
+                alinhamento postural e identifica possíveis desvios com precisão milimétrica.<br><br>
+                A tecnologia MediaPipe Pose, desenvolvida pelo Google, combinada com nosso próprio modelo
+                de análise, oferece resultados confiáveis e detalhados em tempo real.
+              </p>
+              <div class="frame-12">
+                <div class="frame-13">
+                  <div class="check-wrapper">
+                    <div class="check"><img class="vector" src="img/image.svg" alt="Check" /></div>
+                  </div>
+                  <p class="text-wrapper-15">Detecção de 33 pontos corporais</p>
+                </div>
+                <div class="frame-13">
+                  <div class="check-wrapper">
+                    <div class="check"><img class="vector" src="img/vector.svg" alt="Check" /></div>
+                  </div>
+                  <p class="text-wrapper-15">Análise de ângulos articulares</p>
+                </div>
+                <div class="frame-13">
+                  <div class="check-wrapper">
+                    <div class="check"><img class="vector" src="img/check.svg" alt="Check" /></div>
+                  </div>
+                  <p class="text-wrapper-15">Relatórios detalhados</p>
+                </div>
+              </div>
+              <!-- BOTÃO EXPERIMENTE AGORA COM CLASSE BTN-PRIMARY -->
+              <a href="login.html" class="btn-primary">
+                <div class="text-wrapper-16">Experimente Agora</div>
+              </a>
+            </div>
+            <img class="group-2" src="img/group-4.png" alt="Tecnologia" />
+          </div>
+          <img class="kisspng-physician" src="img/medico.png" alt="Médico" />
+        </div>
+
         <div class="our-rating">
+          <div class="frame-10">
+            <div class="text-wrapper-12">Números</div>
+            <p class="text-wrapper-13">Nossa eficiência comprovada</p>
+          </div>
           <div class="frame-5">
             <div class="card">
               <div class="frame-wrapper">
@@ -133,147 +264,88 @@
               <div class="rectangle-3"></div>
             </div>
           </div>
-          <div class="frame-10">
-            <div class="text-wrapper-12">Números</div>
-            <p class="text-wrapper-13">Nossa eficiência comprovada</p>
-          </div>
         </div>
-        <div class="overlap-2">
-          <div class="schedule-section">
-            <div class="frame-11">
-              <div class="frame-4">
-                <div class="text-wrapper-12">Tecnologia</div>
-                <div class="text-wrapper-14">Como Funciona Nossa Análise</div>
-              </div>
-              <p class="a-avalia-o-postural">
-                Utilizamos algoritmos avançados de visão computacional para detectar
-                automaticamente 33 pontos-chave do corpo humano. Nosso sistema analisa ângulos articulares,
-                alinhamento postural e identifica possíveis desvios com precisão milimétrica.<br><br>
-                A tecnologia MediaPipe Pose, desenvolvida pelo Google, combinada com nosso próprio modelo
-                de análise, oferece resultados confiáveis e detalhados em tempo real.
-              </p>
-              <div class="frame-12">
-                <div class="frame-13">
-                  <div class="check-wrapper">
-                    <div class="check"><img class="vector" src="img/image.svg" /></div>
-                  </div>
-                  <p class="text-wrapper-15">Detecção de 33 pontos corporais</p>
-                </div>
-                <div class="frame-13">
-                  <div class="check-wrapper">
-                    <div class="check"><img class="vector" src="img/vector.svg" /></div>
-                  </div>
-                  <p class="text-wrapper-15">Análise de ângulos articulares</p>
-                </div>
-                <div class="frame-13">
-                  <div class="check-wrapper">
-                    <div class="check"><img class="vector" src="img/check.svg" /></div>
-                  </div>
-                  <p class="text-wrapper-15">Relatórios detalhados</p>
-                </div>
-              </div>
-              <!-- BOTÃO EXPERIMENTE AGORA COM CLASSE BTN-PRIMARY -->
-              <a href="login.html" class="btn-primary" style="text-decoration: none; display: inline-block;">
-                <div class="text-wrapper-16">Experimente Agora</div>
-              </a>
-            </div>
-            <img class="group-2" src="img/group-4.png" />
+
+        <div class="testimonial">
+          <div class="title">
+            <p class="text-wrapper-8">Feedback de profissionais que já utilizam</p>
+            <p class="text-wrapper-7">Experimente e se surpreenda com as funcionalidades</p>
           </div>
-          <img class="kisspng-physician" src="img/medico.png" />
-        </div>
-        <div class="step-section">
-          <div class="card-2">
-            <div class="frame-14">
-              <div class="text-wrapper-17">Capture com o Celular</div>
-              <p class="text-wrapper-18">Use a câmera do seu próprio celular para gravar um vídeo rápido e prático.</p>
-              <img class="img-2" src="img/Search.png" />
-            </div>
-            <div class="rectangle-3"></div>
-          </div>
-          <div class="card-3">
-            <div class="frame-15">
-              <div class="text-wrapper-17">Relatórios Detalhados</div>
-              <p class="text-wrapper-19">
-                Monitore sua evolução atraves de dados das últimas análises feitas na ferramenta.
-              </p>
-              <img class="img-2" src="img/Profile.png" />
-            </div>
-            <div class="rectangle-3"></div>
-          </div>
-          <div class="card-4">
-            <div class="frame-15">
-              <div class="text-wrapper-17">Acompanhe sua Evolução</div>
-              <p class="text-wrapper-20">
-                Gere relatórios completos para acompanhamento e documentação da sua evolução.
-              </p>
-              <div class="img-2"><img class="calendar" src="img/Calendar.png" /></div>
-            </div>
-            <div class="rectangle-3"></div>
-          </div>
-          <div class="card-5">
-            <div class="frame-15">
-              <div class="text-wrapper-17">Ánalise Profissional</div>
-              <div class="overlap-group-3">
-                <div class="text"></div>
-                <p class="text-wrapper-21">
-                  Envie os resultados da sua análise de forma segura e instantânea para o seu médico ou fisioterapeuta.
+          <div class="overlap-wrapper">
+            <div class="overlap">
+              <div class="overlap-group">
+                <div class="rectangle"></div>
+                <p class="healthycarely-is-an">
+                  "O The Posture Lab revolucionou minha prática clínica. Agora consigo oferecer<br>
+                  análises postural precisas e acessíveis para todos os meus pacientes, com<br>
+                  resultados em tempo real e relatórios detalhados que facilitam o diagnóstico."
                 </p>
+                <div class="group">
+                  <div class="overlap-group-2">
+                    <div class="rectangle-2"></div>
+                    <img class="image" src="img/homen.png" alt="Dr. Carlos Silva" />
+                  </div>
+                </div>
               </div>
-              <img class="img-2" src="img/Search.png" />
+              <div class="text-wrapper-5">Dr. Carlos Silva</div>
+              <p class="text-wrapper-6">Fisioterapeuta Especialista em Postura</p>
+              <img class="arrow-long-right" src="img/long_right.png" alt="Seta" />
+              <img class="arrow-long-right-2" src="img/long_right-1.png" alt="Seta" />
             </div>
-            <div class="rectangle-3"></div>
-          </div>
-          <div class="title-2">
-            <div class="text-wrapper-12">Simples, rápido e eficaz</div>
-            <div class="text-wrapper-22">Como Funciona a Análise</div>
           </div>
         </div>
-        
-        <header class="header">
-          <div class="overlap-3">
-            <div class="overlap-4">
-              <div class="ellipse"></div>
-              <img class="female-doctor" src="img/mulher.png" />
-              <p class="agora-poss-vel">
-                <span class="text-wrapper-23"
-                  >Ferramenta de apoio para análise postural de fisioterapeutas. Além de ser acessível para&nbsp;&nbsp;</span
-                >
-                <span class="text-wrapper-24">todos</span>
-              </p>
-              <p class="text-wrapper-25">
-                Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
-                sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu
-                bem-estar
-              </p>
-            </div>
-            <a href="login.html" class="btn-primary" style="text-decoration: none;"><div class="text-wrapper-16">Consulte sua análise</div></a>
+
+        <footer class="footer">
+          <div class="frame">
+            <p class="the-posture-lab"><span class="text-wrapper">The Posture </span> <span class="span">Lab</span></p>
+            <p class="p">
+              Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
+              sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu bem-estar
+            </p>
           </div>
-          <div class="navbar">
-            <div class="frame-16">
-              <p class="the-posture-lab">
-                <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-              </p>
-              <div class="frame-17">
-                <a href="index.html" class="text-wrapper-26">Home</a>
-                <a href="login.html" class="text-wrapper-26">Login</a>
-                <a href="index.html" class="text-wrapper-26">Configurações</a>
+          <div class="frame-2">
+            <div class="frame-3">
+              <div class="text-wrapper-2">Overview</div>
+              <div class="frame-4">
+                <div class="text-wrapper-3">Saúde</div>
+                <div class="text-wrapper-4">Postura</div>
+                <div class="text-wrapper-4">IA</div>
+              </div>
+            </div>
+            <div class="frame-3">
+              <div class="text-wrapper-2">Explore</div>
+              <div class="frame-4">
+                <div class="text-wrapper-3">Termos &amp; Condições</div>
+                <div class="text-wrapper-4">Políticas de Privacidade</div>
+                <div class="text-wrapper-4">Cookies</div>
               </div>
             </div>
           </div>
-        </header>
+        </footer>
       </div>
     </div>
-    <!-- FOOTER -->
-        <div class="footer">
-            <div class="footer-links">
-                <a href="#">Careers</a> | 
-                <a href="#">Privacy Policy</a> | 
-                <a href="#">Terms & Conditions</a>
-            </div>
-            <div class="copyright">
-                © 2025 Analíse Postural 
-            </div>
-        </div>
+    
+    <!-- FOOTER ADICIONAL -->
+    <div class="footer-links">
+      <a href="#">Careers</a> | 
+      <a href="#">Privacy Policy</a> | 
+      <a href="#">Terms & Conditions</a>
     </div>
+    <div class="copyright">
+      © 2025 Analíse Postural 
+    </div>
+    
+    <script>
+      // Script para verificar se as imagens carregaram corretamente
+      document.addEventListener('DOMContentLoaded', function() {
+        const images = document.querySelectorAll('img');
+        images.forEach(img => {
+          img.onerror = function() {
+            console.error('Erro ao carregar imagem: ' + this.src);
+            this.style.border = '2px solid red';
+          };
+        });
+      });
+    </script>
   </body>
 </html>
