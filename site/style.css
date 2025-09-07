@@ -1450,7 +1450,7 @@ body {
 /* IMAGEM INFERIOR MAIS PRÓXIMA DO LOGIN */
 .corner-image {
   width: 180px;
-  margin-top: 20px; /* Aproxima do conteúdo */
+  margin-top: 60px; /* Aproxima do conteúdo */
   align-self: flex-start; /* Joga para a esquerda */
 }
 .footer {
