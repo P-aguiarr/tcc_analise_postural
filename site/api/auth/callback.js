@@ -8,6 +8,14 @@ const client = new OAuth2Client(CLIENT_ID);
 // TOKEN DO BLOB - COLOCA DIRETO NO CÓDIGO! 🔥
 const BLOB_TOKEN = "vercel_blob_rw_ZXJ7FzJ8oliEG9Ix_EMKmWfzml1W0Y0Ni1CbSdR4Em1A8X2";
 
+// Função de log melhorada
+function log(message) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${message}`;
+  console.log(logMessage);
+  return logMessage;
+}
+
 module.exports = async (req, res) => {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://ttc-analise-postural.vercel.app');
@@ -47,6 +55,7 @@ module.exports = async (req, res) => {
         
         // Responder a teste de conexão
         if (test) {
+          log('✅ Teste de conexão recebido');
           return res.status(200).json({ 
             success: true, 
             message: 'API conectada com sucesso' 
@@ -54,8 +63,11 @@ module.exports = async (req, res) => {
         }
         
         if (!token) {
+          log('❌ Token não fornecido');
           return res.status(400).json({ error: 'Token não fornecido' });
         }
+        
+        log('🔍 Verificando token do Google...');
         
         // Verificar o token do Google
         const ticket = await client.verifyIdToken({
@@ -69,7 +81,7 @@ module.exports = async (req, res) => {
         const name = payload['name'];
         const picture = payload['picture'];
         
-        console.log('👤 Usuário autenticado:', email);
+        log(`👤 Usuário autenticado: ${email} (ID: ${userid})`);
         
         // Dados do usuário
         const userData = {
@@ -83,9 +95,9 @@ module.exports = async (req, res) => {
         };
         
         try {
-          // 🔥 CORREÇÃO 1: Consulta com autenticação
+          // 🔥 CORREÇÃO: Consulta com autenticação
           const existingUserUrl = `https://zxj7fzj8olieg9ix.public.blob.vercel-storage.com/users/${userid}.json`;
-          console.log('🔍 Verificando usuário existente:', existingUserUrl);
+          log(`🔍 Verificando usuário existente: ${existingUserUrl}`);
           
           const existingResponse = await fetch(existingUserUrl, {
             headers: {
@@ -95,16 +107,16 @@ module.exports = async (req, res) => {
           
           if (existingResponse.ok) {
             const existingData = await existingResponse.json();
-            console.log('✅ Usuário existente encontrado, atualizando...');
+            log('✅ Usuário existente encontrado, atualizando...');
             userData.accessCount = (existingData.accessCount || 0) + 1;
             userData.firstLogin = existingData.firstLogin || userData.loginTimestamp;
           } else {
-            console.log('🆕 Novo usuário, criando registro...');
+            log('🆕 Novo usuário, criando registro...');
             userData.firstLogin = userData.loginTimestamp;
           }
           
-          // 🔥 CORREÇÃO 2: Salvar no Blob Storage
-          console.log('💾 Salvando no Blob Storage...');
+          // 🔥 CORREÇÃO: Salvar no Blob Storage
+          log('💾 Salvando no Blob Storage...');
           const blob = await put(
             `users/${userid}.json`,
             JSON.stringify(userData, null, 2),
@@ -116,7 +128,7 @@ module.exports = async (req, res) => {
             }
           );
           
-          console.log('✅ Dados salvos no Blob Storage:', blob.url);
+          log(`✅ Dados salvos no Blob Storage: ${blob.url}`);
           
           // Retornar resposta de sucesso
           res.status(200).json({
@@ -124,13 +136,13 @@ module.exports = async (req, res) => {
             user: userData,
             message: 'Login realizado e dados salvos com sucesso!',
             blobUrl: blob.url,
-            saved: true // 🔥 Nova flag para confirmar salvamento
+            saved: true
           });
           
         } catch (blobError) {
-          console.error('❌ Erro ao salvar no Blob Storage:', blobError);
+          log(`❌ Erro ao salvar no Blob Storage: ${blobError.message}`);
           
-          // 🔥 CORREÇÃO 3: Retornar info mesmo com erro no blob
+          // Retornar info mesmo com erro no blob
           res.status(200).json({
             success: true,
             user: userData,
@@ -142,7 +154,7 @@ module.exports = async (req, res) => {
         }
         
       } catch (error) {
-        console.error('Erro no processamento:', error);
+        log(`❌ Erro no processamento: ${error.message}`);
         res.status(500).json({
           success: false,
           error: 'Erro interno do servidor: ' + error.message
@@ -151,7 +163,7 @@ module.exports = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Erro na verificação do token:', error);
+    log(`❌ Erro na verificação do token: ${error.message}`);
     res.status(401).json({
       success: false,
       error: 'Token inválido: ' + error.message
