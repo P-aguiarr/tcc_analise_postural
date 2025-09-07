@@ -45,7 +45,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/site"
+      "dest": "/site/index.html"
     }
   ]
 }
