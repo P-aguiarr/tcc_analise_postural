@@ -1,29 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="globals.css" />
-    <link rel="stylesheet" href="styleguide.css" />
-    <link rel="stylesheet" href="style.css" />
-    <title>Login - The Posture Lab</title>
-  </head>
-  <body>
-    <div class="landing-page">
-      <div class="div">
-        <!-- NAVBAR -->
-        <div class="navbar">
-          <div class="frame-16">
-            <p class="the-posture-lab">
-              <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-            </p>
-            <div class="frame-17">
-              <a href="/sites/index.html" class="text-wrapper-26">Home</a>
-              <a href="/sites/login.html" class="text-wrapper-26">Login</a>
-              <a href="/sites/index.html" class="text-wrapper-26">Configurações</a>
-            </div>
-          </div>
-        </div>
+    <link rel="stylesheet" href="/style.css" />
+    <title>Pós-Login - The Posture Lab</title>
     <style>
       body {
         margin: 0;
@@ -31,32 +12,80 @@
         background: white;
       }
 
+      .navbar {
+        background: #fff;
+        padding: 15px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .the-posture-lab {
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .text-wrapper {
+        color: #2c3e50;
+      }
+
+      .span {
+        color: #4CAF50;
+      }
+
+      .frame-17 {
+        display: flex;
+        gap: 20px;
+      }
+
+      .text-wrapper-26 {
+        color: #2c3e50;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .text-wrapper-26:hover {
+        color: #4CAF50;
+      }
+
       .dashboard {
         display: flex;
         justify-content: center;
         align-items: center;
         gap: 50px;
-        margin-top: 150px;
+        margin-top: 100px;
+        flex-wrap: wrap;
+        padding: 20px;
       }
 
       .card {
-        background: #4a7dff;
-        color: white;
-        width: 250px;
-        height: 150px;
-        border-radius: 10px;
+        background: white;
+        width: 300px;
+        height: 200px;
+        border-radius: 15px;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 20px;
-        font-weight: bold;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         cursor: pointer;
-        transition: transform 0.3s ease;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        border: none;
+        padding: 0;
       }
 
       .card:hover {
-        transform: scale(1.05);
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 15px;
       }
 
       .decor {
@@ -64,6 +93,7 @@
         border-radius: 50%;
         background: linear-gradient(135deg, #6ea0ff, #4a7dff);
         z-index: -1;
+        opacity: 0.6;
       }
 
       .decor.small {
@@ -86,20 +116,69 @@
         bottom: 20px;
         right: 40px;
       }
+
+      @media (max-width: 768px) {
+        .dashboard {
+          flex-direction: column;
+          gap: 30px;
+        }
+        
+        .card {
+          width: 250px;
+          height: 170px;
+        }
+      }
     </style>
   </head>
   <body>
+    <!-- NAVBAR -->
+    <div class="navbar">
+      <div class="frame-16">
+        <p class="the-posture-lab">
+          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+        </p>
+        <div class="frame-17">
+          <a href="/" class="text-wrapper-26">Home</a>
+          <a href="/login" class="text-wrapper-26">Login</a>
+          <a href="/" class="text-wrapper-26">Configurações</a>
+        </div>
+      </div>
+    </div>
+
     <div class="dashboard">
-      <div class="card" onclick="window.location.href='historico.html'">
-        🔍 Consultar histórico
-      </div>
-      <div class="card" onclick="window.location.href='nova-analise.html'">
-        ☁️ Nova Análise
-      </div>
+      <!-- Botão de Nova Análise com Group 119.png -->
+      <button class="card" onclick="window.location.href='/nova-analise'">
+        <img src="/img/Group 119.png" alt="Nova Análise" class="card-image">
+      </button>
+      
+      <!-- Botão de Consultar Histórico com Group 117.png -->
+      <button class="card" onclick="window.location.href='/historico'">
+        <img src="/img/Group 117.png" alt="Consultar Histórico" class="card-image">
+      </button>
     </div>
 
     <div class="decor small"></div>
     <div class="decor medium"></div>
     <div class="decor large"></div>
+
+    <script>
+      // Verificar se o usuário está logado
+      document.addEventListener('DOMContentLoaded', function() {
+        const user = localStorage.getItem('user');
+        if (!user) {
+          alert('Você precisa fazer login primeiro!');
+          window.location.href = '/login';
+          return;
+        }
+        
+        try {
+          const userData = JSON.parse(user);
+          console.log('Usuário logado:', userData.email);
+        } catch (e) {
+          console.error('Erro ao carregar dados do usuário:', e);
+          window.location.href = '/login';
+        }
+      });
+    </script>
   </body>
 </html>
