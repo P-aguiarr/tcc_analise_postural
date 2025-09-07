@@ -380,14 +380,15 @@
       } catch (error) {
         console.error('❌ Erro grave na API:', error);
         showAPIStatus('❌ Falha na conexão com o servidor');
-        showError('Erro de conexão com o servidor');
+        showError('Erro de conexão com o servidor: ' + error.message);
       }
     }
 
-    // 🔥 FUNÇÃO PARA ENVIAR DADOS PARA API
+    // 🔥 FUNÇÃO PARA ENVIAR DADOS PARA API (COM MELHOR DEBUG)
     async function sendToAPI(token, userData) {
       try {
         console.log('📡 Enviando dados para API...');
+        console.log('🔗 URL:', API_AUTH_URL);
         
         const response = await fetch(API_AUTH_URL, {
           method: 'POST',
@@ -397,24 +398,46 @@
           body: JSON.stringify({ token: token })
         });
         
+        console.log('📨 Status da resposta:', response.status);
+        console.log('📨 Status text:', response.statusText);
+        
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorText = await response.text();
+          console.error('❌ Resposta de erro:', errorText);
+          throw new Error(`Erro HTTP! Status: ${response.status} - ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('✅ Resposta da API:', data);
         return data;
         
       } catch (error) {
-        console.error('❌ Erro ao conectar com API:', error);
+        console.error('❌ Erro detalhado na API:');
+        console.error('💡 Mensagem:', error.message);
+        console.error('🔗 URL tentada:', API_AUTH_URL);
         throw error;
       }
     }
 
-    // 🔥 TESTAR CONEXÃO COM API
+    // 🔥 TESTAR CONEXÃO COM API (MELHORADO)
     async function testAPIConnection() {
       try {
         showAPIStatus('🔍 Testando conexão com servidor...');
+        console.log('🔗 Testando URL:', API_AUTH_URL);
         
+        // Primeiro teste com GET
+        try {
+          const getResponse = await fetch(API_AUTH_URL, { method: 'GET' });
+          console.log('🔍 GET Status:', getResponse.status);
+          if (getResponse.ok) {
+            const getData = await getResponse.json();
+            console.log('✅ GET funcionando:', getData);
+          }
+        } catch (getError) {
+          console.log('⚠️ GET não funcionou:', getError.message);
+        }
+        
+        // Teste principal com POST
         const response = await fetch(API_AUTH_URL, {
           method: 'POST',
           headers: {
@@ -423,13 +446,21 @@
           body: JSON.stringify({ test: true })
         });
         
-        const data = await response.json();
-        showAPIStatus('✅ Servidor conectado e respondendo!');
-        console.log('🧪 Teste API:', data);
+        console.log('📨 POST Status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ POST funcionando:', data);
+          showAPIStatus('✅ Servidor conectado e respondendo!');
+        } else {
+          const errorText = await response.text();
+          console.error('❌ POST erro:', errorText);
+          showAPIStatus('❌ Erro no servidor - Status: ' + response.status);
+        }
         
       } catch (error) {
-        showAPIStatus('❌ Servidor offline ou com problemas');
-        console.error('❌ Erro no teste API:', error);
+        console.error('❌ Erro completo na conexão:', error);
+        showAPIStatus('❌ Servidor offline: ' + error.message);
       }
     }
 
@@ -482,6 +513,30 @@
     };
 
     window.testAPI = testAPIConnection;
+
+    // 🔥 NOVO: Teste manual da API
+    window.testManual = function() {
+      fetch(API_AUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ test: true })
+      })
+      .then(response => {
+        console.log('🧪 Manual Test - Status:', response.status);
+        return response.text();
+      })
+      .then(text => {
+        try {
+          const data = JSON.parse(text);
+          console.log('🧪 Manual Test - JSON:', data);
+        } catch {
+          console.log('🧪 Manual Test - Text:', text);
+        }
+      })
+      .catch(error => console.error('🧪 Manual Test - Error:', error));
+    };
   </script>
 </body>
 </html>
