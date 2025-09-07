@@ -79,9 +79,9 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
   <script>
-    // URL base da API - CORRIGIDA para apontar para a rota correta
+    // URL base da API
     const API_BASE_URL = window.location.origin;
-    const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`; // ← Este é o endpoint correto
+    const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
 
     // Configuração do Google Sign-In
     window.onload = function () {
@@ -176,57 +176,26 @@
         localStorage.setItem('userId', userData.id);
         localStorage.setItem('loginTime', new Date().getTime().toString());
         
-        // 🔥 TESTAR PRIMEIRO SE A API ESTÁ ACESSÍVEL
-        const apiAvailable = await testAPIConnection();
-        
-        if (!apiAvailable) {
-          throw new Error('Servidor indisponível no momento. Tente novamente mais tarde.');
-        }
-        
         // 🔥 AGORA: Esperar a API completar antes de redirecionar
-        const apiSuccess = await sendToAPI(response.credential, userData);
+        await sendToAPI(response.credential, userData);
         
-        if (apiSuccess) {
-          // Mostrar mensagem de sucesso
-          showSuccess();
-          
-          // Redirecionar após breve delay para mostrar mensagem de sucesso
-          setTimeout(() => {
-            window.location.href = '/poslogin';
-          }, 1500);
-        } else {
-          // Se a API falhou, mostrar erro
-          showError('Falha ao salvar dados no servidor. Tente novamente.');
-          // Limpar dados locais em caso de falha
-          localStorage.removeItem('user');
-          localStorage.removeItem('userId');
-          localStorage.removeItem('loginTime');
-        }
+        // Se chegou aqui, a API foi bem-sucedida
+        showSuccess();
+        
+        // Redirecionar após breve delay
+        setTimeout(() => {
+          window.location.href = '/poslogin';
+        }, 1500);
         
       } catch (error) {
         console.error('Erro no processamento do login:', error);
-        showError('Erro durante o processo de login: ' + error.message);
-      }
-    }
-
-    // Função para testar conexão com API
-    async function testAPIConnection() {
-      try {
-        console.log('Testando conexão com API:', API_AUTH_URL);
-        const response = await fetch(API_AUTH_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ test: true })
-        });
         
-        const data = await response.json();
-        console.log('Teste de API:', data);
-        return data.success === true;
-      } catch (error) {
-        console.error('API não disponível:', error);
-        return false;
+        // Limpar dados locais em caso de falha
+        localStorage.removeItem('user');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('loginTime');
+        
+        showError('Falha no login: ' + error.message);
       }
     }
 
@@ -244,28 +213,54 @@
         
         console.log('Resposta da API status:', response.status);
         
-        if (!response.ok) {
-          throw new Error(`Erro HTTP: ${response.status}`);
+        // Verificar se a resposta é JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Resposta não é JSON:', text.substring(0, 200));
+          throw new Error('Resposta inválida do servidor');
         }
         
         const data = await response.json();
         console.log('Resposta da API:', data);
         
-        if (data.success) {
-          if (data.saved) {
-            console.log('✅ Dados salvos com sucesso na API');
-            return true;
-          } else {
-            console.warn('⚠️ Login OK, mas dados não salvos no servidor');
-            return false;
-          }
+        if (data.success && data.saved) {
+          console.log('✅ Dados salvos com sucesso na API');
+          return true;
         } else {
-          console.error('❌ API retornou erro:', data.error);
-          return false;
+          console.error('❌ Erro na API:', data.error || 'Erro desconhecido');
+          throw new Error(data.error || 'Falha ao salvar dados');
         }
         
       } catch (error) {
         console.error('❌ Erro ao conectar com API:', error);
+        throw error;
+      }
+    }
+
+    // Função para testar conexão com API
+    async function testAPIConnection() {
+      try {
+        console.log('Testando conexão com API:', API_AUTH_URL);
+        const response = await fetch(API_AUTH_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ test: true })
+        });
+        
+        // Verificar se a resposta é JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Resposta não é JSON. Servidor pode estar com erro.');
+        }
+        
+        const data = await response.json();
+        console.log('Teste de API:', data);
+        return data.success === true;
+      } catch (error) {
+        console.error('API não disponível:', error);
         return false;
       }
     }
@@ -319,9 +314,22 @@
 
     // Testar API manualmente
     function testAPI() {
+      showLoading();
       testAPIConnection().then(available => {
-        alert('API disponível: ' + available);
+        hideLoading();
+        if (available) {
+          alert('✅ API disponível e funcionando!');
+        } else {
+          alert('❌ API indisponível. Verifique o console para detalhes.');
+        }
+      }).catch(error => {
+        hideLoading();
+        alert('❌ Erro ao testar API: ' + error.message);
       });
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingSpinner').style.display = 'none';
     }
 
     // Expor funções para console
