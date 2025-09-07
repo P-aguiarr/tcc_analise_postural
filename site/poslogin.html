@@ -6,58 +6,15 @@
     <link rel="stylesheet" href="/style.css" />
     <title>Pós-Login - The Posture Lab</title>
     <style>
-      body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: white;
-      }
-
-      .navbar {
-        background: #fff;
-        padding: 15px 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #ddd;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      }
-
-      .the-posture-lab {
-        font-size: 24px;
-        font-weight: bold;
-      }
-
-      .text-wrapper {
-        color: #2c3e50;
-      }
-
-      .span {
-        color: #4CAF50;
-      }
-
-      .frame-17 {
-        display: flex;
-        gap: 20px;
-      }
-
-      .text-wrapper-26 {
-        color: #2c3e50;
-        text-decoration: none;
-        font-weight: 500;
-      }
-
-      .text-wrapper-26:hover {
-        color: #4CAF50;
-      }
-
+      /* Estilos específicos para esta página */
       .dashboard {
         display: flex;
         justify-content: center;
         align-items: center;
         gap: 50px;
-        margin-top: 100px;
+        margin: 100px 20px 60px 20px;
         flex-wrap: wrap;
-        padding: 20px;
+        min-height: 60vh;
       }
 
       .card {
@@ -113,7 +70,7 @@
       .decor.large {
         width: 180px;
         height: 180px;
-        bottom: 20px;
+        bottom: 100px;
         right: 40px;
       }
 
@@ -121,11 +78,16 @@
         .dashboard {
           flex-direction: column;
           gap: 30px;
+          margin: 80px 20px 40px 20px;
         }
         
         .card {
-          width: 250px;
-          height: 170px;
+          width: 280px;
+          height: 180px;
+        }
+        
+        .decor {
+          display: none;
         }
       }
     </style>
@@ -145,21 +107,35 @@
       </div>
     </div>
 
+    <!-- CONTEÚDO PRINCIPAL -->
     <div class="dashboard">
       <!-- Botão de Nova Análise com Group 119.png -->
       <button class="card" onclick="window.location.href='/nova-analise'">
-        <img src="/img/Group 119.png" alt="Nova Análise" class="card-image">
+        <img src="/img/Group%20119.png" alt="Nova Análise" class="card-image">
       </button>
       
       <!-- Botão de Consultar Histórico com Group 117.png -->
       <button class="card" onclick="window.location.href='/historico'">
-        <img src="/img/Group 117.png" alt="Consultar Histórico" class="card-image">
+        <img src="/img/Group%20117.png" alt="Consultar Histórico" class="card-image">
       </button>
     </div>
 
+    <!-- ELEMENTOS DECORATIVOS -->
     <div class="decor small"></div>
     <div class="decor medium"></div>
     <div class="decor large"></div>
+
+    <!-- FOOTER (igual ao do login.html) -->
+    <div class="footer">
+      <div class="footer-links">
+        <a href="#">Careers</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms & Conditions</a>
+      </div>
+      <div class="copyright">
+        © 2025 Analíse Postural 
+      </div>
+    </div>
 
     <script>
       // Verificar se o usuário está logado
@@ -174,11 +150,25 @@
         try {
           const userData = JSON.parse(user);
           console.log('Usuário logado:', userData.email);
+          
+          // Opcional: Mostrar nome do usuário na página
+          const userNameElement = document.getElementById('user-name');
+          if (userNameElement) {
+            userNameElement.textContent = userData.name;
+          }
         } catch (e) {
           console.error('Erro ao carregar dados do usuário:', e);
           window.location.href = '/login';
         }
       });
+
+      // Função para logout
+      function logout() {
+        localStorage.removeItem('user');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('loginTime');
+        window.location.href = '/login';
+      }
     </script>
   </body>
 </html>
