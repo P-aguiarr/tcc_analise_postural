@@ -140,6 +140,16 @@
       max-width: 500px;
     }
 
+    /* Estilo para o botão do Google personalizado */
+    .google-login-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    #googleButton {
+      display: none; /* Escondemos o botão padrão */
+    }
+
     @media (max-width: 800px) {
       .landing-page .central-login {
         width: 90%;
@@ -183,9 +193,15 @@
         Entre na plataforma e descubra um mundo de possibilidades!
       </p>
       
-      <!-- Botão de Login com Google -->
-      <div id="googleLogin" style="cursor: pointer; display: inline-block;">
-        <img src="/site/img/google.png" alt="Login com Google" class="google-login-img" />
+      <!-- Container para o botão do Google -->
+      <div class="google-login-container">
+        <!-- Botão personalizado que o usuário vê -->
+        <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
+          <img src="/site/img/google.png" alt="Login com Google" class="google-login-img" />
+        </div>
+        
+        <!-- Div onde o botão oficial do Google será renderizado (escondido) -->
+        <div id="googleButton" style="display: none;"></div>
       </div>
       
       <!-- Loading spinner -->
@@ -232,30 +248,13 @@
     const API_BASE_URL = 'https://ttc-analise-postural.vercel.app';
     const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
 
-    // Variável para controlar se o Google já foi inicializado
-    let googleInitialized = false;
-
     // Configuração do Google Sign-In
     window.onload = function () {
-      // Adicionar evento de clique à imagem do Google
-      document.getElementById('googleLogin').addEventListener('click', function() {
-        // Mostrar loading
-        showLoading();
-        
-        // Se o Google já foi inicializado, mostrar o prompt diretamente
-        if (googleInitialized) {
-          google.accounts.id.prompt();
-        } else {
-          // Se ainda não foi inicializado, inicializar e depois mostrar o prompt
-          initializeGoogleSignIn();
-        }
-      });
-
-      // Inicializar o Google Sign-In
-      initializeGoogleSignIn();
-
-      // Verificar se já está logado
+      // Verificar se já está logado primeiro
       checkExistingLogin();
+      
+      // Inicializar o Google Sign-In quando a biblioteca carregar
+      initializeGoogleSignIn();
     };
 
     // Função para inicializar o Google Sign-In
@@ -275,8 +274,25 @@
         itp_support: true
       });
       
-      googleInitialized = true;
+      // Renderizar o botão oficial do Google (mas mantê-lo escondido)
+      google.accounts.id.renderButton(
+        document.getElementById('googleButton'),
+        { 
+          theme: 'filled_blue', 
+          size: 'large',
+          text: 'signin_with',
+          width: 277
+        }
+      );
+      
       console.log('Google Sign-In initialized successfully');
+      
+      // Adicionar evento de clique ao botão personalizado
+      document.getElementById('customGoogleButton').addEventListener('click', function() {
+        showLoading();
+        // Disparar o clique no botão oficial do Google (que está escondido)
+        document.querySelector('#googleButton div[role=button]').click();
+      });
     }
 
     // Função para verificar se já existe login
