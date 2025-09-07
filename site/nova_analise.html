@@ -1,159 +1,100 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="/style.css" />
-  <title>Upload de Vídeos - Análise Postural</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Postural - Andilse</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="landing-page">
-    <!-- NAVBAR -->
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/" class="text-wrapper-26">Configurações</a>
+    <header>
+        <h1>ATrastar e larga + Carregamento de arquivo</h1>
+    </header>
+    
+    <main>
+        <section class="camera-section">
+            <h2>Câmera Vertical</h2>
+            <p class="camera-description">Vídeo gravado com a câmera na posição vertical (90°)</p>
+            
+            <div class="file-upload">
+                <h3>Selecionar Vídeo MP4</h3>
+                <input type="file" id="vertical-video" class="file-input" accept=".mp4">
+                <label for="vertical-video" class="file-label">Escolher arquivo</label>
+                <p class="file-name">Nenhum arquivo selecionado</p>
+            </div>
+        </section>
+        
+        <div class="divider"></div>
+        
+        <section class="camera-section">
+            <h2>Câmera Horizontal</h2>
+            <p class="camera-description">Vídeo gravado com a câmera na posição horizontal (0°)</p>
+            
+            <div class="file-upload">
+                <h3>Selecionar Vídeo MP4</h3>
+                <input type="file" id="horizontal-video" class="file-input" accept=".mp4">
+                <label for="horizontal-video" class="file-label">Escolher arquivo</label>
+                <p class="file-name">Nenhum arquivo selecionado</p>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="footer-links">
+            <a href="#">Careers</a> | 
+            <a href="#">Privacy Policy</a> | 
+            <a href="#">Terms & Conditions</a>
         </div>
-      </div>
-    </div>
-
-    <!-- FAIXA AZUL HORIZONTAL -->
-    <div class="blue-banner">
-      <h1 class="banner-title">Upload para Análise Postural</h1>
-      <p class="banner-subtitle">Selecione o tipo de vídeo de acordo com a orientação da câmera durante a gravação</p>
-    </div>
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div class="upload-container">
-      <div class="upload-grid">
-        <!-- UPLOAD VERTICAL -->
-        <div class="upload-area" id="verticalUpload">
-          <div class="upload-icon">📱</div>
-          <h2 class="upload-title">Câmera Vertical</h2>
-          <p class="upload-description">Vídeo gravado com a câmera na posição vertical (90°)</p>
-          <button class="upload-button" onclick="document.getElementById('verticalInput').click()">
-            Selecionar Vídeo MP4
-          </button>
-          <input type="file" id="verticalInput" class="file-input" accept=".mp4" onchange="handleFileSelect(this, 'vertical')">
+        <div class="copyright">
+            © 2025 Andilse Postural LTDA
         </div>
+    </footer>
 
-        <!-- UPLOAD HORIZONTAL -->
-        <div class="upload-area" id="horizontalUpload">
-          <div class="upload-icon">🎥</div>
-          <h2 class="upload-title">Câmera Horizontal</h2>
-          <p class="upload-description">Vídeo gravado com a câmera na posição horizontal (0°)</p>
-          <button class="upload-button" onclick="document.getElementById('horizontalInput').click()">
-            Selecionar Vídeo MP4
-          </button>
-          <input type="file" id="horizontalInput" class="file-input" accept=".mp4" onchange="handleFileSelect(this, 'horizontal')">
-        </div>
-      </div>
-
-      <!-- ÁREA DE VISUALIZAÇÃO DOS VÍDEOS -->
-      <div class="file-list" id="fileList">
-        <div class="empty-message">Nenhum vídeo selecionado</div>
-      </div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="footer">
-      <div class="footer-links">
-        <a href="#">Careers</a> | 
-        <a href="#">Privacy Policy</a> | 
-        <a href="#">Terms & Conditions</a>
-      </div>
-      <div class="copyright">
-        © 2025 Analíse Postural 
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // JavaScript permanece o mesmo do código anterior
-    let currentVerticalVideo = null;
-    let currentHorizontalVideo = null;
-
-    function handleFileSelect(input, type) {
-      const file = input.files[0];
-      
-      if (!file) return;
-      
-      // Verificar se é MP4
-      if (!file.type.includes('mp4')) {
-        alert('Por favor, selecione apenas arquivos MP4');
-        input.value = '';
-        return;
-      }
-
-      // Limpar vídeo anterior do mesmo tipo
-      if (type === 'vertical') {
-        currentVerticalVideo = file;
-      } else {
-        currentHorizontalVideo = file;
-      }
-
-      updateFileList();
-    }
-
-    function updateFileList() {
-      const fileList = document.getElementById('fileList');
-      fileList.innerHTML = '';
-
-      if (currentVerticalVideo) {
-        addFileToUI(currentVerticalVideo, 'vertical');
-      }
-
-      if (currentHorizontalVideo) {
-        addFileToUI(currentHorizontalVideo, 'horizontal');
-      }
-
-      if (!currentVerticalVideo && !currentHorizontalVideo) {
-        fileList.innerHTML = '<div class="empty-message">Nenhum vídeo selecionado</div>';
-      }
-    }
-
-    function addFileToUI(file, type) {
-      const fileList = document.getElementById('fileList');
-      
-      const fileItem = document.createElement('div');
-      fileItem.className = 'file-item';
-      fileItem.innerHTML = `
-        <div class="file-info">
-          <div class="file-name">${file.name}</div>
-          <div class="file-details">
-            <span class="file-type">${type === 'vertical' ? 'Câmera Vertical' : 'Câmera Horizontal'}</span> • 
-            ${formatFileSize(file.size)}
-          </div>
-        </div>
-        <button class="remove-btn" onclick="removeFile('${type}')">Remover</button>
-      `;
-      
-      fileList.appendChild(fileItem);
-    }
-
-    function removeFile(type) {
-      if (type === 'vertical') {
-        currentVerticalVideo = null;
-        document.getElementById('verticalInput').value = '';
-      } else {
-        currentHorizontalVideo = null;
-        document.getElementById('horizontalInput').value = '';
-      }
-      updateFileList();
-    }
-
-    function formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-  </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar os inputs de arquivo para mostrar o nome do arquivo selecionado
+            const fileInputs = document.querySelectorAll('.file-input');
+            
+            fileInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    const fileName = this.files[0] ? this.files[0].name : 'Nenhum arquivo selecionado';
+                    this.nextElementSibling.nextElementSibling.textContent = fileName;
+                });
+            });
+            
+            // Adicionar funcionalidade de arrastar e soltar
+            const fileSections = document.querySelectorAll('.camera-section');
+            
+            fileSections.forEach(section => {
+                const fileInput = section.querySelector('.file-input');
+                const fileLabel = section.querySelector('.file-label');
+                const fileName = section.querySelector('.file-name');
+                
+                section.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = '#e8f4fc';
+                });
+                
+                section.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = '';
+                });
+                
+                section.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = '';
+                    
+                    if (e.dataTransfer.files.length) {
+                        fileInput.files = e.dataTransfer.files;
+                        fileName.textContent = e.dataTransfer.files[0].name;
+                        
+                        // Disparar evento change manualmente
+                        const event = new Event('change');
+                        fileInput.dispatchEvent(event);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
