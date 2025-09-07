@@ -1769,30 +1769,46 @@ body {
   }
 }
 /* ===== UPLOAD DE ARQUIVOS ===== */
-/* ===== UPLOAD PARA ANÁLISE POSTURAL ===== */
+/* ===== CABEÇALHO AZUL ===== */
+.upload-header {
+  background: #4D77FF;
+  color: white;
+  padding: 50px 20px 40px 20px;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.upload-header-title {
+  font-size: 36px;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.upload-header-subtitle {
+  font-size: 18px;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ===== AJUSTES NO CONTEÚDO ===== */
 .upload-container {
   max-width: 1000px;
-  margin: 40px auto;
+  margin: -30px auto 40px auto;
   padding: 0 20px;
+  position: relative;
+  z-index: 2;
 }
 
-.upload-title {
-  text-align: center;
-  color: #2c3e50;
-  margin-bottom: 40px;
-  font-size: 32px;
+.upload-content {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.upload-subtitle {
-  text-align: center;
-  color: #7f8c8d;
-  margin-bottom: 50px;
-  font-size: 18px;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
+/* ===== UPLOAD GRID ===== */
 .upload-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1807,6 +1823,7 @@ body {
   }
 }
 
+/* ===== ÁREAS DE UPLOAD ===== */
 .upload-area {
   border: 3px dashed #4D77FF;
   border-radius: 20px;
@@ -1894,7 +1911,7 @@ body {
   display: none;
 }
 
-/* Visualização da orientação */
+/* ===== VISUALIZAÇÃO DA ORIENTAÇÃO ===== */
 .orientation-visual {
   width: 120px;
   height: 200px;
@@ -1935,7 +1952,7 @@ body {
   transform: translate(-50%, -50%);
 }
 
-/* Resto do CSS permanece igual (file-list, progress bar, etc) */
+/* ===== LISTA DE ARQUIVOS ===== */
 .uploaded-files {
   margin-top: 50px;
 }
@@ -2013,6 +2030,7 @@ body {
   background: #ffece8;
 }
 
+/* ===== BARRA DE PROGRESSO ===== */
 .progress-bar {
   height: 8px;
   background: #ecf0f1;
@@ -2033,6 +2051,7 @@ body {
   background: linear-gradient(90deg, #2ecc71, #27ae60);
 }
 
+/* ===== ESTADOS VAZIOS ===== */
 .file-item.empty {
   justify-content: center;
   color: #7f8c8d;
@@ -2041,22 +2060,78 @@ body {
   text-align: center;
 }
 
+/* ===== RESPONSIVIDADE ===== */
 @media (max-width: 768px) {
   .upload-area {
     padding: 30px 20px;
     min-height: 350px;
   }
   
-  .upload-title {
+  .upload-header-title {
     font-size: 28px;
   }
   
-  .upload-subtitle {
+  .upload-header-subtitle {
     font-size: 16px;
     padding: 0 20px;
   }
   
   .upload-text {
     font-size: 20px;
+  }
+  
+  .upload-content {
+    padding: 30px 20px;
+  }
+  
+  .orientation-visual {
+    width: 100px;
+    height: 160px;
+  }
+  
+  .orientation-visual.horizontal {
+    width: 160px;
+    height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-header {
+    padding: 40px 15px 30px 15px;
+  }
+  
+  .upload-header-title {
+    font-size: 24px;
+  }
+  
+  .upload-header-subtitle {
+    font-size: 14px;
+  }
+  
+  .upload-container {
+    margin: -20px auto 30px auto;
+    padding: 0 15px;
+  }
+  
+  .upload-content {
+    padding: 20px 15px;
+  }
+  
+  .upload-area {
+    padding: 25px 15px;
+    min-height: 300px;
+  }
+  
+  .upload-icon {
+    font-size: 50px;
+  }
+  
+  .upload-text {
+    font-size: 18px;
+  }
+  
+  .upload-button {
+    padding: 12px 25px;
+    font-size: 14px;
   }
 }
