@@ -5,6 +5,9 @@ const { put } = require('@vercel/blob');
 const CLIENT_ID = '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com';
 const client = new OAuth2Client(CLIENT_ID);
 
+// TOKEN DO BLOB - COLOCA DIRETO NO CÓDIGO! 🔥
+const BLOB_TOKEN = "vercel_blob_rw_ZXJ7FzJ8oliEG9Ix_EMKmWfzml1W0Y0Ni1CbSdR4Em1A8X2";
+
 module.exports = async (req, res) => {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://ttc-analise-postural.vercel.app');
@@ -92,18 +95,19 @@ module.exports = async (req, res) => {
             userData.firstLogin = userData.loginTimestamp;
           }
           
-          // Salvar/atualizar no Blob Storage
+          // 🔥🔥🔥 CORREÇÃO AQUI: PASSAR O TOKEN! 🔥🔥🔥
           const blob = await put(
             `users/${userid}.json`,
             JSON.stringify(userData, null, 2),
             {
               access: 'public',
               contentType: 'application/json',
-              addRandomSuffix: false
+              addRandomSuffix: false,
+              token: BLOB_TOKEN // ✅ TOKEN ADICIONADO AQUI!
             }
           );
           
-          console.log('Dados salvos no Blob Storage:', blob.url);
+          console.log('✅ Dados salvos no Blob Storage:', blob.url);
           
           // Retornar resposta de sucesso
           res.status(200).json({
@@ -114,7 +118,7 @@ module.exports = async (req, res) => {
           });
           
         } catch (blobError) {
-          console.error('Erro ao salvar no Blob Storage:', blobError);
+          console.error('❌ Erro ao salvar no Blob Storage:', blobError);
           // Mesmo com erro no blob, retornar sucesso para o usuário
           res.status(200).json({
             success: true,
