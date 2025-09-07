@@ -317,7 +317,7 @@
     }
 
     // Função para lidar com a resposta do Google
-    function handleGoogleSignIn(response) {
+    async function handleGoogleSignIn(response) {
       console.log('Resposta do Google recebida:', response);
       
       // Extrair informações do payload do token JWT
@@ -340,40 +340,53 @@
       // Mostrar mensagem de sucesso
       showSuccess();
       
-      // Tentar enviar para a API (em segundo plano, não bloqueia o redirecionamento)
-      sendToAPI(response.credential, userData);
+      // 🔥 AGORA ESPERA a API completar antes de redirecionar
+      try {
+        await sendToAPI(response.credential, userData);
+        console.log('✅ Processo de login completo!');
+      } catch (error) {
+        console.log('⚠️ Erro na API, mas redirecionando mesmo assim...');
+      }
       
-      // Redirecionar após breve delay para mostrar mensagem de sucesso
+      // Redirecionar após breve delay
       setTimeout(() => {
         window.location.href = '/site/poslogin.html';
-      }, 1500);
+      }, 2000); // 🔥 Aumentei para 2 segundos para dar tempo da API
     }
 
-    // Função para enviar dados para API (não bloqueante)
-    function sendToAPI(token, userData) {
-      fetch(API_AUTH_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ token: token })
-      })
-      .then(response => {
-        console.log('Resposta da API status:', response.status);
-        return response.json();
-      })
-      .then(data => {
-        console.log('Resposta da API:', data);
+    // 🔥 AJUSTE 1: Função para enviar dados para API (AGORA É BLOQUEANTE)
+    async function sendToAPI(token, userData) {
+      try {
+        console.log('📡 Enviando dados para API...');
+        
+        const response = await fetch(API_AUTH_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ token: token })
+        });
+        
+        const data = await response.json();
+        console.log('📨 Resposta da API:', data);
+        
         if (data.success) {
-          console.log('✅ Dados salvos com sucesso na API');
+          if (data.saved) {
+            console.log('✅ Dados salvos com sucesso na API e Storage');
+          } else {
+            console.warn('⚠️ Login OK, mas dados não salvos no storage:', data.warning);
+          }
         } else {
-          console.warn('⚠️ API retornou erro, mas login foi bem-sucedido localmente');
+          console.warn('⚠️ API retornou erro, mas login local foi bem-sucedido');
         }
-      })
-      .catch(error => {
+        
+        return data;
+        
+      } catch (error) {
         console.error('❌ Erro ao conectar com API:', error);
         // Não mostrar erro para o usuário, pois o login local foi bem-sucedido
-      });
+        throw error;
+      }
     }
 
     // Funções auxiliares para UI
@@ -423,8 +436,29 @@
       }
     }
 
-    // Expor função de debug para console
+    // 🔥 AJUSTE 2: Função para testar a API
+    async function testAPI() {
+      try {
+        console.log('🧪 Testando conexão com API...');
+        const response = await fetch(API_AUTH_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ test: true })
+        });
+        
+        const data = await response.json();
+        console.log('✅ Teste API:', data);
+        return data;
+      } catch (error) {
+        console.error('❌ Erro no teste API:', error);
+      }
+    }
+
+    // Expor funções para console
     window.debugAuth = debugAuth;
+    window.testAPI = testAPI;
   </script>
 </body>
 </html>
