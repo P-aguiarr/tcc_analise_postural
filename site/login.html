@@ -80,8 +80,8 @@
   
   <script>
     // URL base da API - CORRIGIDA para apontar para a rota correta
-    const API_BASE_URL = window.location.origin; // Usa a origem atual
-    const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
+    const API_BASE_URL = window.location.origin;
+    const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`; // ← Este é o endpoint correto
 
     // Configuração do Google Sign-In
     window.onload = function () {
