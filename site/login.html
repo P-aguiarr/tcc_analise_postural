@@ -1,286 +1,299 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="/site/globals.css" />
-  <link rel="stylesheet" href="/site/styleguide.css" />
-  <link rel="stylesheet" href="/site/style.css" />
-  <title>Login - The Posture Lab</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    .landing-page {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Navbar fixa no topo */
-    .navbar {
-      background: #fff;
-      padding: 15px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ddd;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .the-posture-lab {
-      font-size: 24px;
-      font-weight: bold;
-      margin: 0;
-    }
-    
-    .text-wrapper {
-      color: #2c3e50;
-    }
-    
-    .span {
-      color: #4CAF50;
-    }
-
-    .frame-17 {
-      display: flex;
-      gap: 20px;
-    }
-    
-    .frame-17 a {
-      text-decoration: none;
-      color: #333;
-      font-weight: 500;
-      transition: color 0.3s;
-    }
-    
-    .frame-17 a:hover {
-      color: #4CAF50;
-    }
-
-    /* Seção centralizada */
-    .login-section {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      flex: 1;
-      text-align: center;
-      padding: 40px 20px;
-      background-color: #f8f9fa;
-    }
-
-    /* Frase central com largura maior e fonte grande */
-    .central-login {
-      width: 720px;
-      max-width: 90%;
-      font-weight: 700;
-      color: #2c3e50;
-      font-size: 40px;
-      letter-spacing: 0.25px;
-      line-height: 48px;
-      margin-bottom: 2rem;
-      text-align: center;
-    }
-
-    /* Container do botão Google */
-    .google-login-container {
-      margin: 20px 0;
-    }
-
-    /* Botão Google customizado */
-    .google-login-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 12px 24px;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      font-size: 16px;
-      font-weight: 500;
-      color: #757575;
-    }
-    
-    .google-login-btn:hover {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-      transform: translateY(-2px);
-    }
-    
-    .google-icon {
-      width: 20px;
-      height: 20px;
-      margin-right: 12px;
-    }
-
-    /* IMAGEM DECORATIVA */
-    .corner-image {
-      position: fixed;
-      bottom: 80px; /* Ajustado para não sobrepor o footer */
-      left: 20px;
-      width: 100px;
-      opacity: 0.8;
-      z-index: -1;
-    }
-
-    /* FOOTER FIXADO NA BASE */
-    .footer {
-      text-align: center;
-      color: #333;
-      padding: 20px;
-      background-color: #f8f9fa;
-      border-top: 1px solid #ddd;
-      margin-top: auto; /* Empurra o footer para a base */
-    }
-
-    .footer-links {
-      margin-bottom: 0.8rem;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuração do Callback OAuth - The Posture Lab</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
         
-    .footer-links a {
-      color: #718096;
-      text-decoration: none;
-      margin: 0 0.8rem;
-      font-size: 0.9rem;
-      transition: color 0.3s;
-    }
-    
-    .footer-links a:hover {
-      color: #4e73df;
-      text-decoration: underline;
-    }
-
-    .copyright {
-      font-weight: 500;
-      font-size: 0.9rem;
-      color: #718096;
-    }
-
-    /* Responsividade */
-    @media (max-width: 800px) {
-      .central-login {
-        font-size: 32px;
-        line-height: 40px;
-      }
-      
-      .navbar {
-        flex-direction: column;
-        gap: 15px;
-        padding: 15px;
-      }
-    }
-
-    @media (max-width: 500px) {
-      .central-login {
-        font-size: 24px;
-        line-height: 32px;
-      }
-      
-      .footer-links a {
-        display: block;
-        margin: 0.5rem 0;
-      }
-      
-      .corner-image {
-        display: none; /* Oculta a imagem em telas muito pequenas */
-      }
-    }
-  </style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f9f9f9;
+            border-left: 5px solid #4285F4;
+        }
+        
+        h2 {
+            color: #4285F4;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        h2 i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .instructions {
+            margin-bottom: 20px;
+        }
+        
+        .info-box {
+            background: #E3F2FD;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+        }
+        
+        .copy-btn {
+            background: #4285F4;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        
+        .copy-btn:hover {
+            background: #3367D6;
+        }
+        
+        .note {
+            background: #FFF8E1;
+            border-left: 4px solid #FFC107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .steps {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .steps li {
+            margin-bottom: 10px;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 30px 0;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="landing-page">
-    <!-- NAVBAR -->
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-      </div>
-      <div class="frame-17">
-        <a href="index.html" class="text-wrapper-26">Home</a>
-        <a href="login.html" class="text-wrapper-26">Login</a>
-        <a href="index.html" class="text-wrapper-26">Configurações</a>
-      </div>
-    </div>
+    <div class="container">
+        <header>
+            <h1>Configuração do Callback OAuth</h1>
+            <p class="subtitle">The Posture Lab - Implementação do endpoint de callback</p>
+        </header>
+        
+        <div class="content">
+            <div class="info-box">
+                <p><strong>Seu Client ID:</strong> 584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com</p>
+                <p><strong>URL do Callback:</strong> https://ttc-analise-postural.vercel.app/site/auth/google/callback</p>
+            </div>
+            
+            <div class="section">
+                <h2><i>🔧</i> O que é um endpoint de callback?</h2>
+                <div class="instructions">
+                    <p>O endpoint de callback é uma rota no seu backend que recebe a resposta do Google após o usuário fazer login. Ele é responsável por:</p>
+                    <ol class="steps">
+                        <li>Receber o código de autorização do Google</li>
+                        <li>Trocar esse código por um token de acesso</li>
+                        <li>Verificar o token e obter informações do usuário</li>
+                        <li>Criar uma sessão para o usuário em sua aplicação</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i>🚀</i> Implementação do Callback (Frontend)</h2>
+                <div class="instructions">
+                    <p>No seu arquivo login.html, adicione este código para integrar com o Google OAuth:</p>
+                    
+                    <div class="code-block">
+&lt;script src="https://accounts.google.com/gsi/client" async defer&gt;&lt;/script&gt;
 
-    <!-- CONTEÚDO LOGIN -->
-    <div class="login-section">
-      <p class="central-login">
-        Entre na plataforma e descubra um mundo de possibilidades!
-      </p>
-      
-      <div class="google-login-container">
-        <!-- Botão de Login com Google oficial -->
-        <div id="googleLogin" class="google-login-btn">
-          <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="google-icon">
-          <span>Entrar com Google</span>
+&lt;div id="g_id_onload"
+     data-client_id="584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com"
+     data-context="signin"
+     data-ux_mode="redirect"
+     data-login_uri="https://ttc-analise-postural.vercel.app/site/auth/google/callback"
+     data-auto_prompt="false"&gt;
+&lt;/div&gt;
+
+&lt;div class="g_id_signin"
+     data-type="standard"
+     data-shape="rectangular"
+     data-theme="filled_blue"
+     data-text="signin_with"
+     data-size="large"
+     data-logo_alignment="left"&gt;
+&lt;/div&gt;
+                    </div>
+                    <button class="copy-btn" onclick="copyToClipboard(this.previousElementSibling.textContent)">Copiar Código</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i>🔌</i> Implementação do Callback (Backend)</h2>
+                <div class="instructions">
+                    <p>Você precisa criar um endpoint no seu backend para processar o callback. Aqui está um exemplo em Node.js:</p>
+                    
+                    <div class="code-block">
+const express = require('express');
+const { OAuth2Client } = require('google-auth-library');
+const router = express.Router();
+
+const CLIENT_ID = '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com';
+const client = new OAuth2Client(CLIENT_ID);
+
+// Rota de callback do Google
+router.post('/site/auth/google/callback', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    // Verificar o token do Google
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const userid = payload['sub'];
+    const email = payload['email'];
+    const name = payload['name'];
+    const picture = payload['picture'];
+    
+    // Aqui você pode:
+    // 1. Verificar se o usuário já existe no seu banco de dados
+    // 2. Criar um novo usuário se não existir
+    // 3. Criar uma sessão para o usuário
+    // 4. Redirecionar para a página principal
+    
+    // Exemplo: criar sessão e redirecionar
+    req.session.user = {
+      id: userid,
+      email: email,
+      name: name,
+      picture: picture
+    };
+    
+    res.json({ 
+      success: true, 
+      message: 'Login realizado com sucesso!',
+      user: { id: userid, email, name, picture }
+    });
+    
+  } catch (error) {
+    console.error('Erro no callback do Google:', error);
+    res.status(401).json({ 
+      success: false, 
+      message: 'Falha na autenticação' 
+    });
+  }
+});
+
+module.exports = router;
+                    </div>
+                    <button class="copy-btn" onclick="copyToClipboard(this.previousElementSibling.textContent)">Copiar Código</button>
+                    
+                    <div class="note">
+                        <p><strong>Nota:</strong> Este é um exemplo em Node.js. Se você está usando outra linguagem (PHP, Python, etc.), a implementação será similar mas com sintaxe diferente.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i>📋</i> Próximos Passos</h2>
+                <div class="instructions">
+                    <ol class="steps">
+                        <li>Adicione o código frontend ao seu arquivo login.html</li>
+                        <li>Implemente a rota de callback no seu backend</li>
+                        <li>Teste o fluxo de login completo</li>
+                        <li>Adapte a lógica para salvar usuários no seu banco de dados</li>
+                    </ol>
+                </div>
+                
+                <div class="note">
+                    <p><strong>Importante:</strong> Se você está usando Vercel, pode precisar configurar uma função serverless (API Route) para lidar com o callback.</p>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-    
-    <!-- IMAGEM DECORATIVA -->
-    <img src="/site/img/Group 6.png" alt="Decoração" class="corner-image" />
 
-    <!-- FOOTER FIXADO NA BASE -->
-    <div class="footer">
-      <div class="footer-links">
-        <a href="#">Careers</a> | 
-        <a href="#">Privacy Policy</a> | 
-        <a href="#">Terms & Conditions</a>
-      </div>
-      <div class="copyright">
-        © 2025 The Posture Lab
-      </div>
-    </div>
-  </div>
-
-  <!-- Script para integração com Google SSO -->
-  <script>
-    // Função para iniciar o fluxo de autenticação do Google
-    function handleGoogleLogin() {
-      // Configurações do OAuth 2.0 - substitua com suas credenciais reais
-      const clientId = 'SEU_CLIENT_ID_AQUI'; // Obtenha em: https://console.developers.google.com/
-      const redirectUri = encodeURIComponent('http://localhost:3000/auth/google/callback'); // Sua URL de callback
-      const scope = encodeURIComponent('profile email');
-      const responseType = 'code';
-      
-      // URL de autenticação do Google
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?
-        client_id=${clientId}&
-        redirect_uri=${redirectUri}&
-        response_type=${responseType}&
-        scope=${scope}&
-        access_type=offline&
-        include_granted_scopes=true`;
-      
-      // Redireciona para a página de autenticação do Google
-      window.location.href = authUrl;
-    }
-    
-    // Simulação de login para demonstração (remova em produção)
-    function handleDemoLogin() {
-      alert('Em um ambiente real, isso redirecionaria para a autenticação do Google.\n\nPara implementação completa, você precisa:\n\n1. Registrar seu app em https://console.developers.google.com/\n2. Configurar um backend para processar o callback OAuth\n3. Substituir o clientId e redirectUri com seus valores reais');
-      
-      // Redirecionamento simulado para fins de demonstração
-      setTimeout(() => {
-        window.location.href = 'poslogin.html';
-      }, 1000);
-    }
-    
-    // Adiciona o event listener ao botão do Google
-    document.getElementById('googleLogin').addEventListener('click', handleDemoLogin);
-    
-    // Para produção, use:
-    // document.getElementById('googleLogin').addEventListener('click', handleGoogleLogin);
-  </script>
+    <script>
+        function copyToClipboard(text) {
+            // Remove leading whitespace from each line
+            const formattedText = text.replace(/^[ \t]+/gm, '');
+            navigator.clipboard.writeText(formattedText).then(() => {
+                alert('Código copiado para a área de transferência!');
+            }).catch(err => {
+                console.error('Erro ao copiar texto: ', err);
+            });
+        }
+    </script>
 </body>
 </html>
