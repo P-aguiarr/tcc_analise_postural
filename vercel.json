@@ -18,6 +18,14 @@
       "use": "@vercel/static"
     },
     {
+      "src": "site/nova-analise.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/historico.html",
+      "use": "@vercel/static"
+    },
+    {
       "src": "site/api/auth/callback.js",  
       "use": "@vercel/node"
     },
@@ -31,6 +39,18 @@
     }
   ],
   "routes": [
+    {
+      "src": "/api/auth/callback",  
+      "dest": "/site/api/auth/callback.js"
+    },
+    {
+      "src": "/(.*).css",
+      "dest": "/site/$1.css"
+    },
+    {
+      "src": "/img/(.*)",
+      "dest": "/site/img/$1"
+    },
     {
       "src": "/",
       "dest": "/site/index.html"
@@ -48,16 +68,12 @@
       "dest": "/site/review_new.html"
     },
     {
-      "src": "/api/auth/callback",  
-      "dest": "/site/api/auth/callback.js"
+      "src": "/nova-analise",
+      "dest": "/site/nova-analise.html"
     },
     {
-      "src": "/(.*).css",
-      "dest": "/site/$1.css"
-    },
-    {
-      "src": "/img/(.*)",
-      "dest": "/site/img/$1"
+      "src": "/historico",
+      "dest": "/site/historico.html"
     },
     {
       "src": "/(.*)",
