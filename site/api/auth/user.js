@@ -1,11 +1,5 @@
 const { get } = require('@vercel/blob');
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 module.exports = async (req, res) => {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://ttc-analise-postural.vercel.app');
@@ -27,20 +21,44 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'ID do usuário não fornecido' });
     }
     
-    // Tentar recuperar dados do usuário do Blob Storage
+    // URL do blob no Vercel Storage
     const blobUrl = `https://zxj7fzj8olieg9ix.public.blob.vercel-storage.com/users/${userId}.json`;
     
-    const response = await fetch(blobUrl);
+    console.log('Buscando usuário na URL:', blobUrl);
     
-    if (response.ok) {
+    const response = await fetch(blobUrl, {
+      headers: {
+        'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
+      }
+    });
+    
+    if (response.status === 200) {
       const userData = await response.json();
-      res.status(200).json({ success: true, user: userData });
+      res.status(200).json({ 
+        success: true, 
+        user: userData,
+        found: true 
+      });
+    } else if (response.status === 404) {
+      res.status(404).json({ 
+        success: false, 
+        error: 'Usuário não encontrado',
+        found: false 
+      });
     } else {
-      res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+      console.error('Erro HTTP:', response.status, response.statusText);
+      res.status(500).json({ 
+        success: false, 
+        error: `Erro ao buscar usuário: ${response.status} ${response.statusText}` 
+      });
     }
     
   } catch (error) {
     console.error('Erro ao buscar usuário:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro interno do servidor',
+      details: error.message 
+    });
   }
 };
