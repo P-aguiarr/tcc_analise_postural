@@ -130,6 +130,16 @@
       max-width: 500px;
     }
 
+    .success-message {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #e8f5e9;
+      border: 1px solid #4caf50;
+      border-radius: 5px;
+      max-width: 500px;
+    }
+
     @media (max-width: 800px) {
       .landing-page .central-login {
         width: 90%;
@@ -184,12 +194,17 @@
         <p>Processando login...</p>
       </div>
 
-      <!-- Detalhes do erro (inicialmente oculto) -->
+      <!-- Mensagem de sucesso -->
+      <div class="success-message" id="successMessage">
+        <h3>✅ Login realizado com sucesso!</h3>
+        <p>Redirecionando para a página principal...</p>
+      </div>
+
+      <!-- Detalhes do erro -->
       <div class="error-details" id="errorDetails">
-        <h3>Detalhes do Erro:</h3>
+        <h3>❌ Erro no Login:</h3>
         <pre id="errorMessage">Nenhum detalhe disponível</pre>
-        <button onclick="document.getElementById('errorDetails').style.display = 'none'">Fechar</button>
-        <p><strong>Dica:</strong> Verifique se a API route está funcionando corretamente.</p>
+        <button onclick="hideError()">Fechar</button>
       </div>
     </div>
     
@@ -213,67 +228,75 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
   <script>
-    // URL base da API - CORRIGIDA para sua estrutura
+    // URL base da API
     const API_BASE_URL = 'https://ttc-analise-postural.vercel.app';
     const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
 
     // Configuração do Google Sign-In
     window.onload = function () {
-      // Inicializar o Google Sign-In
+      // Inicializar o Google Sign-In com configuração explícita
       google.accounts.id.initialize({
         client_id: '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com',
-        callback: handleGoogleSignIn
+        callback: handleGoogleSignIn,
+        auto_select: false, // Importante: não selecionar automaticamente
+        context: 'signin',
+        ux_mode: 'popup',   // Usar popup em vez de redirect
+        itp_support: true   // Suporte a Intelligent Tracking Prevention
       });
       
       // Adicionar evento de clique à imagem do Google
       document.getElementById('googleLogin').addEventListener('click', function() {
         // Mostrar loading
-        document.getElementById('loadingSpinner').style.display = 'block';
+        showLoading();
         
-        // Solicitar login com Google
-        google.accounts.id.prompt();
+        // Solicitar login com Google - método correto para modo anônimo
+        google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            // Se o popup não foi mostrado (modo anônimo), usar método alternativo
+            console.log('Popup não mostrado, tentando método alternativo');
+            google.accounts.id.renderButton(
+              document.getElementById('googleLogin'),
+              { 
+                theme: 'filled_blue', 
+                size: 'large',
+                text: 'signin_with',
+                width: 277
+              }
+            );
+          }
+        });
       });
 
-      // Testar se a API route está acessível
-      testApiConnection();
+      // Verificar se já está logado
+      checkExistingLogin();
     };
 
-    // Função para testar a conexão com a API
-    function testApiConnection() {
-      console.log('Testando conexão com a API:', API_AUTH_URL);
-      fetch(API_AUTH_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ test: true })
-      })
-      .then(response => {
-        console.log('Teste POST status:', response.status);
-        return response.text();
-      })
-      .then(text => {
-        console.log('Resposta da API:', text);
-        try {
-          const data = JSON.parse(text);
-          if (data.success) {
-            console.log('✅ API conectada com sucesso');
-          }
-        } catch (e) {
-          console.warn('Resposta não é JSON válido:', text);
+    // Função para verificar se já existe login
+    function checkExistingLogin() {
+      const user = localStorage.getItem('user');
+      const loginTime = localStorage.getItem('loginTime');
+      
+      if (user && loginTime) {
+        // Verificar se o login foi feito há menos de 5 minutos
+        const loginTimestamp = parseInt(loginTime);
+        const currentTime = new Date().getTime();
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (currentTime - loginTimestamp < fiveMinutes) {
+          console.log('Usuário já logado recentemente, redirecionando...');
+          showSuccess();
+          setTimeout(() => {
+            window.location.href = '/site/poslogin.html';
+          }, 1500);
         }
-      })
-      .catch(error => {
-        console.error('Erro no teste de conexão:', error);
-        showError('A API não está respondendo. Usando modo fallback.');
-      });
+      }
     }
 
     // Função para lidar com a resposta do Google
     function handleGoogleSignIn(response) {
       console.log('Resposta do Google recebida:', response);
       
-      // Extrair informações do payload do token JWT (fallback)
+      // Extrair informações do payload do token JWT
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
       console.log('Payload do token:', payload);
       
@@ -285,59 +308,99 @@
         loginTimestamp: new Date().toISOString()
       };
       
-      // Esconder loading
-      document.getElementById('loadingSpinner').style.display = 'none';
+      // Salvar dados imediatamente no localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('userId', userData.id);
+      localStorage.setItem('loginTime', new Date().getTime().toString());
       
-      // Tentar enviar para a API, mas se falhar, usar fallback
+      // Mostrar mensagem de sucesso
+      showSuccess();
+      
+      // Tentar enviar para a API (em segundo plano, não bloqueia o redirecionamento)
+      sendToAPI(response.credential, userData);
+      
+      // Redirecionar após breve delay para mostrar mensagem de sucesso
+      setTimeout(() => {
+        window.location.href = '/site/poslogin.html';
+      }, 1500);
+    }
+
+    // Função para enviar dados para API (não bloqueante)
+    function sendToAPI(token, userData) {
       fetch(API_AUTH_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ token: response.credential })
+        body: JSON.stringify({ token: token })
       })
       .then(response => {
-        console.log('Resposta do servidor status:', response.status);
-        
-        if (!response.ok) {
-          // Se a API falhar, usar os dados locais
-          throw new Error('API não disponível, usando fallback');
-        }
+        console.log('Resposta da API status:', response.status);
         return response.json();
       })
       .then(data => {
-        console.log('Resposta do servidor:', data);
-        
+        console.log('Resposta da API:', data);
         if (data.success) {
-          // Usar dados da API se disponíveis
-          localStorage.setItem('user', JSON.stringify(data.user));
-          localStorage.setItem('userId', data.user.id);
+          console.log('✅ Dados salvos com sucesso na API');
         } else {
-          // Usar fallback se a API retornar erro
-          localStorage.setItem('user', JSON.stringify(userData));
-          localStorage.setItem('userId', userData.id);
+          console.warn('⚠️ API retornou erro, mas login foi bem-sucedido localmente');
         }
-        
-        // Redirecionar para poslogin.html em ambos os casos
-        window.location.href = '/site/poslogin.html';
       })
       .catch(error => {
-        console.error('Erro ao conectar com API, usando fallback:', error);
-        
-        // Salvar dados localmente (fallback)
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('userId', userData.id);
-        
-        // Redirecionar para poslogin.html
-        window.location.href = '/site/poslogin.html';
+        console.error('❌ Erro ao conectar com API:', error);
+        // Não mostrar erro para o usuário, pois o login local foi bem-sucedido
       });
     }
 
+    // Funções auxiliares para UI
+    function showLoading() {
+      document.getElementById('loadingSpinner').style.display = 'block';
+      hideError();
+      hideSuccess();
+    }
+
+    function showSuccess() {
+      document.getElementById('loadingSpinner').style.display = 'none';
+      document.getElementById('successMessage').style.display = 'block';
+      hideError();
+    }
+
     function showError(message) {
+      document.getElementById('loadingSpinner').style.display = 'none';
       document.getElementById('errorMessage').textContent = message;
       document.getElementById('errorDetails').style.display = 'block';
+      hideSuccess();
       console.error('Erro:', message);
     }
+
+    function hideError() {
+      document.getElementById('errorDetails').style.display = 'none';
+    }
+
+    function hideSuccess() {
+      document.getElementById('successMessage').style.display = 'none';
+    }
+
+    // Debug: Verificar se o usuário está logado
+    function debugAuth() {
+      const user = localStorage.getItem('user');
+      console.log('Usuário no localStorage:', user);
+      
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          console.log('Dados do usuário:', userData);
+          console.log('Tempo desde o login:', (new Date().getTime() - parseInt(localStorage.getItem('loginTime'))) / 1000 + ' segundos');
+        } catch (e) {
+          console.error('Erro ao parsear usuário:', e);
+        }
+      } else {
+        console.log('Nenhum usuário logado');
+      }
+    }
+
+    // Expor função de debug para console
+    window.debugAuth = debugAuth;
   </script>
 </body>
 </html>
