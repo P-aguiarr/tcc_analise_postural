@@ -1,24 +1,26 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Consulta de Histórico - The Posture Lab</title>
+  <meta charset="utf-8" />
   <link rel="stylesheet" href="/style.css" />
+  <title>Consulta de Histórico - The Posture Lab</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: #f8f9fa; color: #333; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
     .landing-page { flex: 1; display: flex; flex-direction: column; }
     .divider { height: 1px; background-color: #e0e0e0; margin: 20px 0; }
     .container { flex: 1; max-width: 600px; margin: 40px auto; padding: 0 20px; width: 100%; }
-    .search-section, .results-section { background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    .search-title, .results-title { color: #2c3e50; margin-bottom: 20px; text-align: center; }
+    .search-section { background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .search-title { color: #2c3e50; margin-bottom: 20px; text-align: center; }
     .input-group { margin-bottom: 25px; }
     .input-label { display: block; margin-bottom: 8px; color: #7f8c8d; font-weight: 500; }
     .email-input { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; transition: border-color 0.3s; }
     .email-input:focus { border-color: #3498db; outline: none; }
     .search-button { background-color: #3498db; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-weight: 500; width: 100%; font-size: 1rem; transition: background-color 0.3s; }
     .search-button:hover { background-color: #2980b9; }
+    .results-section { margin-top: 30px; background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; }
+    .results-title { color: #2c3e50; margin-bottom: 20px; }
     .no-results { text-align: center; color: #7f8c8d; padding: 20px 0; }
     .history-item { border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
     .history-date { color: #3498db; font-weight: 500; margin-bottom: 10px; }
@@ -40,7 +42,7 @@
     <!-- NAVBAR -->
     <div class="navbar">
       <div class="frame-16">
-        <p class="the-posture-lab"><span class="text-wrapper">The Posture </span><span class="span">Lab</span></p>
+        <p class="the-posture-lab"><span class="text-wrapper">The Posture </span> <span class="span">Lab</span></p>
         <div class="frame-17">
           <a href="/" class="text-wrapper-26">Home</a>
           <a href="/login" class="text-wrapper-26">Login</a>
@@ -60,10 +62,12 @@
           <input type="email" id="email" class="email-input" placeholder="exemplo@email.com">
         </div>
         <button id="search-button" class="search-button">ACESSAR</button>
+        
         <div id="loading" class="loading">
           <div class="spinner"></div>
           <p>Buscando informações...</p>
         </div>
+        
         <div id="error-message" class="error-message"></div>
       </div>
 
@@ -82,14 +86,14 @@
         <a href="#">Privacy Policy</a> | 
         <a href="#">Terms & Conditions</a>
       </div>
-      <div class="copyright">© 2025 Andilse Postural LTDA</div>
+      <div class="copyright">
+        © 2025 Andilse Postural LTDA
+      </div>
     </div>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const API_URL = '/api/check-patient-history'; // relativo, funciona local e no Vercel
-
       const searchButton = document.getElementById('search-button');
       const emailInput = document.getElementById('email');
       const resultsSection = document.getElementById('results-section');
@@ -99,16 +103,17 @@
 
       async function searchInVercelStorage(email) {
         try {
-          const response = await fetch(API_URL, {
+          const response = await fetch('/api/check-patient-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
           });
 
           let data;
-          try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
             data = await response.json();
-          } catch (e) {
+          } else {
             const text = await response.text();
             throw new Error('Resposta inválida do servidor: ' + text.substring(0, 200));
           }
@@ -121,19 +126,16 @@
         }
       }
 
-      function showError(message) {
-        errorMessage.textContent = message;
-        errorMessage.style.display = 'block';
-      }
-
       searchButton.addEventListener('click', async function() {
         const email = emailInput.value.trim();
+
         errorMessage.style.display = 'none';
+        errorMessage.textContent = '';
         resultsSection.style.display = 'none';
         resultsContent.innerHTML = '';
 
         if (!email) return showError('Por favor, informe o e-mail do paciente.');
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Por favor, informe um e-mail válido.');
+        if (!isValidEmail(email)) return showError('Por favor, informe um e-mail válido.');
 
         loadingElement.style.display = 'block';
 
@@ -142,23 +144,26 @@
           loadingElement.style.display = 'none';
 
           if (result.success && result.found) {
-            resultsSection.style.display = 'block';
-            resultsContent.innerHTML = result.history.length
-              ? result.history.map(h => `
-                  <div class="history-item">
-                    <div class="history-date">${h.date || 'Sem data'}</div>
-                    <div class="history-details">${h.details || 'Sem detalhes'}</div>
-                  </div>
-                `).join('')
-              : '<p class="no-results">Nenhum histórico encontrado para este paciente.</p>';
+            window.location.href = 'consulta.html';
           } else {
             showError(result.error || 'Este e-mail não está cadastrado na base de dados.');
           }
+
         } catch (error) {
           loadingElement.style.display = 'none';
           showError(error.message || 'Erro ao buscar informações. Tente novamente.');
         }
       });
+
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+      }
+
+      function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      }
 
       emailInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') searchButton.click();
