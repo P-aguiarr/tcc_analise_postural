@@ -1,4 +1,4 @@
-const { list } = require('@vercel/blob');
+const { list } = require('@vercel/blob'); 
 
 module.exports = async (req, res) => {
   // Configurar CORS
