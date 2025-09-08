@@ -26,7 +26,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "site/configuracoe.html",
+      "src": "site/configuracoes.html",
       "use": "@vercel/static"
     },
     {
@@ -84,8 +84,8 @@
       "dest": "/site/historico.html"
     },
     {
-      "src": "/configuracoe",
-      "dest": "/site/configuracoe.html"
+      "src": "/configuracoes",
+      "dest": "/site/configuracoes.html"
     },
     {
       "src": "/consulta",
