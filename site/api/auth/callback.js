@@ -1,4 +1,4 @@
-const { OAuth2Client } = require('google-auth-library');
+const { OAuth2Client } = require('google-auth-library'); 
 const { put } = require('@vercel/blob');
 
 // Seu Client ID do Google
