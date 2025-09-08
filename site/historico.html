@@ -4,7 +4,205 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="utf-8" />
   <link rel="stylesheet" href="/style.css" />
-  <title>Login - The Posture Lab</title>
+  <title>Consulta de Histórico - The Posture Lab</title>
+  <style>
+    /* SEUS ESTILOS ATUAIS AQUI (mantenha todos os estilos anteriores) */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background-color: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .landing-page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 20px 0;
+    }
+    
+    .container {
+      flex: 1;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+      width: 100%;
+    }
+    
+    .search-section {
+      background-color: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .search-title {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .input-group {
+      margin-bottom: 25px;
+    }
+    
+    .input-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #7f8c8d;
+      font-weight: 500;
+    }
+    
+    .email-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    
+    .email-input:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    
+    .search-button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      width: 100%;
+      font-size: 1rem;
+      transition: background-color 0.3s;
+    }
+    
+    .search-button:hover {
+      background-color: #2980b9;
+    }
+    
+    .results-section {
+      margin-top: 30px;
+      background-color: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+    
+    .results-title {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+    
+    .no-results {
+      text-align: center;
+      color: #7f8c8d;
+      padding: 20px 0;
+    }
+    
+    .history-item {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .history-date {
+      color: #3498db;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    
+    .history-details {
+      color: #7f8c8d;
+    }
+    
+    .footer {
+      background-color: white;
+      padding: 30px 20px;
+      text-align: center;
+      margin-top: auto;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .footer-links {
+      margin-bottom: 15px;
+    }
+    
+    .footer-links a {
+      color: #3498db;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+    
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+    
+    .copyright {
+      font-size: 0.9rem;
+      color: #7f8c8d;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .error-message {
+      color: #e74c3c;
+      text-align: center;
+      padding: 10px;
+      background-color: #fdedec;
+      border-radius: 5px;
+      margin-top: 15px;
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px auto;
+      }
+      
+      .search-section, .results-section {
+        padding: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="landing-page">
@@ -22,52 +220,172 @@
       </div>
     </div>
 
-      <div class="overlap-group">
-        <div class="login">
-          <div class="username">
-            <img class="line" src="img/line-1.png" />
-            <div class="user">
-              <img class="icon" src="img/icon.png" />
-            </div>
-            <div class="text-wrapper-4">E-mail do paciente</div>
-          </div>
+    <div class="divider"></div>
 
-          <div class="footer">
-            <button class="button">
-              <button class="button-2">ACESSAR</button>
-            </button>
-          </div>
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="container">
+      <div class="search-section">
+        <h2 class="search-title">Consulta de Histórico</h2>
+        <div class="input-group">
+          <label for="email" class="input-label">E-mail do paciente</label>
+          <input type="email" id="email" class="email-input" placeholder="exemplo@email.com">
         </div>
-
-        <div class="login-2">
-          <div class="username-2">
-            <img class="img" src="img/image.png" />
-            <div class="icon-wrapper">
-              <img class="icon" src="img/icon-2.png" />
-            </div>
-          </div>
-
-          <div class="button-wrapper">
-            <button class="button">
-              <button class="button-2">ACESSAR</button>
-            </button>
-          </div>
+        <button id="search-button" class="search-button">ACESSAR</button>
+        
+        <div id="loading" class="loading">
+          <div class="spinner"></div>
+          <p>Buscando informações...</p>
         </div>
-
-        <img class="profile" src="img/profile.png" />
-        <div class="button-3"></div>
-        <p class="p">© 2025 Análise Postural LTDA</p>
-
-        <div class="group">
-          <img class="line-2" src="img/line-11.svg" />
-          <img class="line-3" src="img/line-12.svg" />
-          <div class="text-wrapper-5">Careers</div>
-          <div class="text-wrapper-6">Privacy Policy</div>
-          <div class="terms-conditions">Terms & Conditions</div>
-        </div>
+        
+        <div id="error-message" class="error-message"></div>
       </div>
 
+      <div id="results-section" class="results-section">
+        <h3 class="results-title">Histórico do Paciente</h3>
+        <div id="results-content">
+          <!-- Os resultados serão inseridos aqui via JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <div class="footer-links">
+        <a href="#">Careers</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms & Conditions</a>
+      </div>
+      <div class="copyright">
+        © 2025 Andilse Postural LTDA
+      </div>
     </div>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchButton = document.getElementById('search-button');
+      const emailInput = document.getElementById('email');
+      const resultsSection = document.getElementById('results-section');
+      const resultsContent = document.getElementById('results-content');
+      const loadingElement = document.getElementById('loading');
+      const errorMessage = document.getElementById('error-message');
+      
+      // Função para buscar dados no Vercel Blob Storage
+      async function searchInVercelStorage(email) {
+        try {
+          // Fazer requisição para a API route
+          const response = await fetch('/api/check-patient-history', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: email })
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'Erro ao buscar informações');
+          }
+          
+          return data;
+          
+        } catch (error) {
+          console.error('Erro ao buscar no storage:', error);
+          throw error;
+        }
+      }
+      
+      searchButton.addEventListener('click', async function() {
+        const email = emailInput.value.trim();
+        
+        // Reset states
+        errorMessage.style.display = 'none';
+        errorMessage.textContent = '';
+        resultsSection.style.display = 'none';
+        resultsContent.innerHTML = '';
+        
+        if (!email) {
+          showError('Por favor, informe o e-mail do paciente.');
+          return;
+        }
+        
+        if (!isValidEmail(email)) {
+          showError('Por favor, informe um e-mail válido.');
+          return;
+        }
+        
+        // Mostrar loading
+        loadingElement.style.display = 'block';
+        
+        try {
+          // Buscar no storage real
+          const result = await searchInVercelStorage(email);
+          
+          // Esconder loading
+          loadingElement.style.display = 'none';
+          
+          if (result.success && result.found) {
+            // Exibir histórico
+            displayPatientHistory(result.history);
+            resultsSection.style.display = 'block';
+          } else {
+            // Exibir mensagem de não encontrado
+            showError(result.error || 'Este e-mail não está cadastrado na base de dados.');
+            resultsSection.style.display = 'none';
+          }
+          
+        } catch (error) {
+          // Esconder loading
+          loadingElement.style.display = 'none';
+          
+          // Mostrar mensagem de erro
+          showError(error.message || 'Erro ao buscar informações. Tente novamente.');
+        }
+      });
+      
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+      }
+      
+      function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      }
+      
+      function displayPatientHistory(history) {
+        let html = '';
+        
+        if (!history || history.length === 0) {
+          html = '<div class="no-results">Nenhum histórico encontrado para este paciente.</div>';
+        } else {
+          history.forEach(item => {
+            // Formatar a data para o formato brasileiro
+            const dateObj = item.date ? new Date(item.date) : new Date();
+            const formattedDate = dateObj.toLocaleDateString('pt-BR');
+            
+            html += `
+              <div class="history-item">
+                <div class="history-date">${formattedDate}</div>
+                <div class="history-details">${item.description || 'Consulta realizada'}</div>
+              </div>
+            `;
+          });
+        }
+        
+        resultsContent.innerHTML = html;
+      }
+      
+      // Permitir busca pressionando Enter
+      emailInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          searchButton.click();
+        }
+      });
+    });
+  </script>
 </body>
 </html>
