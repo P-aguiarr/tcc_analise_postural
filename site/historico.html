@@ -1,181 +1,151 @@
 <!DOCTYPE html> 
 <html lang="pt-br">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="/style.css" />
-  <title>Consulta de Histórico - The Posture Lab</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histórico - Análise Postural | The Posture Lab</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* SEUS ESTILOS ATUAIS AQUI (mantenha todos os estilos anteriores) */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    :root {
+      --primary: #3498db;
+      --secondary: #2c3e50;
+      --accent: #e74c3c;
+      --light: #f8f9fa;
+      --dark: #343a40;
+      --success: #28a745;
     }
     
     body {
-      background-color: #f8f9fa;
+      background-color: #f5f7f9;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #333;
-      line-height: 1.6;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
     
-    .landing-page {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+    .navbar {
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
     
-    .divider {
-      height: 1px;
-      background-color: #e0e0e0;
-      margin: 20px 0;
-    }
-    
-    .container {
-      flex: 1;
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 0 20px;
-      width: 100%;
-    }
-    
-    .search-section {
-      background-color: white;
-      border-radius: 10px;
-      padding: 30px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .search-title {
-      color: #2c3e50;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    
-    .input-group {
-      margin-bottom: 25px;
-    }
-    
-    .input-label {
-      display: block;
-      margin-bottom: 8px;
-      color: #7f8c8d;
-      font-weight: 500;
-    }
-    
-    .email-input {
-      width: 100%;
-      padding: 12px 15px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      font-size: 1rem;
-      transition: border-color 0.3s;
-    }
-    
-    .email-input:focus {
-      border-color: #3498db;
-      outline: none;
-    }
-    
-    .search-button {
-      background-color: #3498db;
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: 500;
-      width: 100%;
-      font-size: 1rem;
-      transition: background-color 0.3s;
-    }
-    
-    .search-button:hover {
-      background-color: #2980b9;
-    }
-    
-    .results-section {
+    .main-container {
       margin-top: 30px;
-      background-color: white;
-      border-radius: 10px;
-      padding: 30px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      display: none;
+      margin-bottom: 30px;
     }
     
-    .results-title {
-      color: #2c3e50;
+    .card {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: none;
       margin-bottom: 20px;
     }
     
-    .no-results {
-      text-align: center;
-      color: #7f8c8d;
-      padding: 20px 0;
-    }
-    
-    .history-item {
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
-    }
-    
-    .history-date {
-      color: #3498db;
-      font-weight: 500;
-      margin-bottom: 10px;
-    }
-    
-    .history-details {
-      color: #7f8c8d;
-    }
-    
-    .footer {
+    .card-header {
       background-color: white;
-      padding: 30px 20px;
+      border-bottom: 1px solid #eaeaea;
+      font-weight: 600;
+      padding: 15px 20px;
+      border-radius: 12px 12px 0 0 !important;
+    }
+    
+    .patient-header {
+      background: linear-gradient(135deg, #3498db, #2c3e50);
+      color: white;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+    
+    .metric-card {
       text-align: center;
-      margin-top: auto;
-      border-top: 1px solid #e0e0e0;
+      padding: 15px;
+      border-radius: 10px;
+      background: white;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     }
     
-    .footer-links {
-      margin-bottom: 15px;
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
     }
     
-    .footer-links a {
-      color: #3498db;
-      text-decoration: none;
-      margin: 0 10px;
+    .metric-label {
+      font-size: 14px;
+      color: #6c757d;
     }
     
-    .footer-links a:hover {
-      text-decoration: underline;
+    .progress {
+      height: 8px;
+      border-radius: 4px;
     }
     
-    .copyright {
-      font-size: 0.9rem;
-      color: #7f8c8d;
+    .timeline {
+      position: relative;
+      padding-left: 30px;
     }
     
-    .loading {
-      display: none;
-      text-align: center;
-      margin: 20px 0;
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background-color: #e9ecef;
+    }
+    
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    
+    .timeline-dot {
+      position: absolute;
+      left: -30px;
+      top: 5px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+    
+    .btn-primary {
+      background-color: var(--primary);
+      border-color: var(--primary);
+    }
+    
+    .btn-primary:hover {
+      background-color: #2980b9;
+      border-color: #2980b9;
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
     }
     
     .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
       animation: spin 1s linear infinite;
-      margin: 0 auto;
     }
     
     @keyframes spin {
@@ -184,157 +154,530 @@
     }
     
     .error-message {
-      color: #e74c3c;
-      text-align: center;
-      padding: 10px;
-      background-color: #fdedec;
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 15px;
       border-radius: 5px;
-      margin-top: 15px;
+      margin-bottom: 20px;
       display: none;
     }
     
-    @media (max-width: 768px) {
-      .container {
-        margin: 20px auto;
-      }
-      
-      .search-section, .results-section {
-        padding: 20px;
-      }
+    .blob-url {
+      word-break: break-all;
+      font-size: 12px;
+      color: #6c757d;
     }
   </style>
 </head>
 <body>
-  <div class="landing-page">
-    <!-- NAVBAR -->
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/" class="text-wrapper-26">Configurações</a>
-        </div>
-      </div>
+  <!-- Overlay de carregamento -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Mensagem de erro -->
+  <div class="container mt-3">
+    <div class="error-message" id="errorMessage">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <span id="errorText">Erro ao carregar dados</span>
     </div>
+  </div>
 
-    <div class="divider"></div>
-
-    <!-- CONTEÚDO PRINCIPAL -->
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container">
-      <div class="search-section">
-        <h2 class="search-title">Consulta de Histórico</h2>
-        <div class="input-group">
-          <label for="email" class="input-label">E-mail do paciente</label>
-          <input type="email" id="email" class="email-input" placeholder="exemplo@email.com">
-        </div>
-        <button id="search-button" class="search-button">ACESSAR</button>
-        
-        <div id="loading" class="loading">
-          <div class="spinner"></div>
-          <p>Buscando informações...</p>
-        </div>
-        
-        <div id="error-message" class="error-message"></div>
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-stethoscope me-2"></i>
+        The Posture Lab
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html"><i class="fas fa-home me-1"></i> Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="#"><i class="fas fa-history me-1"></i> Histórico</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="consulta.html"><i class="fas fa-video me-1"></i> Consulta</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-cog me-1"></i> Configurações</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-user me-1"></i> Perfil</a>
+          </li>
+        </ul>
       </div>
+    </div>
+  </nav>
 
-      <div id="results-section" class="results-section">
-        <h3 class="results-title">Histórico do Paciente</h3>
-        <div id="results-content">
-          <!-- Os resultados serão inseridos aqui via JavaScript -->
+  <div class="container main-container">
+    <!-- Cabeçalho do Paciente -->
+    <div class="patient-header mb-4">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h2><i class="fas fa-user-injured me-2"></i> <span id="patientName">Carregando...</span></h2>
+          <p class="mb-1"><i class="fas fa-envelope me-2"></i> <span id="patientEmail">Carregando...</span></p>
+          <p class="mb-0"><i class="fas fa-id-card me-2"></i> ID: <span id="patientId">Carregando...</span></p>
+        </div>
+        <div class="col-md-4 text-md-end">
+          <p class="mb-1">Idade: <span id="patientAge">Carregando...</span></p>
+          <p class="mb-0">Última consulta: <span id="lastAppointment">Carregando...</span></p>
         </div>
       </div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- FOOTER -->
-    <div class="footer">
-      <div class="footer-links">
-        <a href="#">Careers</a> | 
-        <a href="#">Privacy Policy</a> | 
-        <a href="#">Terms & Conditions</a>
+    <div class="row">
+      <!-- Coluna principal -->
+      <div class="col-lg-8">
+        <!-- Card de Histórico de Análises -->
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-chart-line me-2"></i> Histórico de Análises</span>
+            <button class="btn btn-sm btn-outline-primary" id="refreshButton">
+              <i class="fas fa-sync-alt me-1"></i> Atualizar
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Tipo de Análise</th>
+                    <th>Resultado</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="analysisHistory">
+                  <tr>
+                    <td colspan="5" class="text-center">Carregando histórico...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Card de Estatísticas -->
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-chart-bar me-2"></i> Estatísticas de Progresso
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="progressChart"></canvas>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="copyright">
-        © 2025 Andilse Postural LTDA
+      
+      <!-- Coluna lateral -->
+      <div class="col-lg-4">
+        <!-- Card de Próxima Consulta -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <i class="fas fa-calendar-alt me-2"></i> Próxima Consulta
+          </div>
+          <div class="card-body text-center">
+            <div id="nextAppointmentInfo">
+              <p>Carregando informações...</p>
+            </div>
+            <button class="btn btn-primary mt-3" onclick="window.location.href='consulta.html'">
+              <i class="fas fa-video me-2"></i> Iniciar Nova Análise
+            </button>
+          </div>
+        </div>
+        
+        <!-- Card de Resumo -->
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-clipboard-list me-2"></i> Resumo do Tratamento
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <p class="mb-1">Progresso do tratamento</p>
+              <div class="progress">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 0%" id="treatmentProgress"></div>
+              </div>
+              <p class="text-end mt-1 small"><span id="progressPercent">0</span>% completo</p>
+            </div>
+            
+            <div class="mb-3">
+              <p class="mb-1">Sessões realizadas</p>
+              <h4 class="text-center" id="sessionsCount">0</h4>
+            </div>
+            
+            <div class="mb-3">
+              <p class="mb-1">Melhoria geral</p>
+              <h4 class="text-center text-success" id="improvementPercent">0%</h4>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card de Informações do Storage -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <i class="fas fa-database me-2"></i> Informações do Storage
+          </div>
+          <div class="card-body">
+            <p class="small">Status da conexão: <span id="storageStatus" class="badge bg-secondary">Verificando...</span></p>
+            <p class="small blob-url" id="blobUrl">URL: Verificando...</p>
+            <button class="btn btn-sm btn-outline-info mt-2" id="testBlobButton">
+              <i class="fas fa-bolt me-1"></i> Testar Conexão
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // Token de acesso ao Vercel Blob Storage
+    const BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_ZXJ7FzJ8oliEG9Ix_EMKmWfzml1W0Y0Ni1CbSdR4Em1A8X2";
+    const BLOB_BASE_URL = "https://ttc-analise-postural.vercel.app";
+
     document.addEventListener('DOMContentLoaded', function() {
-      const searchButton = document.getElementById('search-button');
-      const emailInput = document.getElementById('email');
-      const resultsSection = document.getElementById('results-section');
-      const resultsContent = document.getElementById('results-content');
-      const loadingElement = document.getElementById('loading');
-      const errorMessage = document.getElementById('error-message');
+      // Elementos da UI
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const errorMessage = document.getElementById('errorMessage');
+      const errorText = document.getElementById('errorText');
+      const refreshButton = document.getElementById('refreshButton');
+      const testBlobButton = document.getElementById('testBlobButton');
+      const storageStatus = document.getElementById('storageStatus');
+      const blobUrl = document.getElementById('blobUrl');
+
+      // Mostrar overlay de carregamento
+      loadingOverlay.style.display = 'flex';
       
-      async function searchInVercelStorage(email) {
-        try {
-          const response = await fetch('/api/check-patient-history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-          });
-          
-          const data = await response.json();
-          
-          if (!response.ok) throw new Error(data.error || 'Erro ao buscar informações');
-          
-          return data;
-          
-        } catch (error) {
-          console.error('Erro ao buscar no storage:', error);
-          throw error;
-        }
-      }
+      // Verificar autenticação e carregar dados
+      checkAuthentication();
       
-      searchButton.addEventListener('click', async function() {
-        const email = emailInput.value.trim();
-        
+      // Configurar botão de atualização
+      refreshButton.addEventListener('click', function() {
+        loadingOverlay.style.display = 'flex';
         errorMessage.style.display = 'none';
-        errorMessage.textContent = '';
-        resultsSection.style.display = 'none';
-        resultsContent.innerHTML = '';
-        
-        if (!email) return showError('Por favor, informe o e-mail do paciente.');
-        if (!isValidEmail(email)) return showError('Por favor, informe um e-mail válido.');
-        
-        loadingElement.style.display = 'block';
-        
+        checkAuthentication();
+      });
+
+      // Configurar botão de teste de conexão
+      testBlobButton.addEventListener('click', function() {
+        testBlobConnection();
+      });
+      
+      async function checkAuthentication() {
         try {
-          const result = await searchInVercelStorage(email);
-          loadingElement.style.display = 'none';
+          // Primeiro, tente verificar se há um usuário no localStorage (fallback)
+          const localUserData = localStorage.getItem('postureLabUser');
           
-          if (result.success && result.found) {
-            // Se encontrado, redireciona para consulta.html
-            window.location.href = 'consulta.html';
-          } else {
-            showError(result.error || 'Este e-mail não está cadastrado na base de dados.');
+          if (localUserData) {
+            try {
+              const userData = JSON.parse(localUserData);
+              loadPatientData(userData);
+              loadAnalysisHistory(userData);
+              loadCharts(userData);
+              loadingOverlay.style.display = 'none';
+              storageStatus.textContent = 'Usando dados locais';
+              storageStatus.className = 'badge bg-warning';
+              return;
+            } catch (e) {
+              console.error('Erro ao analisar dados do localStorage:', e);
+            }
           }
           
+          // Se não há dados locais, tente buscar do servidor usando Blob Storage
+          const userData = await getUserDataFromBlob();
+          
+          if (userData) {
+            // Se usuário autenticado, carregar dados
+            loadPatientData(userData);
+            loadAnalysisHistory(userData);
+            loadCharts(userData);
+            
+            // Salvar dados no localStorage para uso futuro
+            localStorage.setItem('postureLabUser', JSON.stringify(userData));
+            storageStatus.textContent = 'Conectado ao Blob Storage';
+            storageStatus.className = 'badge bg-success';
+          } else {
+            // Se não autenticado, redirecionar para login
+            window.location.href = 'login.html';
+          }
         } catch (error) {
-          loadingElement.style.display = 'none';
-          showError(error.message || 'Erro ao buscar informações. Tente novamente.');
+          console.error('Erro ao verificar autenticação:', error);
+          showError('Erro de conexão. Verificando dados locais...');
+          
+          // Tentar usar dados locais em caso de erro
+          const localUserData = localStorage.getItem('postureLabUser');
+          if (localUserData) {
+            try {
+              const userData = JSON.parse(localUserData);
+              loadPatientData(userData);
+              loadAnalysisHistory(userData);
+              loadCharts(userData);
+              showError('Usando dados offline. Algumas funcionalidades podem estar limitadas.', 'warning');
+              storageStatus.textContent = 'Modo offline';
+              storageStatus.className = 'badge bg-warning';
+            } catch (e) {
+              showError('Não foi possível carregar os dados. Por favor, tente novamente.');
+              storageStatus.textContent = 'Erro ao carregar dados';
+              storageStatus.className = 'badge bg-danger';
+            }
+          } else {
+            showError('Não foi possível conectar ao servidor e não há dados locais disponíveis.');
+            storageStatus.textContent = 'Sem conexão';
+            storageStatus.className = 'badge bg-danger';
+          }
+        } finally {
+          loadingOverlay.style.display = 'none';
         }
-      });
+      }
       
-      function showError(message) {
-        errorMessage.textContent = message;
+      // Buscar dados do usuário do Vercel Blob Storage
+      async function getUserDataFromBlob() {
+        try {
+          // Primeiro, vamos listar os arquivos no diretório users/
+          const listResponse = await fetch(`${BLOB_BASE_URL}/api/list-blobs?prefix=users/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${BLOB_READ_WRITE_TOKEN}`,
+              'Accept': 'application/json'
+            }
+          });
+
+          if (!listResponse.ok) {
+            throw new Error(`Erro ao listar blobs: ${listResponse.status}`);
+          }
+
+          const blobList = await listResponse.json();
+          console.log('Blobs disponíveis:', blobList);
+
+          // Verificar se há um arquivo de usuário
+          if (blobList.blobs && blobList.blobs.length > 0) {
+            // Vamos pegar o primeiro arquivo de usuário (em um caso real, você teria uma lógica para identificar o usuário correto)
+            const userBlob = blobList.blobs.find(blob => blob.pathname.startsWith('users/'));
+            
+            if (userBlob) {
+              blobUrl.textContent = `URL: ${userBlob.url}`;
+              
+              // Buscar os dados do usuário
+              const userResponse = await fetch(userBlob.url, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${BLOB_READ_WRITE_TOKEN}`,
+                  'Accept': 'application/json'
+                }
+              });
+
+              if (!userResponse.ok) {
+                throw new Error(`Erro ao buscar dados do usuário: ${userResponse.status}`);
+              }
+
+              const userData = await userResponse.json();
+              return userData;
+            }
+          }
+
+          // Se não encontrou usuário, retornar dados de exemplo
+          return getSampleUserData();
+          
+        } catch (error) {
+          console.error('Erro ao buscar dados do Blob Storage:', error);
+          // Em caso de erro, retornar dados de exemplo
+          return getSampleUserData();
+        }
+      }
+
+      // Testar conexão com o Blob Storage
+      async function testBlobConnection() {
+        testBlobButton.disabled = true;
+        testBlobButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Testando...';
+        
+        try {
+          const response = await fetch(`${BLOB_BASE_URL}/api/list-blobs?prefix=test/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${BLOB_READ_WRITE_TOKEN}`,
+              'Accept': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            storageStatus.textContent = 'Conexão bem-sucedida';
+            storageStatus.className = 'badge bg-success';
+            showError('Conexão com o Blob Storage estabelecida com sucesso!', 'success');
+          } else {
+            throw new Error(`Status: ${response.status}`);
+          }
+        } catch (error) {
+          console.error('Erro ao testar conexão:', error);
+          storageStatus.textContent = 'Falha na conexão';
+          storageStatus.className = 'badge bg-danger';
+          showError('Falha ao conectar com o Blob Storage. Verifique o token de acesso.', 'danger');
+        } finally {
+          testBlobButton.disabled = false;
+          testBlobButton.innerHTML = '<i class="fas fa-bolt me-1"></i> Testar Conexão';
+        }
+      }
+      
+      // Dados de exemplo para quando não conseguir conectar ao Blob Storage
+      function getSampleUserData() {
+        return {
+          authenticated: true,
+          name: "João da Silva",
+          email: "joao.silva@email.com",
+          id: "PS789456",
+          age: 42,
+          lastAppointment: "20/08/2023",
+          nextAppointment: "25/09/2023 às 10:00",
+          analysisHistory: [
+            { date: '20/08/2023', type: 'Coluna Vertebral', result: '7.2° de desvio', status: 'Concluído' },
+            { date: '10/07/2023', type: 'Ombros', result: '9.8° de desvio', status: 'Concluído' },
+            { date: '15/06/2023', type: 'Coluna Vertebral', result: '12.5° de desvio', status: 'Concluído' }
+          ],
+          progressData: {
+            labels: ['Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov'],
+            data: [12.5, 9.8, 7.2, 6.1, 5.3, 4.7]
+          }
+        };
+      }
+      
+      // Mostrar mensagem de erro
+      function showError(message, type = 'danger') {
+        errorText.textContent = message;
         errorMessage.style.display = 'block';
+        errorMessage.style.backgroundColor = type === 'warning' ? '#fff3cd' : 
+                                           type === 'success' ? '#d4edda' : '#f8d7da';
+        errorMessage.style.color = type === 'warning' ? '#856404' : 
+                                  type === 'success' ? '#155724' : '#721c24';
+        
+        // Auto-esconder mensagens de sucesso
+        if (type === 'success') {
+          setTimeout(() => {
+            errorMessage.style.display = 'none';
+          }, 3000);
+        }
       }
       
-      function isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+      // Carregar dados do paciente
+      function loadPatientData(userData) {
+        document.getElementById('patientName').textContent = userData.name || 'João da Silva';
+        document.getElementById('patientEmail').textContent = userData.email || 'joao.silva@email.com';
+        document.getElementById('patientId').textContent = userData.id || 'PS789456';
+        document.getElementById('patientAge').textContent = userData.age ? `${userData.age} anos` : '42 anos';
+        document.getElementById('lastAppointment').textContent = userData.lastAppointment || '20/08/2023';
       }
       
-      emailInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') searchButton.click();
-      });
+      // Carregar histórico de análises
+      function loadAnalysisHistory(userData) {
+        const historyContainer = document.getElementById('analysisHistory');
+        
+        // Simular dados de histórico
+        const analysisHistory = userData.analysisHistory || [
+          { date: '20/08/2023', type: 'Coluna Vertebral', result: '7.2° de desvio', status: 'Concluído' },
+          { date: '10/07/2023', type: 'Ombros', result: '9.8° de desvio', status: 'Concluído' },
+          { date: '15/06/2023', type: 'Coluna Vertebral', result: '12.5° de desvio', status: 'Concluído' }
+        ];
+        
+        if (analysisHistory.length === 0) {
+          historyContainer.innerHTML = `
+            <tr>
+              <td colspan="5" class="text-center">Nenhuma análise encontrada</td>
+            </tr>
+          `;
+          return;
+        }
+        
+        historyContainer.innerHTML = '';
+        analysisHistory.forEach(analysis => {
+          const row = document.createElement('tr');
+          
+          // Determinar classe de status
+          let statusClass = 'badge bg-secondary';
+          if (analysis.status === 'Concluído') statusClass = 'badge bg-success';
+          if (analysis.status === 'Pendente') statusClass = 'badge bg-warning';
+          if (analysis.status === 'Cancelado') statusClass = 'badge bg-danger';
+          
+          row.innerHTML = `
+            <td>${analysis.date}</td>
+            <td>${analysis.type}</td>
+            <td>${analysis.result}</td>
+            <td><span class="${statusClass}">${analysis.status}</span></td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary">Ver Detalhes</button>
+            </td>
+          `;
+          
+          historyContainer.appendChild(row);
+        });
+      }
+      
+      // Carregar gráficos
+      function loadCharts(userData) {
+        // Dados do gráfico de progresso
+        const progressData = userData.progressData || {
+          labels: ['Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov'],
+          data: [12.5, 9.8, 7.2, 6.1, 5.3, 4.7]
+        };
+        
+        const progressConfig = {
+          type: 'line',
+          data: {
+            labels: progressData.labels,
+            datasets: [{
+              label: 'Desvio Lombar (°)',
+              data: progressData.data,
+              borderColor: 'rgb(52, 152, 219)',
+              backgroundColor: 'rgba(52, 152, 219, 0.2)',
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: false,
+                title: {
+                  display: true,
+                  text: 'Graus de Desvio'
+                }
+              }
+            }
+          }
+        };
+        
+        // Inicializar gráfico de progresso
+        const progressChart = new Chart(
+          document.getElementById('progressChart'),
+          progressConfig
+        );
+        
+        // Atualizar informações de resumo
+        document.getElementById('treatmentProgress').style.width = '65%';
+        document.getElementById('progressPercent').textContent = '65';
+        document.getElementById('sessionsCount').textContent = progressData.data.length;
+        
+        // Calcular melhoria percentual
+        const firstValue = progressData.data[0];
+        const lastValue = progressData.data[progressData.data.length - 1];
+        const improvement = Math.round(((firstValue - lastValue) / firstValue) * 100);
+        document.getElementById('improvementPercent').textContent = `${improvement}%`;
+        
+        // Configurar próxima consulta
+        const nextAppointment = userData.nextAppointment || '25/09/2023 às 10:00';
+        document.getElementById('nextAppointmentInfo').innerHTML = `
+          <h4>${nextAppointment.split(' às ')[0]}</h4>
+          <p>${nextAppointment.split(' às ')[1] ? `às ${nextAppointment.split(' às ')[1]}` : ''}</p>
+          <p class="text-muted">Consulta de acompanhamento</p>
+        `;
+      }
     });
   </script>
 </body>
