@@ -26,6 +26,14 @@
       "use": "@vercel/static"
     },
     {
+      "src": "site/configuracoe.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/consulta.html",
+      "use": "@vercel/static"
+    },
+    {
       "src": "site/api/auth/callback.js",  
       "use": "@vercel/node"
     },
@@ -74,6 +82,14 @@
     {
       "src": "/historico",
       "dest": "/site/historico.html"
+    },
+    {
+      "src": "/configuracoe",
+      "dest": "/site/configuracoe.html"
+    },
+    {
+      "src": "/consulta",
+      "dest": "/site/consulta.html"
     },
     {
       "src": "/(.*)",
