@@ -272,23 +272,17 @@
       const loadingElement = document.getElementById('loading');
       const errorMessage = document.getElementById('error-message');
       
-      // Função para buscar dados no Vercel Blob Storage
       async function searchInVercelStorage(email) {
         try {
-          // Fazer requisição para a API route
           const response = await fetch('/api/check-patient-history', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email: email })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
           });
           
           const data = await response.json();
           
-          if (!response.ok) {
-            throw new Error(data.error || 'Erro ao buscar informações');
-          }
+          if (!response.ok) throw new Error(data.error || 'Erro ao buscar informações');
           
           return data;
           
@@ -301,47 +295,29 @@
       searchButton.addEventListener('click', async function() {
         const email = emailInput.value.trim();
         
-        // Reset states
         errorMessage.style.display = 'none';
         errorMessage.textContent = '';
         resultsSection.style.display = 'none';
         resultsContent.innerHTML = '';
         
-        if (!email) {
-          showError('Por favor, informe o e-mail do paciente.');
-          return;
-        }
+        if (!email) return showError('Por favor, informe o e-mail do paciente.');
+        if (!isValidEmail(email)) return showError('Por favor, informe um e-mail válido.');
         
-        if (!isValidEmail(email)) {
-          showError('Por favor, informe um e-mail válido.');
-          return;
-        }
-        
-        // Mostrar loading
         loadingElement.style.display = 'block';
         
         try {
-          // Buscar no storage real
           const result = await searchInVercelStorage(email);
-          
-          // Esconder loading
           loadingElement.style.display = 'none';
           
           if (result.success && result.found) {
-            // Exibir histórico
-            displayPatientHistory(result.history);
-            resultsSection.style.display = 'block';
+            // Se encontrado, redireciona para consulta.html
+            window.location.href = 'consulta.html';
           } else {
-            // Exibir mensagem de não encontrado
             showError(result.error || 'Este e-mail não está cadastrado na base de dados.');
-            resultsSection.style.display = 'none';
           }
           
         } catch (error) {
-          // Esconder loading
           loadingElement.style.display = 'none';
-          
-          // Mostrar mensagem de erro
           showError(error.message || 'Erro ao buscar informações. Tente novamente.');
         }
       });
@@ -356,34 +332,8 @@
         return emailRegex.test(email);
       }
       
-      function displayPatientHistory(history) {
-        let html = '';
-        
-        if (!history || history.length === 0) {
-          html = '<div class="no-results">Nenhum histórico encontrado para este paciente.</div>';
-        } else {
-          history.forEach(item => {
-            // Formatar a data para o formato brasileiro
-            const dateObj = item.date ? new Date(item.date) : new Date();
-            const formattedDate = dateObj.toLocaleDateString('pt-BR');
-            
-            html += `
-              <div class="history-item">
-                <div class="history-date">${formattedDate}</div>
-                <div class="history-details">${item.description || 'Consulta realizada'}</div>
-              </div>
-            `;
-          });
-        }
-        
-        resultsContent.innerHTML = html;
-      }
-      
-      // Permitir busca pressionando Enter
       emailInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-          searchButton.click();
-        }
+        if (e.key === 'Enter') searchButton.click();
       });
     });
   </script>
