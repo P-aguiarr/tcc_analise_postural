@@ -254,28 +254,6 @@
       background-color: #3a7bc8;
     }
 
-    .validate-button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-
-    .send-button {
-      background-color: #4caf50;
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s;
-      display: none;
-      margin-top: 15px;
-    }
-
-    .send-button:hover {
-      background-color: #3d8b40;
-    }
-
     .validation-message {
       margin-top: 15px;
       padding: 10px;
@@ -377,9 +355,12 @@
 
       <div class="validation-container">
         <button class="validate-button" id="validateButton" onclick="validateVideos()">Validar Vídeos</button>
-        <div id="validationSuccess" class="validation-message validation-success">✓ Vídeos validados com sucesso!</div>
-        <div id="validationError" class="validation-message validation-error">✗ É necessário adicionar ambos os vídeos.</div>
-        <button class="send-button" id="sendButton" onclick="sendToAnalysis()">Enviar para Análise</button>
+        <div id="validationSuccess" class="validation-message validation-success">
+          ✓ Vídeos validados com sucesso! Ambos os formatos foram adicionados.
+        </div>
+        <div id="validationError" class="validation-message validation-error">
+          ✗ É necessário adicionar ambos os vídeos (horizontal e vertical) para prosseguir.
+        </div>
       </div>
     </div>
 
@@ -397,109 +378,103 @@
   </div>
 
   <script>
-    // ===== SCRIPT DE UPLOAD =====
     const verticalUploadArea = document.getElementById('verticalUploadArea');
     const horizontalUploadArea = document.getElementById('horizontalUploadArea');
     const verticalFileInput = document.getElementById('verticalFileInput');
     const horizontalFileInput = document.getElementById('horizontalFileInput');
     const fileList = document.getElementById('fileList');
-    const validateButton = document.getElementById('validateButton');
-    const sendButton = document.getElementById('sendButton');
     const validationSuccess = document.getElementById('validationSuccess');
     const validationError = document.getElementById('validationError');
+
     let files = [];
 
     setupUploadArea(verticalUploadArea, verticalFileInput, 'vertical');
     setupUploadArea(horizontalUploadArea, horizontalFileInput, 'horizontal');
 
     function setupUploadArea(uploadArea, fileInput, type) {
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
-      });
-      ['dragenter', 'dragover'].forEach(eventName => uploadArea.addEventListener(eventName, () => uploadArea.classList.add('dragover')));
-      ['dragleave', 'drop'].forEach(eventName => uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover')));
+      ['dragenter','dragover','dragleave','drop'].forEach(e => uploadArea.addEventListener(e, preventDefaults, false));
+      ['dragenter','dragover'].forEach(e => uploadArea.addEventListener(e, () => uploadArea.classList.add('dragover')));
+      ['dragleave','drop'].forEach(e => uploadArea.addEventListener(e, () => uploadArea.classList.remove('dragover')));
       uploadArea.addEventListener('drop', e => handleDrop(e, type));
       fileInput.addEventListener('change', function() { handleFiles(this.files, type); });
     }
 
-    function handleDrop(e, type) {
-      handleFiles(e.dataTransfer.files, type);
+    function preventDefaults(e){ e.preventDefault(); e.stopPropagation(); }
+
+    function handleDrop(e, type){
+      const dt = e.dataTransfer;
+      handleFiles(dt.files, type);
     }
 
-    function handleFiles(fileListRaw, type) {
-      for (let i = 0; i < fileListRaw.length; i++) {
-        const file = fileListRaw[i];
-        if (!files.some(f => f.file.name === file.name && f.file.size === file.size)) {
-          files.push({ file: file, type: type });
+    function handleFiles(fileListInput, type){
+      for (let i=0; i<fileListInput.length; i++){
+        const file = fileListInput[i];
+        if(!files.some(f=>f.name===file.name && f.size===file.size)){
+          files.push({file: file, type: type});
           addFileToUI(file, type);
         }
       }
       updateFileList();
     }
 
-    function addFileToUI(file, type) {
-      if (fileList.querySelector('.empty')) fileList.innerHTML = '';
+    function addFileToUI(file, type){
+      if(fileList.querySelector('.empty')) fileList.innerHTML='';
       const fileItem = document.createElement('div');
-      fileItem.className = 'file-item';
-      fileItem.innerHTML = `
+      fileItem.className='file-item';
+      fileItem.innerHTML=`
         <div class="file-info">
-          <div><span class="file-name">${file.name}</span><span class="file-type">${type === 'vertical' ? 'Câmera Vertical' : 'Câmera Horizontal'}</span></div>
+          <div><span class="file-name">${file.name}</span>
+          <span class="file-type">${type==='vertical'?'Câmera Vertical':'Câmera Horizontal'}</span></div>
           <div class="file-size">${formatFileSize(file.size)}</div>
-          <div class="progress-bar"><div class="progress" style="width: 0%"></div></div>
+          <div class="progress-bar"><div class="progress" style="width:0%"></div></div>
         </div>
-        <div class="file-remove" onclick="removeFile('${file.name}', ${file.size})">✕</div>
-      `;
+        <div class="file-remove" onclick="removeFile('${file.name}',${file.size})">✕</div>`;
       fileList.appendChild(fileItem);
       simulateUpload(fileItem);
     }
 
-    function simulateUpload(fileItem) {
+    function simulateUpload(fileItem){
       const progressBar = fileItem.querySelector('.progress');
-      let width = 0;
-      const interval = setInterval(() => {
-        if (width >= 100) { clearInterval(interval); progressBar.classList.add('complete'); }
-        else { width += Math.random() * 15; progressBar.style.width = Math.min(width,100)+'%'; }
-      }, 200);
+      let width=0;
+      const interval=setInterval(()=>{
+        if(width>=100){ clearInterval(interval); progressBar.classList.add('complete'); }
+        else{ width+=Math.random()*15; progressBar.style.width=Math.min(width,100)+'%'; }
+      },200);
     }
 
-    function removeFile(name, size) {
-      files = files.filter(f => !(f.file.name === name && f.file.size === size));
+    function removeFile(name,size){
+      files = files.filter(f=>!(f.file.name===name && f.file.size===size));
       updateFileList();
-      sendButton.style.display = 'none';
-      validationSuccess.style.display = 'none';
+      validationSuccess.style.display='none';
+      validationError.style.display='none';
     }
 
-    function updateFileList() {
-      if (files.length === 0) fileList.innerHTML = '<div class="file-item empty"><div class="file-info"><span>Nenhum vídeo selecionado</span></div></div>';
-    }
-
-    function formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes','KB','MB','GB'];
-      const i = Math.floor(Math.log(bytes)/Math.log(k));
-      return parseFloat((bytes/Math.pow(k,i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    function validateVideos() {
-      const hasVertical = files.some(f => f.type === 'vertical');
-      const hasHorizontal = files.some(f => f.type === 'horizontal');
-      if (hasVertical && hasHorizontal) {
-        validationSuccess.style.display = 'block';
-        validationError.style.display = 'none';
-        sendButton.style.display = 'block';
-      } else {
-        validationSuccess.style.display = 'none';
-        validationError.style.display = 'block';
-        sendButton.style.display = 'none';
+    function updateFileList(){
+      if(files.length===0){
+        fileList.innerHTML='<div class="file-item empty"><div class="file-info"><span>Nenhum vídeo selecionado</span></div></div>';
       }
     }
 
-    function sendToAnalysis() {
-      alert('Enviando vídeos para análise postural...');
-      console.log('Vídeos enviados para análise:');
-      files.forEach(file => console.log(`- ${file.type}: ${file.file.name}`));
-      setTimeout(() => alert('Análise concluída! Os resultados estão prontos.'), 2000);
+    function formatFileSize(bytes){
+      if(bytes===0) return '0 Bytes';
+      const k=1024;
+      const sizes=['Bytes','KB','MB','GB'];
+      const i=Math.floor(Math.log(bytes)/Math.log(k));
+      return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
+    }
+
+    function validateVideos(){
+      const hasVertical = files.some(f=>f.type==='vertical');
+      const hasHorizontal = files.some(f=>f.type==='horizontal');
+      if(hasVertical && hasHorizontal){
+        validationSuccess.style.display='block';
+        validationError.style.display='none';
+        // Redireciona direto para consulta
+        window.location.href='/consulta';
+      } else{
+        validationSuccess.style.display='none';
+        validationError.style.display='block';
+      }
     }
   </script>
 </body>
