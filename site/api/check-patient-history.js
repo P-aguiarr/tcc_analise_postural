@@ -23,11 +23,10 @@ module.exports = async (req, res) => {
     
     console.log('Buscando paciente com email:', email);
     
-    // ⚡ Coloque o token direto aqui
-    const TOKEN = "vercel_blob_rw_ZXJ7FzJ8oliEG9Ix_EMKmWfzml1W0Y0Ni1CbSdR4Em1A8X2";
-    
     // Buscar todos os arquivos de usuários
-    const { blobs } = await list({ token: TOKEN });
+    const { blobs } = await list({ 
+      token: process.env.BLOB_READ_WRITE_TOKEN 
+    });
     
     // Filtrar apenas arquivos de usuários
     const userBlobs = blobs.filter(blob => 
@@ -37,19 +36,21 @@ module.exports = async (req, res) => {
     
     console.log(`Encontrados ${userBlobs.length} arquivos de usuário`);
     
+    // Procurar usuário pelo email
     let userData = null;
     
     for (const blob of userBlobs) {
       try {
         const response = await fetch(blob.url, {
           headers: {
-            'Authorization': `Bearer ${TOKEN}`
+            'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
           }
         });
         
         if (response.status === 200) {
           const data = await response.json();
           
+          // Verificar se é o usuário procurado
           if (data.email && data.email.toLowerCase() === email.toLowerCase()) {
             userData = data;
             console.log('Usuário encontrado:', data.email);
