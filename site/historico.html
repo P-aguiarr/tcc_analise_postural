@@ -60,6 +60,34 @@
       width: 100%;
     }
     
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 10px;
+      background-color: #000;
+    }
+    
+    .video-container video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .video-thumbnail {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .video-thumbnail:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+    
     .metric-card {
       text-align: center;
       padding: 15px;
@@ -160,12 +188,6 @@
       border-radius: 5px;
       margin-bottom: 20px;
       display: none;
-    }
-    
-    .blob-url {
-      word-break: break-all;
-      font-size: 12px;
-      color: #6c757d;
     }
   </style>
 </head>
@@ -319,40 +341,19 @@
             </div>
           </div>
         </div>
-
-        <!-- Card de Informações do Storage -->
-        <div class="card mt-4">
-          <div class="card-header">
-            <i class="fas fa-database me-2"></i> Informações do Storage
-          </div>
-          <div class="card-body">
-            <p class="small">Status da conexão: <span id="storageStatus" class="badge bg-secondary">Verificando...</span></p>
-            <p class="small blob-url" id="blobUrl">URL: Verificando...</p>
-            <button class="btn btn-sm btn-outline-info mt-2" id="testBlobButton">
-              <i class="fas fa-bolt me-1"></i> Testar Conexão
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Token de acesso ao Vercel Blob Storage
-    const BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_ZXJ7FzJ8oliEG9Ix_EMKmWfzml1W0Y0Ni1CbSdR4Em1A8X2";
-    const BLOB_BASE_URL = "https://ttc-analise-postural.vercel.app";
-
     document.addEventListener('DOMContentLoaded', function() {
       // Elementos da UI
       const loadingOverlay = document.getElementById('loadingOverlay');
       const errorMessage = document.getElementById('errorMessage');
       const errorText = document.getElementById('errorText');
       const refreshButton = document.getElementById('refreshButton');
-      const testBlobButton = document.getElementById('testBlobButton');
-      const storageStatus = document.getElementById('storageStatus');
-      const blobUrl = document.getElementById('blobUrl');
-
+      
       // Mostrar overlay de carregamento
       loadingOverlay.style.display = 'flex';
       
@@ -364,11 +365,6 @@
         loadingOverlay.style.display = 'flex';
         errorMessage.style.display = 'none';
         checkAuthentication();
-      });
-
-      // Configurar botão de teste de conexão
-      testBlobButton.addEventListener('click', function() {
-        testBlobConnection();
       });
       
       async function checkAuthentication() {
@@ -383,18 +379,16 @@
               loadAnalysisHistory(userData);
               loadCharts(userData);
               loadingOverlay.style.display = 'none';
-              storageStatus.textContent = 'Usando dados locais';
-              storageStatus.className = 'badge bg-warning';
               return;
             } catch (e) {
               console.error('Erro ao analisar dados do localStorage:', e);
             }
           }
           
-          // Se não há dados locais, tente buscar do servidor usando Blob Storage
-          const userData = await getUserDataFromBlob();
+          // Se não há dados locais, tente buscar do servidor
+          const userData = await getUserData();
           
-          if (userData) {
+          if (userData && userData.authenticated) {
             // Se usuário autenticado, carregar dados
             loadPatientData(userData);
             loadAnalysisHistory(userData);
@@ -402,8 +396,6 @@
             
             // Salvar dados no localStorage para uso futuro
             localStorage.setItem('postureLabUser', JSON.stringify(userData));
-            storageStatus.textContent = 'Conectado ao Blob Storage';
-            storageStatus.className = 'badge bg-success';
           } else {
             // Se não autenticado, redirecionar para login
             window.location.href = 'login.html';
@@ -421,147 +413,77 @@
               loadAnalysisHistory(userData);
               loadCharts(userData);
               showError('Usando dados offline. Algumas funcionalidades podem estar limitadas.', 'warning');
-              storageStatus.textContent = 'Modo offline';
-              storageStatus.className = 'badge bg-warning';
             } catch (e) {
               showError('Não foi possível carregar os dados. Por favor, tente novamente.');
-              storageStatus.textContent = 'Erro ao carregar dados';
-              storageStatus.className = 'badge bg-danger';
             }
           } else {
             showError('Não foi possível conectar ao servidor e não há dados locais disponíveis.');
-            storageStatus.textContent = 'Sem conexão';
-            storageStatus.className = 'badge bg-danger';
           }
         } finally {
           loadingOverlay.style.display = 'none';
         }
       }
       
-      // Buscar dados do usuário do Vercel Blob Storage
-      async function getUserDataFromBlob() {
+      // Buscar dados do usuário do servidor
+      async function getUserData() {
         try {
-          // Primeiro, vamos listar os arquivos no diretório users/
-          const listResponse = await fetch(`${BLOB_BASE_URL}/api/list-blobs?prefix=users/`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${BLOB_READ_WRITE_TOKEN}`,
-              'Accept': 'application/json'
-            }
-          });
-
-          if (!listResponse.ok) {
-            throw new Error(`Erro ao listar blobs: ${listResponse.status}`);
-          }
-
-          const blobList = await listResponse.json();
-          console.log('Blobs disponíveis:', blobList);
-
-          // Verificar se há um arquivo de usuário
-          if (blobList.blobs && blobList.blobs.length > 0) {
-            // Vamos pegar o primeiro arquivo de usuário (em um caso real, você teria uma lógica para identificar o usuário correto)
-            const userBlob = blobList.blobs.find(blob => blob.pathname.startsWith('users/'));
-            
-            if (userBlob) {
-              blobUrl.textContent = `URL: ${userBlob.url}`;
-              
-              // Buscar os dados do usuário
-              const userResponse = await fetch(userBlob.url, {
+          // Tente diferentes endpoints e métodos
+          const endpoints = [
+            '/api/user-data',
+            '/api/check-patient-history',
+            'https://ttc-analise-postural.vercel.app/api/user-data'
+          ];
+          
+          let response = null;
+          
+          for (const endpoint of endpoints) {
+            try {
+              // Tente com GET primeiro
+              response = await fetch(endpoint, {
                 method: 'GET',
+                credentials: 'include',
                 headers: {
-                  'Authorization': `Bearer ${BLOB_READ_WRITE_TOKEN}`,
                   'Accept': 'application/json'
                 }
               });
-
-              if (!userResponse.ok) {
-                throw new Error(`Erro ao buscar dados do usuário: ${userResponse.status}`);
-              }
-
-              const userData = await userResponse.json();
-              return userData;
+              
+              if (response.ok) break;
+              
+              // Se GET falhar, tente POST
+              response = await fetch(endpoint, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify({ action: 'getUserData' })
+              });
+              
+              if (response.ok) break;
+            } catch (e) {
+              console.warn(`Endpoint ${endpoint} falhou:`, e);
+              continue;
             }
           }
-
-          // Se não encontrou usuário, retornar dados de exemplo
-          return getSampleUserData();
           
-        } catch (error) {
-          console.error('Erro ao buscar dados do Blob Storage:', error);
-          // Em caso de erro, retornar dados de exemplo
-          return getSampleUserData();
-        }
-      }
-
-      // Testar conexão com o Blob Storage
-      async function testBlobConnection() {
-        testBlobButton.disabled = true;
-        testBlobButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Testando...';
-        
-        try {
-          const response = await fetch(`${BLOB_BASE_URL}/api/list-blobs?prefix=test/`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${BLOB_READ_WRITE_TOKEN}`,
-              'Accept': 'application/json'
-            }
-          });
-
-          if (response.ok) {
-            storageStatus.textContent = 'Conexão bem-sucedida';
-            storageStatus.className = 'badge bg-success';
-            showError('Conexão com o Blob Storage estabelecida com sucesso!', 'success');
-          } else {
-            throw new Error(`Status: ${response.status}`);
+          if (!response || !response.ok) {
+            throw new Error('Todos os endpoints falharam');
           }
+          
+          return await response.json();
         } catch (error) {
-          console.error('Erro ao testar conexão:', error);
-          storageStatus.textContent = 'Falha na conexão';
-          storageStatus.className = 'badge bg-danger';
-          showError('Falha ao conectar com o Blob Storage. Verifique o token de acesso.', 'danger');
-        } finally {
-          testBlobButton.disabled = false;
-          testBlobButton.innerHTML = '<i class="fas fa-bolt me-1"></i> Testar Conexão';
+          console.error('Erro ao buscar dados do usuário:', error);
+          throw error;
         }
-      }
-      
-      // Dados de exemplo para quando não conseguir conectar ao Blob Storage
-      function getSampleUserData() {
-        return {
-          authenticated: true,
-          name: "João da Silva",
-          email: "joao.silva@email.com",
-          id: "PS789456",
-          age: 42,
-          lastAppointment: "20/08/2023",
-          nextAppointment: "25/09/2023 às 10:00",
-          analysisHistory: [
-            { date: '20/08/2023', type: 'Coluna Vertebral', result: '7.2° de desvio', status: 'Concluído' },
-            { date: '10/07/2023', type: 'Ombros', result: '9.8° de desvio', status: 'Concluído' },
-            { date: '15/06/2023', type: 'Coluna Vertebral', result: '12.5° de desvio', status: 'Concluído' }
-          ],
-          progressData: {
-            labels: ['Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov'],
-            data: [12.5, 9.8, 7.2, 6.1, 5.3, 4.7]
-          }
-        };
       }
       
       // Mostrar mensagem de erro
       function showError(message, type = 'danger') {
         errorText.textContent = message;
         errorMessage.style.display = 'block';
-        errorMessage.style.backgroundColor = type === 'warning' ? '#fff3cd' : 
-                                           type === 'success' ? '#d4edda' : '#f8d7da';
-        errorMessage.style.color = type === 'warning' ? '#856404' : 
-                                  type === 'success' ? '#155724' : '#721c24';
-        
-        // Auto-esconder mensagens de sucesso
-        if (type === 'success') {
-          setTimeout(() => {
-            errorMessage.style.display = 'none';
-          }, 3000);
-        }
+        errorMessage.style.backgroundColor = type === 'warning' ? '#fff3cd' : '#f8d7da';
+        errorMessage.style.color = type === 'warning' ? '#856404' : '#721c24';
       }
       
       // Carregar dados do paciente
