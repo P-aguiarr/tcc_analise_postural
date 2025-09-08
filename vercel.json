@@ -90,7 +90,7 @@
     {
       "src": "/consulta",
       "dest": "/site/consulta.html"
-    },
+    }, 
     { 
       "src": "/(.*)",
       "dest": "/site/index.html"
