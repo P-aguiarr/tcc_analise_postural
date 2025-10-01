@@ -2,13 +2,13 @@
   "version": 2,
   "functions": {
     "site/api/app.py": {
-      "runtime": "@vercel/python",
+      "runtime": "python3.11",
       "maxDuration": 30,
       "memory": 1024,
       "includeFiles": "site/api/**"
     },
     "site/api/auth/callback.js": {
-      "runtime": "@vercel/node"
+      "runtime": "nodejs18.x"
     }
   },
   "routes": [
@@ -41,17 +41,50 @@
       "src": "/api/auth/callback",
       "dest": "/site/api/auth/callback.js"
     },
-    { "src": "/", "dest": "/site/index.html" },
-    { "src": "/login", "dest": "/site/login.html" },
-    { "src": "/poslogin", "dest": "/site/poslogin.html" },
-    { "src": "/review_new", "dest": "/site/review_new.html" },
-    { "src": "/nova-analise", "dest": "/site/nova_analise.html" },
-    { "src": "/historico", "dest": "/site/historico.html" },
-    { "src": "/configuracoes", "dest": "/site/configuracoes.html" },
-    { "src": "/consulta", "dest": "/site/consulta.html" },
-    { "src": "/style.css", "dest": "/site/style.css" },
-    { "src": "/img/(.*)", "dest": "/site/img/$1" },
-    { "src": "/(.*)", "dest": "/site/index.html" }
+    {
+      "src": "/",
+      "dest": "/site/index.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/site/login.html"
+    },
+    {
+      "src": "/poslogin",
+      "dest": "/site/poslogin.html"
+    },
+    {
+      "src": "/review_new",
+      "dest": "/site/review_new.html"
+    },
+    {
+      "src": "/nova-analise",
+      "dest": "/site/nova_analise.html"
+    },
+    {
+      "src": "/historico",
+      "dest": "/site/historico.html"
+    },
+    {
+      "src": "/configuracoes",
+      "dest": "/site/configuracoes.html"
+    },
+    {
+      "src": "/consulta",
+      "dest": "/site/consulta.html"
+    },
+    {
+      "src": "/style.css",
+      "dest": "/site/style.css"
+    },
+    {
+      "src": "/img/(.*)",
+      "dest": "/site/img/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/site/index.html"
+    }
   ],
   "env": {
     "PYTHONPATH": "/var/task/site/api"
