@@ -769,5 +769,36 @@
     currentApiUrl.textContent = API_BASE_URL;
     testApiConnection();
   </script>
+  <!-- Adiciona esta função no script -->
+<script>
+function validateFileSize(file) {
+  const maxSize = 4 * 1024 * 1024; // 4MB - limite do Vercel
+  if (file.size > maxSize) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    const maxMB = (maxSize / 1024 / 1024).toFixed(0);
+    alert(`❌ Vídeo muito grande!\n\nTamanho: ${sizeMB}MB\nMáximo permitido: ${maxMB}MB\n\nDica: Use vídeos mais curtos ou compacte o vídeo.`);
+    return false;
+  }
+  return true;
+}
+
+function handleFiles(fileListInput, type) {
+  for (let i=0; i<fileListInput.length; i++){
+    const file = fileListInput[i];
+    
+    // 🔥 VALIDA TAMANHO ANTES DE ADICIONAR
+    if (!validateFileSize(file)) {
+      continue; // Pula arquivos muito grandes
+    }
+    
+    if(!files.some(f=>f.name===file.name && f.size===file.size)){
+      files.push({file: file, type: type});
+      addFileToUI(file, type);
+      logDebug(`Arquivo ${type} adicionado: ${file.name} (${formatFileSize(file.size)})`);
+    }
+  }
+  updateFileList();
+}
+</script>
 </body>
 </html>
