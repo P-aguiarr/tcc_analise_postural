@@ -360,6 +360,15 @@
             margin-top: 10px;
         }
 
+        .demo-notice {
+            background: var(--warning);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
         @media (max-width: 768px) {
             .analysis-grid {
                 grid-template-columns: 1fr;
@@ -408,6 +417,12 @@
         <div class="page-header">
             <h1 class="page-title">Resultados da Análise Postural</h1>
             <p class="page-subtitle" id="analysisSubtitle">Carregando análise...</p>
+        </div>
+
+        <!-- AVISO DE DEMONSTRAÇÃO -->
+        <div class="demo-notice" id="demoNotice" style="display: none;">
+            <h3>🔬 Modo de Demonstração</h3>
+            <p>Estes são dados simulados para demonstração do sistema.</p>
         </div>
 
         <div id="loadingSection" class="loading">
@@ -560,53 +575,34 @@
         let currentAnalysisData = null;
         let currentGraphsPage = 1;
         let currentAnalysisId = null;
+        let isDemoMode = false;
 
         // Carregar dados da análise quando a página carregar
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Página consulta.html carregada');
             
-            // Tentar obter analysisId da URL ou localStorage
-            const urlParams = new URLSearchParams(window.location.search);
-            currentAnalysisId = urlParams.get('analysisId') || localStorage.getItem('currentAnalysisId');
+            // Tentar obter dados do localStorage
+            currentAnalysisId = localStorage.getItem('currentAnalysisId');
+            const storedResults = localStorage.getItem('analysisResults');
             
             console.log('📋 Analysis ID:', currentAnalysisId);
+            console.log('💾 Stored Results:', storedResults ? 'Encontrados' : 'Não encontrados');
             
-            if (currentAnalysisId) {
-                loadAnalysisData(currentAnalysisId);
+            if (storedResults) {
+                try {
+                    currentAnalysisData = JSON.parse(storedResults);
+                    displayAnalysisData(currentAnalysisData);
+                } catch (error) {
+                    console.error('❌ Erro ao parsear dados:', error);
+                    loadDemoData();
+                }
             } else {
-                console.log('ℹ️ Nenhum analysisId encontrado, carregando dados de demonstração');
+                console.log('ℹ️ Nenhum dado encontrado, carregando demonstração');
                 setTimeout(() => {
                     loadDemoData();
                 }, 1500);
             }
         });
-
-        async function loadAnalysisData(analysisId) {
-            try {
-                console.log(`📥 Buscando análise: ${analysisId}`);
-                showLoading(true);
-                hideError();
-                
-                const API_BASE_URL = window.location.origin;
-                const response = await fetch(`${API_BASE_URL}/api/analysis/${analysisId}`);
-                
-                console.log('📡 Status da resposta:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('📊 Dados recebidos:', data);
-                
-                currentAnalysisData = data.results || data;
-                displayAnalysisData(currentAnalysisData);
-                
-            } catch (error) {
-                console.error('❌ Erro ao carregar análise:', error);
-                showError(`Não foi possível carregar a análise: ${error.message}`);
-            }
-        }
 
         function showError(message) {
             document.getElementById('loadingSection').style.display = 'none';
@@ -624,8 +620,14 @@
         }
 
         function retryLoadAnalysis() {
-            if (currentAnalysisId) {
-                loadAnalysisData(currentAnalysisId);
+            const storedResults = localStorage.getItem('analysisResults');
+            if (storedResults) {
+                try {
+                    currentAnalysisData = JSON.parse(storedResults);
+                    displayAnalysisData(currentAnalysisData);
+                } catch (error) {
+                    loadDemoData();
+                }
             } else {
                 loadDemoData();
             }
@@ -633,10 +635,12 @@
 
         function loadDemoData() {
             console.log('🔧 Carregando dados de demonstração...');
+            isDemoMode = true;
+            document.getElementById('demoNotice').style.display = 'block';
             
             // Dados de demonstração
             currentAnalysisData = {
-                analysis_id: 'demo_analysis_001',
+                analysis_id: 'demo_analysis_' + Date.now(),
                 status: 'completed',
                 videos: {
                     frontal_original: 'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
@@ -651,13 +655,13 @@
                     overall_health: 80
                 },
                 graphs: {
-                    // Gráficos de exemplo em base64 (seriam substituídos pelos reais)
-                    ombros: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4=',
-                    quadris: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+',
-                    coluna: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg==',
-                    assimetrias: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZHRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+',
-                    joelhos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZG9zIEpvZWxob3M8L3RleHQ+PC9zdmc+',
-                    tornozelos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFRvcm5vemVsb3M8L3RleHQ+PC9zdmc+'
+                    // Placeholders para gráficos
+                    ombros: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4=',
+                    quadris: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+',
+                    coluna: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg==',
+                    assimetrias: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+',
+                    joelhos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIEpvZWxob3M8L3RleHQ+PC9zdmc+',
+                    tornozelos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFRvcm5vemVsb3M8L3RleHQ+PC9zdmc+'
                 },
                 detailed_analysis: {
                     angulos: {
@@ -700,10 +704,12 @@
             
             // Atualizar subtítulo
             const subtitle = document.getElementById('analysisSubtitle');
-            if (data.analysis_id) {
+            if (isDemoMode) {
+                subtitle.textContent = `Demonstração - ${new Date().toLocaleDateString('pt-BR')}`;
+            } else if (data.analysis_id) {
                 subtitle.textContent = `Análise ${data.analysis_id} - ${new Date().toLocaleDateString('pt-BR')}`;
             } else {
-                subtitle.textContent = `Análise Demo - ${new Date().toLocaleDateString('pt-BR')}`;
+                subtitle.textContent = `Análise - ${new Date().toLocaleDateString('pt-BR')}`;
             }
             
             // Configurar vídeos
@@ -791,19 +797,19 @@
             page1.innerHTML = `
                 <div class="graph-container">
                     <h3 class="graph-title">Ângulos dos Ombros</h3>
-                    <img src="${graphs.ombros || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4='}" alt="Ângulos dos Ombros" class="graph-image">
+                    <img src="${graphs.ombros}" alt="Ângulos dos Ombros" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Ângulos dos Quadris</h3>
-                    <img src="${graphs.quadris || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+'}" alt="Ângulos dos Quadris" class="graph-image">
+                    <img src="${graphs.quadris}" alt="Ângulos dos Quadris" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Ângulos da Coluna</h3>
-                    <img src="${graphs.coluna || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg=='}" alt="Ângulos da Coluna" class="graph-image">
+                    <img src="${graphs.coluna}" alt="Ângulos da Coluna" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Ângulos dos Joelhos</h3>
-                    <img src="${graphs.joelhos || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIEpvZWxob3M8L3RleHQ+PC9zdmc+'}" alt="Ângulos dos Joelhos" class="graph-image">
+                    <img src="${graphs.joelhos}" alt="Ângulos dos Joelhos" class="graph-image">
                 </div>
             `;
             
@@ -812,15 +818,15 @@
             page2.innerHTML = `
                 <div class="graph-container">
                     <h3 class="graph-title">Assimetrias Corporais</h3>
-                    <img src="${graphs.assimetrias || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDA/c3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+'}" alt="Assimetrias Corporais" class="graph-image">
+                    <img src="${graphs.assimetrias}" alt="Assimetrias Corporais" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Comparação Lado Esquerdo vs Direito</h3>
-                    <img src="${graphs.ombros || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4='}" alt="Comparação Lados" class="graph-image">
+                    <img src="${graphs.ombros}" alt="Comparação Lados" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Distribuição de Carga</h3>
-                    <img src="${graphs.quadris || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+'}" alt="Distribuição de Carga" class="graph-image">
+                    <img src="${graphs.quadris}" alt="Distribuição de Carga" class="graph-image">
                 </div>
             `;
             
@@ -829,15 +835,15 @@
             page3.innerHTML = `
                 <div class="graph-container">
                     <h3 class="graph-title">Evolução Temporal - Ombros</h3>
-                    <img src="${graphs.ombros || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4='}" alt="Evolução Ombros" class="graph-image">
+                    <img src="${graphs.ombros}" alt="Evolução Ombros" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Evolução Temporal - Quadris</h3>
-                    <img src="${graphs.quadris || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+'}" alt="Evolução Quadris" class="graph-image">
+                    <img src="${graphs.quadris}" alt="Evolução Quadris" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Padrão de Marcha</h3>
-                    <img src="${graphs.tornozelos || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFRvcm5vemVsb3M8L3RleHQ+PC9zdmc+'}" alt="Padrão de Marcha" class="graph-image">
+                    <img src="${graphs.tornozelos}" alt="Padrão de Marcha" class="graph-image">
                 </div>
             `;
             
@@ -846,15 +852,15 @@
             page4.innerHTML = `
                 <div class="graph-container">
                     <h3 class="graph-title">Distribuição de Ângulos</h3>
-                    <img src="${graphs.coluna || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg=='}" alt="Distribuição Ângulos" class="graph-image">
+                    <img src="${graphs.coluna}" alt="Distribuição Ângulos" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Histograma de Assimetrias</h3>
-                    <img src="${graphs.assimetrias || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+'}" alt="Histograma Assimetrias" class="graph-image">
+                    <img src="${graphs.assimetrias}" alt="Histograma Assimetrias" class="graph-image">
                 </div>
                 <div class="graph-container">
                     <h3 class="graph-title">Box Plot Articular</h3>
-                    <img src="${graphs.joelhos || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIEpvZWxob3M8L3RleHQ+PC9zdmc+'}" alt="Box Plot Articular" class="graph-image">
+                    <img src="${graphs.joelhos}" alt="Box Plot Articular" class="graph-image">
                 </div>
             `;
         }
@@ -880,7 +886,7 @@
                 metricsHTML += `
                     <div class="detail-item">
                         <div class="detail-title">Assimetria ${nomeFormatado}</div>
-                        <div class="detail-value">${valor.toFixed(3)} metros</div>
+                        <div class="detail-value">${valor.toFixed(3)}</div>
                     </div>
                 `;
             }
@@ -929,6 +935,7 @@
             console.log('🔍 Debug Analysis Data:', currentAnalysisData);
             console.log('🔍 Current Analysis ID:', currentAnalysisId);
             console.log('🔍 LocalStorage Analysis ID:', localStorage.getItem('currentAnalysisId'));
+            console.log('🔍 Demo Mode:', isDemoMode);
         };
     </script>
 </body>
