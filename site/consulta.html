@@ -790,8 +790,21 @@
         }
 
         function generateGraphs(graphs) {
-            console.log('📈 Gerando gráficos:', Object.keys(graphs));
+            console.log('📈 Gerando gráficos:', graphs ? Object.keys(graphs) : 'graphs é undefined');
             
+            // Se graphs for undefined, usa placeholders
+            if (!graphs) {
+                console.log('⚠️ Graphs é undefined, usando placeholders');
+                graphs = {
+                    ombros: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4=',
+                    quadris: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+',
+                    coluna: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg==',
+                    assimetrias: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+',
+                    joelhos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIEpvZWxob3M8L3RleHQ+PC9zdmc+',
+                    tornozelos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFRvcm5vemVsb3M8L3RleHQ+PC9zdmc+'
+                };
+            }
+        
             // Página 1: Ângulos Articulares
             const page1 = document.getElementById('graphsPage1');
             page1.innerHTML = `
@@ -869,26 +882,42 @@
             const metricsElement = document.getElementById('detailedMetrics');
             let metricsHTML = '';
             
+            // Verifica se detailedAnalysis existe
+            if (!detailedAnalysis) {
+                metricsHTML = '<div class="detail-item">Nenhuma métrica disponível</div>';
+                metricsElement.innerHTML = metricsHTML;
+                return;
+            }
+            
             // Ângulos
-            for (const [articulacao, dados] of Object.entries(detailedAnalysis.angulos)) {
-                const nomeFormatado = articulacao.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                metricsHTML += `
-                    <div class="detail-item">
-                        <div class="detail-title">${nomeFormatado}</div>
-                        <div class="detail-value">Média: ${dados.media}° | Variação: ${dados.variacao}°</div>
-                    </div>
-                `;
+            if (detailedAnalysis.angulos) {
+                for (const [articulacao, dados] of Object.entries(detailedAnalysis.angulos)) {
+                    const nomeFormatado = articulacao.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    metricsHTML += `
+                        <div class="detail-item">
+                            <div class="detail-title">${nomeFormatado}</div>
+                            <div class="detail-value">Média: ${dados.media}° | Variação: ${dados.variacao}°</div>
+                        </div>
+                    `;
+                }
             }
             
             // Assimetrias
-            for (const [articulacao, valor] of Object.entries(detailedAnalysis.assimetrias)) {
-                const nomeFormatado = articulacao.replace(/\b\w/g, l => l.toUpperCase());
-                metricsHTML += `
-                    <div class="detail-item">
-                        <div class="detail-title">Assimetria ${nomeFormatado}</div>
-                        <div class="detail-value">${valor.toFixed(3)}</div>
-                    </div>
-                `;
+            if (detailedAnalysis.assimetrias) {
+                for (const [articulacao, valor] of Object.entries(detailedAnalysis.assimetrias)) {
+                    const nomeFormatado = articulacao.replace(/\b\w/g, l => l.toUpperCase());
+                    metricsHTML += `
+                        <div class="detail-item">
+                            <div class="detail-title">Assimetria ${nomeFormatado}</div>
+                            <div class="detail-value">${valor.toFixed(3)}</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Se não houver métricas, mostra mensagem
+            if (metricsHTML === '') {
+                metricsHTML = '<div class="detail-item">Nenhuma métrica detalhada disponível</div>';
             }
             
             metricsElement.innerHTML = metricsHTML;
