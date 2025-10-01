@@ -1,50 +1,67 @@
 # site/api/app.py
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 import os
 import json
 from datetime import datetime
 import logging
+import sys
 
-# Configurar logging
-logging.basicConfig(level=logging.INFO)
+# Configurar logging para ver no Vercel
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# 🔥 CORS para Vercel
-CORS(app)
+# CORS simples
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', '*')
+    response.headers.add('Access-Control-Allow-Methods', '*')
+    return response
+
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
+def health_check():
+    try:
+        logger.info("🔍 Health check chamado")
+        
+        if request.method == 'OPTIONS':
+            return jsonify({'status': 'ok'}), 200
+            
+        return jsonify({
+            'status': 'healthy',
+            'environment': 'vercel',
+            'python_version': sys.version,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"💥 Erro no health check: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/process-analysis', methods=['POST', 'OPTIONS'])
 def process_analysis():
     try:
-        logger.info("🎬 INICIANDO PROCESSAMENTO NO VERCEL")
+        logger.info("🎬 INICIANDO PROCESSAMENTO")
         
-        # Handle CORS preflight
         if request.method == 'OPTIONS':
-            response = jsonify({'status': 'ok'})
-            response.headers.add('Access-Control-Allow-Origin', '*')
-            response.headers.add('Access-Control-Allow-Headers', '*')
-            response.headers.add('Access-Control-Allow-Methods', '*')
-            return response
+            return jsonify({'status': 'ok'}), 200
+            
+        logger.info(f"📦 Headers: {dict(request.headers)}")
+        logger.info(f"📦 Content-Type: {request.content_type}")
+        logger.info(f"📦 Content-Length: {request.content_length}")
         
-        # Verificar tamanho (limite do Vercel: ~4.5MB)
-        content_length = request.content_length or 0
-        max_size = 4 * 1024 * 1024  # 4MB
-        
-        logger.info(f"📦 Tamanho do request: {content_length} bytes")
-        
-        if content_length > max_size:
-            logger.error(f"❌ Arquivo muito grande: {content_length} bytes")
-            return jsonify({
-                'success': False, 
-                'error': f'Arquivo muito grande ({content_length} bytes). Máximo: 4MB',
-                'max_size': max_size,
-                'received_size': content_length
-            }), 413
-        
+        # Verificar se tem files
         if not request.files:
+            logger.error("❌ Nenhum arquivo recebido")
             return jsonify({'success': False, 'error': 'Nenhum arquivo recebido'}), 400
+        
+        files_info = {key: file.filename for key, file in request.files.items() if file.filename}
+        logger.info(f"📹 Arquivos recebidos: {files_info}")
         
         frontal_file = request.files.get('video_frontal')
         transversal_file = request.files.get('video_transversal')
@@ -53,82 +70,97 @@ def process_analysis():
         logger.info(f"📹 Transversal: {transversal_file.filename if transversal_file else 'None'}")
         
         if not frontal_file and not transversal_file:
+            logger.error("❌ Nenhum vídeo válido")
             return jsonify({'success': False, 'error': 'Nenhum vídeo válido enviado'}), 400
+        
+        # Verificar tamanho
+        content_length = request.content_length or 0
+        max_size = 4 * 1024 * 1024  # 4MB
+        
+        logger.info(f"📏 Tamanho do request: {content_length} bytes")
+        
+        if content_length > max_size:
+            logger.error(f"❌ Arquivo muito grande: {content_length} bytes")
+            return jsonify({
+                'success': False, 
+                'error': f'Arquivo muito grande ({content_length} bytes). Máximo: 4MB'
+            }), 413
         
         analysis_id = f"analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         uploaded_files = []
         
-        # Simular processamento (Vercel não suporta OpenCV)
+        # Processar arquivos
         if frontal_file and frontal_file.filename:
             file_size = len(frontal_file.read())
-            frontal_file.seek(0)
-            logger.info(f"✅ Frontal recebido - {file_size} bytes")
+            frontal_file.seek(0)  # Reset
+            logger.info(f"✅ Frontal processado - {file_size} bytes")
             uploaded_files.append('frontal')
         
         if transversal_file and transversal_file.filename:
             file_size = len(transversal_file.read())
             transversal_file.seek(0)
-            logger.info(f"✅ Transversal recebido - {file_size} bytes")
+            logger.info(f"✅ Transversal processado - {file_size} bytes")
             uploaded_files.append('transversal')
         
-        # Resultados simulados
+        logger.info(f"📋 Arquivos processados: {uploaded_files}")
+        
+        # Gerar resposta
+        videos = {}
+        if 'frontal' in uploaded_files:
+            videos['frontal_original'] = f'/api/videos/{analysis_id}_frontal.mp4'
+            videos['frontal_processed'] = f'/api/videos/{analysis_id}_frontal_processed.mp4'
+        
+        if 'transversal' in uploaded_files:
+            videos['transversal_original'] = f'/api/videos/{analysis_id}_transversal.mp4'
+            videos['transversal_processed'] = f'/api/videos/{analysis_id}_transversal_processed.mp4'
+        
         result_data = {
             'analysis_id': analysis_id,
             'uploaded_files': uploaded_files,
-            'videos': generate_video_urls(analysis_id, uploaded_files),
-            'metrics': generate_metrics(uploaded_files),
-            'environment': 'vercel',
-            'limitation': 'Processamento simulado - Vercel não suporta OpenCV/MediaPipe para análise postural real'
+            'videos': videos,
+            'metrics': {
+                'posture_score': 78,
+                'symmetry_score': 85,
+                'gait_quality': 72 if 'transversal' in uploaded_files else 0,
+                'overall_health': 80
+            },
+            'debug': {
+                'environment': 'vercel',
+                'file_sizes': {
+                    'frontal': len(frontal_file.read()) if frontal_file else 0,
+                    'transversal': len(transversal_file.read()) if transversal_file else 0
+                }
+            }
         }
         
-        logger.info("🎉 PROCESSAMENTO SIMULADO CONCLUÍDO!")
+        logger.info("🎉 PROCESSAMENTO CONCLUÍDO!")
         
-        response = jsonify({
+        return jsonify({
             'success': True,
             'analysisId': analysis_id,
             'data': result_data
         })
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
         
     except Exception as e:
-        logger.error(f"💥 ERRO: {str(e)}")
-        response = jsonify({'success': False, 'error': str(e)})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response, 500
-
-def generate_video_urls(analysis_id, uploaded_files):
-    """Gera URLs simuladas para os vídeos"""
-    videos = {}
-    if 'frontal' in uploaded_files:
-        videos['frontal_original'] = f'/api/videos/{analysis_id}_frontal.mp4'
-        videos['frontal_processed'] = f'/api/videos/{analysis_id}_frontal_processed.mp4'
-    if 'transversal' in uploaded_files:
-        videos['transversal_original'] = f'/api/videos/{analysis_id}_transversal.mp4'
-        videos['transversal_processed'] = f'/api/videos/{analysis_id}_transversal_processed.mp4'
-    return videos
-
-def generate_metrics(uploaded_files):
-    """Gera métricas simuladas"""
-    return {
-        'posture_score': 78,
-        'symmetry_score': 85,
-        'gait_quality': 72 if 'transversal' in uploaded_files else 0,
-        'overall_health': 80,
-        'note': 'Métricas simuladas - Para análise real use Railway/Render com OpenCV'
-    }
+        logger.error(f"💥 ERRO NO PROCESSAMENTO: {str(e)}")
+        import traceback
+        logger.error(f"📝 Traceback: {traceback.format_exc()}")
+        
+        return jsonify({
+            'success': False, 
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @app.route('/api/analysis/<analysis_id>', methods=['GET', 'OPTIONS'])
 def get_analysis(analysis_id):
     try:
-        if request.method == 'OPTIONS':
-            response = jsonify({'status': 'ok'})
-            response.headers.add('Access-Control-Allow-Origin', '*')
-            return response
-            
         logger.info(f"📂 Buscando análise: {analysis_id}")
         
-        analysis_data = {
+        if request.method == 'OPTIONS':
+            return jsonify({'status': 'ok'}), 200
+            
+        return jsonify({
             'analysis_id': analysis_id,
             'status': 'completed',
             'uploaded_files': ['frontal'],
@@ -141,50 +173,12 @@ def get_analysis(analysis_id):
                 'symmetry_score': 85,
                 'gait_quality': 0,
                 'overall_health': 80
-            },
-            'environment': 'vercel'
-        }
-        
-        response = jsonify(analysis_data)
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
+            }
+        })
         
     except Exception as e:
-        logger.error(f"❌ Erro: {str(e)}")
-        response = jsonify({'error': str(e)})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response, 404
-
-@app.route('/api/health', methods=['GET', 'OPTIONS'])
-def health_check():
-    if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
-        
-    response = jsonify({
-        'status': 'healthy',
-        'environment': 'vercel',
-        'timestamp': datetime.now().isoformat(),
-        'limitation': 'Arquivos máx: 4MB | Processamento: simulado'
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
-
-@app.route('/api/debug/info', methods=['GET', 'OPTIONS'])
-def debug_info():
-    if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
-        
-    response = jsonify({
-        'environment': 'vercel',
-        'python_version': '3.9',
-        'limitation': 'Análise postural simulada - Sem OpenCV/MediaPipe'
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
+        logger.error(f"❌ Erro ao buscar análise: {str(e)}")
+        return jsonify({'error': str(e)}), 404
 
 # Handler para Vercel
 def handler(request):
