@@ -2,15 +2,11 @@
   "version": 2,
   "builds": [
     {
-      "src": "site/api/app.py",
-      "use": "@vercel/python"
-    },
-    {
       "src": "site/api/health.js",
       "use": "@vercel/node"
     },
     {
-      "src": "site/api/auth/callback.js",
+      "src": "site/api/auth/callback.js", 
       "use": "@vercel/node"
     },
     {
@@ -32,14 +28,6 @@
       "dest": "/site/api/health.js"
     },
     {
-      "src": "/api/process-analysis",
-      "dest": "/site/api/app.py"
-    },
-    {
-      "src": "/api/analysis/(.*)",
-      "dest": "/site/api/app.py"
-    },
-    {
       "src": "/api/auth/callback",
       "dest": "/site/api/auth/callback.js"
     },
@@ -52,7 +40,7 @@
       "dest": "/site/login.html"
     },
     {
-      "src": "/poslogin", 
+      "src": "/poslogin",
       "dest": "/site/poslogin.html"
     },
     {
@@ -64,7 +52,7 @@
       "dest": "/site/nova_analise.html"
     },
     {
-      "src": "/historico",
+      "src": "/historico", 
       "dest": "/site/historico.html"
     },
     {
