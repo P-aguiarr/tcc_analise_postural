@@ -11,9 +11,13 @@ import sys
 # Adicionar o caminho para o analise_completa.py
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
+# Configuração para reduzir logs do TensorFlow
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 try:
     from analise_completa import processar_video_com_calibracao, realizar_analise_postural_metros, gerar_graficos_png_individual
     ANALISE_DISPONIVEL = True
+    print("✅ Módulo de análise disponível")
 except ImportError as e:
     print(f"⚠️ Módulo de análise não disponível: {e}")
     ANALISE_DISPONIVEL = False
@@ -62,29 +66,40 @@ class Handler(BaseHTTPRequestHandler):
     
     def process_analysis(self):
         try:
+            print("🔄 Iniciando processamento de análise...")
+            
             content_type = self.headers.get('Content-Type', '')
+            content_length = int(self.headers.get('Content-Length', 0))
+            
+            print(f"📦 Content-Type: {content_type}")
+            print(f"📦 Content-Length: {content_length}")
             
             if 'multipart/form-data' not in content_type:
                 self.send_error(400, "Content-Type deve ser multipart/form-data")
                 return
             
-            # Ler o conteúdo do request
-            content_length = int(self.headers.get('Content-Length', 0))
+            # Ler dados do request
             post_data = self.rfile.read(content_length)
+            print(f"📥 Dados recebidos: {len(post_data)} bytes")
             
-            # Processar dados multipart (simplificado)
-            files = self.parse_multipart_form_data(post_data, content_type)
+            # Processar dados multipart
+            files = self.parse_multipart_data(post_data, content_type)
             
             if not files:
+                print("❌ Nenhum arquivo encontrado no upload")
                 self.send_error(400, "Nenhum arquivo de vídeo encontrado")
                 return
             
+            print(f"✅ Arquivos recebidos: {list(files.keys())}")
+            
             # Criar análise ID
             analysis_id = str(uuid.uuid4())
+            print(f"🆕 Analysis ID: {analysis_id}")
             
             # Salvar vídeos temporariamente
             video_paths = {}
             temp_dir = tempfile.mkdtemp()
+            print(f"📁 Diretório temporário: {temp_dir}")
             
             for field_name, file_data in files.items():
                 if field_name.startswith('video_'):
@@ -95,21 +110,26 @@ class Handler(BaseHTTPRequestHandler):
                         f.write(file_data)
                     
                     video_paths[video_type] = file_path
-                    print(f"✅ Vídeo {video_type} salvo: {file_path}")
+                    print(f"💾 Vídeo {video_type} salvo: {len(file_data)} bytes")
             
             # Simular processamento (substituir pela análise real)
             if ANALISE_DISPONIVEL and 'frontal' in video_paths:
+                print("🔬 Executando análise real...")
                 analysis_results = self.real_analysis(video_paths['frontal'])
             else:
+                print("🔧 Simulando análise...")
                 analysis_results = self.simulate_analysis(analysis_id, video_paths)
             
             # Limpar arquivos temporários
-            for video_path in video_paths.values():
-                if os.path.exists(video_path):
-                    os.remove(video_path)
-            
-            if os.path.exists(temp_dir):
-                os.rmdir(temp_dir)
+            try:
+                for video_path in video_paths.values():
+                    if os.path.exists(video_path):
+                        os.remove(video_path)
+                if os.path.exists(temp_dir):
+                    os.rmdir(temp_dir)
+                print("🧹 Arquivos temporários removidos")
+            except Exception as e:
+                print(f"⚠️ Erro ao limpar arquivos: {e}")
             
             # Responder com sucesso
             self.send_response(200)
@@ -124,16 +144,91 @@ class Handler(BaseHTTPRequestHandler):
                 "data": analysis_results
             }
             
+            print(f"✅ Análise concluída: {analysis_id}")
             self.wfile.write(json.dumps(response).encode())
             
         except Exception as e:
             print(f"❌ Erro no processamento: {str(e)}")
+            import traceback
+            traceback.print_exc()
             self.send_error(500, f"Erro interno do servidor: {str(e)}")
+    
+    def parse_multipart_data(self, data, content_type):
+        """Parser melhorado para dados multipart/form-data"""
+        files = {}
+        
+        try:
+            # Extrair boundary do Content-Type
+            boundary_index = content_type.find('boundary=')
+            if boundary_index == -1:
+                print("❌ Boundary não encontrado no Content-Type")
+                return files
+                
+            boundary = content_type[boundary_index + 9:].encode()
+            if boundary.startswith(b'"') and boundary.endswith(b'"'):
+                boundary = boundary[1:-1]
+            
+            print(f"🔍 Boundary: {boundary}")
+            
+            # Dividir por boundary
+            parts = data.split(b'--' + boundary)
+            print(f"🔍 Partes encontradas: {len(parts)}")
+            
+            for i, part in enumerate(parts):
+                if len(part) < 10:  # Partes vazias ou muito pequenas
+                    continue
+                    
+                # Encontrar headers
+                header_end = part.find(b'\r\n\r\n')
+                if header_end == -1:
+                    continue
+                    
+                headers_part = part[:header_end]
+                file_data = part[header_end + 4:]
+                
+                # Remover trailing boundary
+                if file_data.endswith(b'--\r\n'):
+                    file_data = file_data[:-5]
+                elif file_data.endswith(b'\r\n'):
+                    file_data = file_data[:-2]
+                
+                # Extrair nome do campo
+                if b'name="' in headers_part:
+                    name_start = headers_part.find(b'name="') + 6
+                    name_end = headers_part.find(b'"', name_start)
+                    if name_end != -1:
+                        field_name = headers_part[name_start:name_end].decode('utf-8')
+                        
+                        # Extrair filename se existir
+                        filename = None
+                        if b'filename="' in headers_part:
+                            filename_start = headers_part.find(b'filename="') + 10
+                            filename_end = headers_part.find(b'"', filename_start)
+                            if filename_end != -1:
+                                filename = headers_part[filename_start:filename_end].decode('utf-8')
+                        
+                        print(f"📄 Campo: {field_name}, Arquivo: {filename}, Dados: {len(file_data)} bytes")
+                        
+                        if field_name.startswith('video_') and len(file_data) > 0:
+                            files[field_name] = file_data
+            
+            print(f"✅ Total de arquivos processados: {len(files)}")
+            return files
+            
+        except Exception as e:
+            print(f"❌ Erro no parse multipart: {e}")
+            import traceback
+            traceback.print_exc()
+            return {}
     
     def real_analysis(self, video_path):
         """Executa a análise real usando analise_completa.py"""
         try:
-            print("🔬 Iniciando análise real...")
+            print(f"🔬 Iniciando análise real no vídeo: {video_path}")
+            
+            # Verificar se o arquivo existe
+            if not os.path.exists(video_path):
+                raise FileNotFoundError(f"Vídeo não encontrado: {video_path}")
             
             # Processar vídeo
             df, fps, calibracao = processar_video_com_calibracao(video_path)
@@ -167,6 +262,8 @@ class Handler(BaseHTTPRequestHandler):
             
         except Exception as e:
             print(f"❌ Erro na análise real: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return self.simulate_analysis("real_failed", {})
     
     def simulate_analysis(self, analysis_id, video_paths):
@@ -176,10 +273,10 @@ class Handler(BaseHTTPRequestHandler):
         return {
             "status": "completed",
             "videos": {
-                "frontal_original": f"/api/videos/demo_frontal.mp4",
-                "frontal_processed": f"/api/videos/demo_frontal_processed.mp4",
-                "transversal_original": f"/api/videos/demo_transversal.mp4" if 'transversal' in video_paths else "",
-                "transversal_processed": f"/api/videos/demo_transversal_processed.mp4" if 'transversal' in video_paths else ""
+                "frontal_original": "https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4",
+                "frontal_processed": "https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4",
+                "transversal_original": "https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4" if 'transversal' in video_paths else "",
+                "transversal_processed": "https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4" if 'transversal' in video_paths else ""
             },
             "metrics": {
                 "posture_score": 78,
@@ -188,10 +285,10 @@ class Handler(BaseHTTPRequestHandler):
                 "overall_health": 80
             },
             "graphs": {
-                "ombros": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4=",
-                "quadris": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+",
-                "coluna": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg==",
-                "assimetrias": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+"
+                "ombros": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4=",
+                "quadris": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+",
+                "coluna": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg==",
+                "assimetrias": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+"
             },
             "detailed_analysis": {
                 "angulos": {
@@ -266,39 +363,6 @@ class Handler(BaseHTTPRequestHandler):
         }
         
         self.wfile.write(json.dumps(analysis_data).encode())
-    
-    def parse_multipart_form_data(self, data, content_type):
-        """Parser simplificado para dados multipart/form-data"""
-        files = {}
-        
-        try:
-            # Extrair boundary do Content-Type
-            boundary = content_type.split('boundary=')[1].encode()
-            
-            # Dividir por boundary
-            parts = data.split(b'--' + boundary)
-            
-            for part in parts:
-                if b'Content-Disposition: form-data' in part:
-                    # Extrair nome do campo
-                    if b'name="' in part:
-                        name_start = part.find(b'name="') + 6
-                        name_end = part.find(b'"', name_start)
-                        field_name = part[name_start:name_end].decode()
-                        
-                        # Extrair dados do arquivo
-                        file_start = part.find(b'\r\n\r\n') + 4
-                        file_end = part.rfind(b'\r\n')
-                        
-                        if file_start < file_end:
-                            file_data = part[file_start:file_end]
-                            files[field_name] = file_data
-            
-            return files
-            
-        except Exception as e:
-            print(f"❌ Erro no parse multipart: {e}")
-            return {}
 
 def handler(request, context):
     return Handler().handle_request(request)
