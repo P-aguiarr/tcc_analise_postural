@@ -544,23 +544,66 @@
       debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
     }
 
+    // 🔧 FUNÇÃO MELHORADA DE TESTE DE CONEXÃO
     async function testApiConnection() {
       try {
         logDebug(`🔍 Testando conexão com Vercel: ${API_BASE_URL}/api/health`);
-        const response = await fetch(`${API_BASE_URL}/api/health`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+        
+        const response = await fetch(`${API_BASE_URL}/api/health`, {
+          method: 'GET',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
           const data = await response.json();
           apiStatus.innerHTML = `<span style="color: green;">✅ API Vercel conectada! (${data.environment})</span>`;
           logDebug('✅ Conexão com Vercel estabelecida');
         } else {
-          throw new Error(`Status: ${response.status}`);
+          // Se der erro, mas a API respondeu, mostra o status
+          apiStatus.innerHTML = `<span style="color: orange;">⚠️ Health check retornou status ${response.status}</span>`;
+          logDebug(`⚠️ Health check retornou status: ${response.status}`);
+          
+          // Tenta obter mais detalhes do erro
+          try {
+            const errorData = await response.text();
+            logDebug(`📄 Resposta do health check: ${errorData}`);
+          } catch (e) {
+            logDebug('📄 Não foi possível ler resposta de erro');
+          }
         }
       } catch (error) {
-        apiStatus.innerHTML = `<span style="color: red;">❌ Erro ao conectar com Vercel: ${error.message}</span>`;
-        logDebug(`❌ Falha na conexão com Vercel: ${error.message}`);
+        if (error.name === 'AbortError') {
+          apiStatus.innerHTML = `<span style="color: orange;">⚠️ Timeout na conexão com API</span>`;
+          logDebug('⏰ Timeout na conexão com Vercel');
+        } else {
+          apiStatus.innerHTML = `<span style="color: orange;">⚠️ Erro de conexão: ${error.message}</span>`;
+          logDebug(`🌐 Erro de rede: ${error.message}`);
+        }
       }
     }
 
+    // 🧪 FUNÇÃO PARA TESTE MANUAL NO CONSOLE
+    window.testHealth = async function() {
+      try {
+        console.log('🧪 Testando /api/health manualmente...');
+        const response = await fetch('https://ttc-analise-postural.vercel.app/api/health');
+        console.log('Status:', response.status);
+        console.log('Headers:', Object.fromEntries(response.headers.entries()));
+        const text = await response.text();
+        console.log('Response:', text);
+        return { status: response.status, text: text };
+      } catch (error) {
+        console.error('Erro no teste manual:', error);
+        return { error: error.message };
+      }
+    };
+
+    // 🎯 CONFIGURAÇÃO DAS ÁREAS DE UPLOAD
     setupUploadArea(frontalUploadArea, frontalFileInput, 'frontal');
     setupUploadArea(transversalUploadArea, transversalFileInput, 'transversal');
 
@@ -579,9 +622,27 @@
       handleFiles(dt.files, type);
     }
 
-    function handleFiles(fileListInput, type){
+    // ✅ FUNÇÃO DE VALIDAÇÃO DE TAMANHO DE ARQUIVO
+    function validateFileSize(file) {
+      const maxSize = 4 * 1024 * 1024; // 4MB - limite do Vercel
+      if (file.size > maxSize) {
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        const maxMB = (maxSize / 1024 / 1024).toFixed(0);
+        alert(`❌ Vídeo muito grande!\n\nTamanho: ${sizeMB}MB\nMáximo permitido: ${maxMB}MB\n\nDica: Use vídeos mais curtos ou compacte o vídeo.`);
+        return false;
+      }
+      return true;
+    }
+
+    function handleFiles(fileListInput, type) {
       for (let i=0; i<fileListInput.length; i++){
         const file = fileListInput[i];
+        
+        // 🔥 VALIDA TAMANHO ANTES DE ADICIONAR
+        if (!validateFileSize(file)) {
+          continue; // Pula arquivos muito grandes
+        }
+        
         if(!files.some(f=>f.name===file.name && f.size===file.size)){
           files.push({file: file, type: type});
           addFileToUI(file, type);
@@ -646,6 +707,7 @@
       return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
     }
 
+    // 🚀 PROCESSAMENTO DA ANÁLISE
     async function processAnalysis() {
       const hasFrontal = files.some(f=>f.type==='frontal');
       
@@ -763,42 +825,11 @@
       window.location.href = '/consulta';
     }
 
-    // Inicialização
+    // 🏁 INICIALIZAÇÃO
     logDebug('🔄 Página carregada no Vercel');
     logDebug(`🔧 API Base URL: ${API_BASE_URL}`);
     currentApiUrl.textContent = API_BASE_URL;
     testApiConnection();
   </script>
-  <!-- Adiciona esta função no script -->
-<script>
-function validateFileSize(file) {
-  const maxSize = 4 * 1024 * 1024; // 4MB - limite do Vercel
-  if (file.size > maxSize) {
-    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-    const maxMB = (maxSize / 1024 / 1024).toFixed(0);
-    alert(`❌ Vídeo muito grande!\n\nTamanho: ${sizeMB}MB\nMáximo permitido: ${maxMB}MB\n\nDica: Use vídeos mais curtos ou compacte o vídeo.`);
-    return false;
-  }
-  return true;
-}
-
-function handleFiles(fileListInput, type) {
-  for (let i=0; i<fileListInput.length; i++){
-    const file = fileListInput[i];
-    
-    // 🔥 VALIDA TAMANHO ANTES DE ADICIONAR
-    if (!validateFileSize(file)) {
-      continue; // Pula arquivos muito grandes
-    }
-    
-    if(!files.some(f=>f.name===file.name && f.size===file.size)){
-      files.push({file: file, type: type});
-      addFileToUI(file, type);
-      logDebug(`Arquivo ${type} adicionado: ${file.name} (${formatFileSize(file.size)})`);
-    }
-  }
-  updateFileList();
-}
-</script>
 </body>
 </html>
