@@ -38,6 +38,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "site/api/app.py",
+      "use": "@vercel/python"
+    },
+    {
       "src": "site/*.css",
       "use": "@vercel/static"
     },
@@ -50,6 +54,18 @@
     {
       "src": "/api/auth/callback",  
       "dest": "/site/api/auth/callback.js"
+    },
+    {
+      "src": "/api/process-analysis",
+      "dest": "/site/api/app.py"
+    },
+    {
+      "src": "/api/analysis/(.*)",
+      "dest": "/site/api/app.py"
+    },
+    {
+      "src": "/api/videos/(.*)",
+      "dest": "/site/api/app.py"
     },
     {
       "src": "/(.*).css",
