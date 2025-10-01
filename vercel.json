@@ -10,39 +10,11 @@
       "use": "@vercel/node"
     },
     {
-      "src": "site/index.html",
+      "src": "site/**/*.html",
       "use": "@vercel/static"
     },
     {
-      "src": "site/login.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/poslogin.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/review_new.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/nova_analise.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/historico.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/configuracoes.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/consulta.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/style.css",
+      "src": "site/**/*.css",
       "use": "@vercel/static"
     },
     {
@@ -52,29 +24,12 @@
   ],
   "routes": [
     {
-      "src": "/api/process-analysis",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "POST", "OPTIONS"]
-    },
-    {
-      "src": "/api/analysis/(.*)",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/videos/(.*)",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
       "src": "/api/health",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "OPTIONS"]
+      "dest": "/site/api/app.py"
     },
     {
-      "src": "/api/debug/info",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "OPTIONS"]
+      "src": "/api/process-analysis",
+      "dest": "/site/api/app.py"
     },
     {
       "src": "/api/auth/callback",
@@ -89,7 +44,7 @@
       "dest": "/site/login.html"
     },
     {
-      "src": "/poslogin",
+      "src": "/poslogin", 
       "dest": "/site/poslogin.html"
     },
     {
