@@ -13,7 +13,9 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)
+
+# 🔥🔥🔥 CORS CONFIGURADO PARA PERMITIR TUDO (PARA TESTE) 🔥🔥🔥
+CORS(app, origins="*")  # ⚠️ ISSO PERMITE QUALQUER DOMÍNIO ACESSAR
 
 # Configurações
 UPLOAD_FOLDER = 'uploads'
@@ -21,13 +23,20 @@ RESULTS_FOLDER = 'results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
-@app.route('/api/process-analysis', methods=['POST'])
+@app.route('/api/process-analysis', methods=['POST', 'OPTIONS'])
 def process_analysis():
     try:
         logger.info("🎬 ========== INICIANDO PROCESSAMENTO ==========")
         logger.info(f"📦 Headers: {dict(request.headers)}")
         logger.info(f"📦 Files: {list(request.files.keys())}")
-        logger.info(f"📦 Form: {list(request.form.keys())}")
+        
+        # 🔥 HANDLE CORS PREFLIGHT
+        if request.method == 'OPTIONS':
+            response = jsonify({'status': 'ok'})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            response.headers.add('Access-Control-Allow-Headers', '*')
+            response.headers.add('Access-Control-Allow-Methods', '*')
+            return response
         
         # Verificar se tem arquivos
         if not request.files:
@@ -80,7 +89,7 @@ def process_analysis():
         
         logger.info(f"📋 Arquivos processados: {uploaded_files}")
         
-        # Executar análise Python
+        # Executar análise Python (simulada por enquanto)
         analysis_results = execute_python_analysis(analysis_id, file_paths)
         
         result_data = {
@@ -99,22 +108,29 @@ def process_analysis():
         }
         
         logger.info("🎉 PROCESSAMENTO CONCLUÍDO COM SUCESSO!")
-        return jsonify({
+        
+        response = jsonify({
             'success': True,
             'analysisId': analysis_id,
             'data': result_data
         })
         
+        # 🔥 CORS HEADERS NA RESPOSTA
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+        
     except Exception as e:
         logger.error(f"💥 ERRO NO PROCESSAMENTO: {str(e)}", exc_info=True)
-        return jsonify({
+        response = jsonify({
             'success': False, 
             'error': str(e),
             'debug_info': {
                 'exception_type': type(e).__name__,
                 'traceback': str(e.__traceback__)
             }
-        }), 500
+        })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
 
 def execute_python_analysis(analysis_id, file_paths):
     """Executa o script Python de análise"""
@@ -129,35 +145,12 @@ def execute_python_analysis(analysis_id, file_paths):
             else:
                 logger.error(f"❌ Arquivo não encontrado: {path}")
         
-        # Construir comando para executar o script
-        script_path = "../analise postural/analise_completa.py"
-        
-        # Verificar se o script existe
-        if not os.path.exists(script_path):
-            logger.warning("⚠️ Script analise_completa.py não encontrado, usando simulação")
-            return {'status': 'simulated', 'reason': 'script_not_found'}
-        
-        # Preparar argumentos
-        cmd = ["python", script_path]
-        
-        if 'frontal' in file_paths:
-            cmd.extend(["--frontal", file_paths['frontal']])
-        if 'transversal' in file_paths:
-            cmd.extend(["--transversal", file_paths['transversal']])
-        
-        cmd.extend(["--output", os.path.join(RESULTS_FOLDER, analysis_id)])
-        
-        logger.info(f"🖥️ Executando comando: {' '.join(cmd)}")
-        
-        # Executar (por enquanto só simular)
-        # result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        
-        # Simular execução por enquanto
-        logger.info("🔧 Execução do Python simulada (substituir por subprocess.run)")
+        # Por enquanto só simular - depois integra com analise_completa.py
+        logger.info("🔧 Execução do Python simulada")
         
         return {
             'status': 'simulated_success',
-            'message': 'Análise simulada - integrar com subprocess.run depois',
+            'message': 'Análise simulada - integrar com analise_completa.py depois',
             'graphs_generated': ['ombros', 'quadris', 'coluna', 'assimetrias']
         }
         
@@ -204,21 +197,19 @@ def get_analysis(analysis_id):
     try:
         logger.info(f"📂 Buscando análise: {analysis_id}")
         
-        # Simular dados (depois carregar do arquivo real)
+        # Simular dados
         analysis_data = {
             'analysis_id': analysis_id,
             'status': 'completed',
-            'uploaded_files': ['frontal', 'transversal'],  # Simulado
+            'uploaded_files': ['frontal'],  # Simulado
             'videos': {
                 'frontal_original': f'/api/videos/{analysis_id}_frontal.mp4',
-                'frontal_processed': f'/api/videos/{analysis_id}_frontal_processed.mp4',
-                'transversal_original': f'/api/videos/{analysis_id}_transversal.mp4',
-                'transversal_processed': f'/api/videos/{analysis_id}_transversal_processed.mp4'
+                'frontal_processed': f'/api/videos/{analysis_id}_frontal_processed.mp4'
             },
             'metrics': {
                 'posture_score': 78,
                 'symmetry_score': 85,
-                'gait_quality': 72,
+                'gait_quality': 0,
                 'overall_health': 80
             },
             'debug': {
@@ -227,26 +218,34 @@ def get_analysis(analysis_id):
             }
         }
         
-        return jsonify(analysis_data)
+        response = jsonify(analysis_data)
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
         
     except Exception as e:
         logger.error(f"❌ Erro ao buscar análise: {str(e)}")
-        return jsonify({'error': str(e)}), 404
+        response = jsonify({'error': str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 404
 
 @app.route('/api/videos/<video_name>')
 def get_video(video_name):
     """Serve vídeos processados"""
     try:
         logger.info(f"🎬 Servindo vídeo: {video_name}")
-        return send_from_directory(UPLOAD_FOLDER, video_name)
+        response = send_from_directory(UPLOAD_FOLDER, video_name)
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
     except Exception as e:
         logger.error(f"❌ Erro ao servir vídeo {video_name}: {str(e)}")
-        return jsonify({'error': f'Vídeo não encontrado: {video_name}'}), 404
+        response = jsonify({'error': f'Vídeo não encontrado: {video_name}'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 404
 
 @app.route('/api/debug/info')
 def debug_info():
     """Endpoint para informações de debug"""
-    return jsonify({
+    response = jsonify({
         'upload_folder': UPLOAD_FOLDER,
         'results_folder': RESULTS_FOLDER,
         'upload_files': os.listdir(UPLOAD_FOLDER) if os.path.exists(UPLOAD_FOLDER) else [],
@@ -254,16 +253,22 @@ def debug_info():
         'python_version': sys.version,
         'working_directory': os.getcwd()
     })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.route('/api/health')
 def health_check():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+    response = jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 if __name__ == '__main__':
     logger.info("🚀 Iniciando servidor Flask...")
     logger.info(f"📁 Upload folder: {os.path.abspath(UPLOAD_FOLDER)}")
     logger.info(f"📁 Results folder: {os.path.abspath(RESULTS_FOLDER)}")
     logger.info(f"🐍 Python path: {sys.executable}")
+    logger.info("🔥 CORS CONFIGURADO: * (permitindo todos os domínios)")
     
+    # 🔥 RODAR NA PORTA 5000 E ACEITAR CONEXÕES EXTERNAS
     app.run(debug=True, port=5000, host='0.0.0.0')
