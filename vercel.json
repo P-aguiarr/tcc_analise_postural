@@ -1,5 +1,55 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "site/api/app.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "site/api/auth/callback.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "site/index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/login.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/poslogin.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/review_new.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/nova_analise.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/historico.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/configuracoes.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/consulta.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/style.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/img/**/*",
+      "use": "@vercel/static"
+    }
+  ],
   "functions": {
     "site/api/app.py": {
       "runtime": "python3.11",
