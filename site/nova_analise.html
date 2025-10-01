@@ -319,26 +319,26 @@
       <p class="upload-subtitle">Selecione o tipo de vídeo de acordo com a orientação da câmera durante a gravação do exame</p>
       
       <div class="upload-grid">
-        <div class="upload-area" id="verticalUploadArea">
+        <div class="upload-area" id="frontalUploadArea">
           <div class="upload-icon">📱</div>
-          <h2 class="upload-text">Câmera Vertical</h2>
-          <p class="upload-subtext">Para quando a câmera estava posicionada na vertical durante a gravação do exame</p>
+          <h2 class="upload-text">Plano Coronal (ou Frontal)</h2>
+          <p class="upload-subtext">Divide o corpo em frente e costas. Vista frontal ou posterior.</p>
           <div class="upload-dimensions">720x1280 pixels</div>
           <div class="orientation-visual"></div>
           <p class="upload-instruction">Posicione a câmera na vertical para capturar todo o corpo</p>
-          <button class="upload-button" onclick="document.getElementById('verticalFileInput').click()">Selecionar Vídeo</button>
-          <input type="file" id="verticalFileInput" class="file-input" accept="video/*">
+          <button class="upload-button" onclick="document.getElementById('frontalFileInput').click()">Selecionar Vídeo</button>
+          <input type="file" id="frontalFileInput" class="file-input" accept="video/*">
         </div>
 
-        <div class="upload-area" id="horizontalUploadArea">
+        <div class="upload-area" id="transversalUploadArea">
           <div class="upload-icon">🎥</div>
-          <h2 class="upload-text">Câmera Horizontal</h2>
-          <p class="upload-subtext">Para quando a câmera estava posicionada na horizontal durante a gravação do exame</p>
+          <h2 class="upload-text">Plano Transversal (ou Axial)</h2>
+          <p class="upload-subtext">Divide o corpo em superior e inferior. Vista de cima ou de baixo (horizontal).</p>
           <div class="upload-dimensions">720x1280 pixels</div>
           <div class="orientation-visual horizontal"></div>
           <p class="upload-instruction">Posicione a câmera na horizontal para uma visão mais ampla</p>
-          <button class="upload-button" onclick="document.getElementById('horizontalFileInput').click()">Selecionar Vídeo</button>
-          <input type="file" id="horizontalFileInput" class="file-input" accept="video/*">
+          <button class="upload-button" onclick="document.getElementById('transversalFileInput').click()">Selecionar Vídeo</button>
+          <input type="file" id="transversalFileInput" class="file-input" accept="video/*">
         </div>
       </div>
 
@@ -356,10 +356,10 @@
       <div class="validation-container">
         <button class="validate-button" id="validateButton" onclick="validateVideos()">Validar Vídeos</button>
         <div id="validationSuccess" class="validation-message validation-success">
-          ✓ Vídeos validados com sucesso! Ambos os formatos foram adicionados.
+          ✓ Vídeos validados com sucesso! Obrigatório: Plano Coronal (Frontal).
         </div>
         <div id="validationError" class="validation-message validation-error">
-          ✗ É necessário adicionar ambos os vídeos (horizontal e vertical) para prosseguir.
+          ✗ É necessário adicionar pelo menos o vídeo do Plano Coronal (Frontal) para prosseguir.
         </div>
       </div>
     </div>
@@ -378,18 +378,18 @@
   </div>
 
   <script>
-    const verticalUploadArea = document.getElementById('verticalUploadArea');
-    const horizontalUploadArea = document.getElementById('horizontalUploadArea');
-    const verticalFileInput = document.getElementById('verticalFileInput');
-    const horizontalFileInput = document.getElementById('horizontalFileInput');
+    const frontalUploadArea = document.getElementById('frontalUploadArea');
+    const transversalUploadArea = document.getElementById('transversalUploadArea');
+    const frontalFileInput = document.getElementById('frontalFileInput');
+    const transversalFileInput = document.getElementById('transversalFileInput');
     const fileList = document.getElementById('fileList');
     const validationSuccess = document.getElementById('validationSuccess');
     const validationError = document.getElementById('validationError');
 
     let files = [];
 
-    setupUploadArea(verticalUploadArea, verticalFileInput, 'vertical');
-    setupUploadArea(horizontalUploadArea, horizontalFileInput, 'horizontal');
+    setupUploadArea(frontalUploadArea, frontalFileInput, 'frontal');
+    setupUploadArea(transversalUploadArea, transversalFileInput, 'transversal');
 
     function setupUploadArea(uploadArea, fileInput, type) {
       ['dragenter','dragover','dragleave','drop'].forEach(e => uploadArea.addEventListener(e, preventDefaults, false));
@@ -421,10 +421,18 @@
       if(fileList.querySelector('.empty')) fileList.innerHTML='';
       const fileItem = document.createElement('div');
       fileItem.className='file-item';
+      
+      let typeLabel = '';
+      if(type === 'frontal') {
+        typeLabel = 'Plano Coronal (Frontal)';
+      } else if(type === 'transversal') {
+        typeLabel = 'Plano Transversal (Axial)';
+      }
+      
       fileItem.innerHTML=`
         <div class="file-info">
           <div><span class="file-name">${file.name}</span>
-          <span class="file-type">${type==='vertical'?'Câmera Vertical':'Câmera Horizontal'}</span></div>
+          <span class="file-type">${typeLabel}</span></div>
           <div class="file-size">${formatFileSize(file.size)}</div>
           <div class="progress-bar"><div class="progress" style="width:0%"></div></div>
         </div>
@@ -464,9 +472,10 @@
     }
 
     function validateVideos(){
-      const hasVertical = files.some(f=>f.type==='vertical');
-      const hasHorizontal = files.some(f=>f.type==='horizontal');
-      if(hasVertical && hasHorizontal){
+      const hasFrontal = files.some(f=>f.type==='frontal');
+      
+      // Apenas o Plano Coronal (Frontal) é obrigatório
+      if(hasFrontal){
         validationSuccess.style.display='block';
         validationError.style.display='none';
         // Redireciona direto para consulta
