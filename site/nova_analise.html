@@ -37,7 +37,7 @@
     }
 
     .span {
-      color: #4a90e2;
+      color: #4d77ff;
     }
 
     .frame-17 {
@@ -88,7 +88,7 @@
     }
 
     .upload-area.dragover {
-      border-color: #4a90e2;
+      border-color: #4d77ff;
       background-color: #eaf2fc;
     }
 
@@ -131,7 +131,7 @@
     }
 
     .upload-button {
-      background-color: #4a90e2;
+      background-color: #4d77ff;
       color: white;
       border: none;
       padding: 10px 20px;
@@ -142,7 +142,7 @@
     }
 
     .upload-button:hover {
-      background-color: #3a7bc8;
+      background-color: #3a5fcc;
     }
 
     .file-input {
@@ -214,7 +214,7 @@
 
     .progress {
       height: 100%;
-      background-color: #4a90e2;
+      background-color: #4d77ff;
       width: 0%;
       transition: width 0.3s;
     }
@@ -240,7 +240,7 @@
     }
 
     .validate-button {
-      background-color: #4a90e2;
+      background-color: #4d77ff;
       color: white;
       border: none;
       padding: 12px 25px;
@@ -251,7 +251,7 @@
     }
 
     .validate-button:hover {
-      background-color: #3a7bc8;
+      background-color: #3a5fcc;
     }
 
     .validation-message {
@@ -270,6 +270,30 @@
       background-color: #fdecea;
       color: #e74c3c;
       display: none;
+    }
+
+    .debug-info {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .debug-toggle {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 10px;
     }
 
     .processing-overlay {
@@ -298,7 +322,7 @@
       width: 60px;
       height: 60px;
       border: 5px solid #f3f3f3;
-      border-top: 5px solid #4a90e2;
+      border-top: 5px solid #4d77ff;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
@@ -321,7 +345,7 @@
     }
 
     .processing-step.active {
-      border-left-color: #4a90e2;
+      border-left-color: #4d77ff;
       background: #f8f9fa;
     }
 
@@ -411,8 +435,15 @@
         </div>
       </div>
 
+      <!-- Área de Debug -->
+      <div class="debug-info" id="debugInfo">
+        <strong>Debug Info:</strong>
+        <div id="debugContent">Nenhuma informação de debug disponível</div>
+      </div>
+      <button class="debug-toggle" onclick="toggleDebug()">Mostrar/Ocultar Debug</button>
+
       <div class="validation-container">
-        <button class="validate-button" id="validateButton" onclick="validateVideos()">Processar Análise</button>
+        <button class="validate-button" id="validateButton" onclick="processAnalysis()">Processar Análise</button>
         <div id="validationSuccess" class="validation-message validation-success">
           ✓ Vídeos validados com sucesso! Obrigatório: Plano Coronal (Frontal).
         </div>
@@ -431,17 +462,15 @@
         
         <div class="processing-steps">
           <div class="processing-step" id="step1">Carregando vídeos...</div>
-          <div class="processing-step" id="step2">Detectando pontos corporais...</div>
-          <div class="processing-step" id="step3">Analisando postura...</div>
-          <div class="processing-step" id="step4">Processando dados biomecânicos...</div>
-          <div class="processing-step" id="step5">Gerando gráficos e resultados...</div>
-          <div class="processing-step" id="step6">Finalizando análise...</div>
+          <div class="processing-step" id="step2">Enviando para API...</div>
+          <div class="processing-step" id="step3">Processando com Python...</div>
+          <div class="processing-step" id="step4">Gerando resultados...</div>
         </div>
 
         <div id="processingResults" style="display: none; margin-top: 20px;">
           <h3 style="color: #4caf50;">✓ Análise Concluída!</h3>
           <button onclick="redirectToConsulta()" style="
-            background-color: #4a90e2;
+            background-color: #4d77ff;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -467,6 +496,9 @@
   </div>
 
   <script>
+    // Configuração da API - ⚠️ AJUSTE ESTA URL!
+    const API_BASE_URL = 'http://localhost:5000'; // Ou a URL do seu backend
+
     const frontalUploadArea = document.getElementById('frontalUploadArea');
     const transversalUploadArea = document.getElementById('transversalUploadArea');
     const frontalFileInput = document.getElementById('frontalFileInput');
@@ -476,8 +508,22 @@
     const validationError = document.getElementById('validationError');
     const processingOverlay = document.getElementById('processingOverlay');
     const processingResults = document.getElementById('processingResults');
+    const debugInfo = document.getElementById('debugInfo');
+    const debugContent = document.getElementById('debugContent');
 
     let files = [];
+    let debugLog = [];
+
+    function logDebug(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      debugLog.push(`[${timestamp}] ${message}`);
+      debugContent.innerHTML = debugLog.join('<br>');
+      console.log(`[DEBUG] ${message}`);
+    }
+
+    function toggleDebug() {
+      debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
+    }
 
     setupUploadArea(frontalUploadArea, frontalFileInput, 'frontal');
     setupUploadArea(transversalUploadArea, transversalFileInput, 'transversal');
@@ -503,6 +549,7 @@
         if(!files.some(f=>f.name===file.name && f.size===file.size)){
           files.push({file: file, type: type});
           addFileToUI(file, type);
+          logDebug(`Arquivo ${type} adicionado: ${file.name} (${formatFileSize(file.size)})`);
         }
       }
       updateFileList();
@@ -546,6 +593,7 @@
       updateFileList();
       validationSuccess.style.display='none';
       validationError.style.display='none';
+      logDebug(`Arquivo removido: ${name}`);
     }
 
     function updateFileList(){
@@ -562,69 +610,109 @@
       return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
     }
 
-    function validateVideos(){
+    async function processAnalysis() {
       const hasFrontal = files.some(f=>f.type==='frontal');
       
       // Apenas o Plano Coronal (Frontal) é obrigatório
-      if(hasFrontal){
-        validationSuccess.style.display='block';
-        validationError.style.display='none';
-        
-        // Mostra overlay de processamento
-        processingOverlay.style.display = 'flex';
-        
-        // Inicia o processamento
-        processAnalysis();
-        
-      } else{
+      if(!hasFrontal){
         validationSuccess.style.display='none';
         validationError.style.display='block';
+        logDebug('❌ Validação falhou: vídeo frontal obrigatório');
+        return;
+      }
+
+      validationSuccess.style.display='block';
+      validationError.style.display='none';
+      logDebug('✅ Validação passou: processando análise...');
+      
+      // Mostra overlay de processamento
+      processingOverlay.style.display = 'flex';
+      
+      try {
+        // 1. Enviar arquivos para a API
+        logDebug('📤 Iniciando upload para API...');
+        const uploadSuccess = await uploadFilesToServer();
+        
+        if (uploadSuccess) {
+          // 2. Simular processamento
+          logDebug('🔧 Simulando processamento...');
+          await simulateProcessing();
+          
+          // 3. Mostrar resultados
+          processingResults.style.display = 'block';
+          logDebug('🎉 Processamento concluído com sucesso!');
+        } else {
+          logDebug('❌ Upload falhou');
+          alert('Erro no upload dos arquivos');
+          processingOverlay.style.display = 'none';
+        }
+        
+      } catch (error) {
+        logDebug(`💥 Erro no processamento: ${error.message}`);
+        console.error('Erro no processamento:', error);
+        alert('Erro ao processar análise: ' + error.message);
+        processingOverlay.style.display = 'none';
       }
     }
 
-    async function processAnalysis() {
-      const steps = document.querySelectorAll('.processing-step');
+    async function uploadFilesToServer() {
+      const formData = new FormData();
+      
+      // Adicionar apenas os arquivos que existem
+      files.forEach((fileObj) => {
+        formData.append(`video_${fileObj.type}`, fileObj.file);
+        logDebug(`➕ Adicionando ao FormData: video_${fileObj.type}`);
+      });
       
       try {
-        // Passo 1: Carregando vídeos
-        await updateStep(steps[0], 1000);
+        logDebug(`🌐 Enviando para: ${API_BASE_URL}/api/process-analysis`);
+        logDebug(`📦 Total de arquivos: ${files.length}`);
         
-        // Passo 2: Detectando pontos corporais
-        await updateStep(steps[1], 2000);
+        const response = await fetch(`${API_BASE_URL}/api/process-analysis`, {
+          method: 'POST',
+          body: formData
+        });
         
-        // Passo 3: Analisando postura
-        await updateStep(steps[2], 1500);
+        logDebug(`📡 Resposta recebida: ${response.status}`);
         
-        // Passo 4: Processando dados biomecânicos
-        await updateStep(steps[3], 1800);
+        const result = await response.json();
+        logDebug(`📊 Resposta da API: ${JSON.stringify(result, null, 2)}`);
         
-        // Passo 5: Gerando gráficos e resultados
-        await updateStep(steps[4], 2200);
-        
-        // Passo 6: Finalizando análise
-        await updateStep(steps[5], 1000);
-        
-        // Mostra resultados
-        setTimeout(() => {
-          processingResults.style.display = 'block';
-          
-          // Salva dados da análise no localStorage
-          const analysisData = {
-            id: 'analysis_' + Date.now(),
-            date: new Date().toISOString(),
-            files: files.map(f => ({
-              type: f.type,
-              name: f.file.name
-            })),
-            status: 'completed'
-          };
-          localStorage.setItem('currentAnalysis', JSON.stringify(analysisData));
-          
-        }, 1000);
-        
+        if (result.success) {
+          logDebug('✅ Upload realizado com sucesso!');
+          localStorage.setItem('currentAnalysisId', result.analysisId);
+          localStorage.setItem('uploadedFiles', JSON.stringify(result.data.uploaded_files));
+          localStorage.setItem('apiResponse', JSON.stringify(result));
+          return true;
+        } else {
+          logDebug(`❌ Erro da API: ${result.error}`);
+          throw new Error(result.error || 'Erro desconhecido da API');
+        }
       } catch (error) {
-        console.error('Erro no processamento:', error);
+        logDebug(`💥 Erro no upload: ${error.message}`);
+        console.error('Erro no upload:', error);
+        return false;
       }
+    }
+
+    async function simulateProcessing() {
+      const steps = document.querySelectorAll('.processing-step');
+      
+      // Passo 1: Carregando vídeos
+      await updateStep(steps[0], 1000);
+      logDebug('📹 Vídeos carregados');
+      
+      // Passo 2: Enviando para API
+      await updateStep(steps[1], 1500);
+      logDebug('📤 Dados enviados para API');
+      
+      // Passo 3: Processando com Python
+      await updateStep(steps[2], 2000);
+      logDebug('🐍 Processamento Python em andamento');
+      
+      // Passo 4: Gerando resultados
+      await updateStep(steps[3], 1500);
+      logDebug('📊 Resultados gerados');
     }
 
     function updateStep(stepElement, delay) {
@@ -641,37 +729,13 @@
     }
 
     function redirectToConsulta() {
-      // Redireciona para a página de consulta
+      logDebug('🔀 Redirecionando para consulta.html');
       window.location.href = '/consulta';
     }
 
-    // Envia os arquivos para o servidor quando o processamento inicia
-    async function uploadFilesToServer() {
-      const formData = new FormData();
-      
-      files.forEach((fileObj, index) => {
-        formData.append(`video_${fileObj.type}`, fileObj.file);
-      });
-      
-      try {
-        const response = await fetch('/api/process-analysis', {
-          method: 'POST',
-          body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          localStorage.setItem('analysisId', result.analysisId);
-          return true;
-        } else {
-          throw new Error(result.error);
-        }
-      } catch (error) {
-        console.error('Erro no upload:', error);
-        return false;
-      }
-    }
+    // Inicialização
+    logDebug('🔄 Página carregada');
+    logDebug(`🔧 API Base URL: ${API_BASE_URL}`);
   </script>
 </body>
 </html>
