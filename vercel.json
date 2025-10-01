@@ -6,10 +6,6 @@
       "use": "@vercel/node"
     },
     {
-      "src": "site/api/auth/callback.js", 
-      "use": "@vercel/node"
-    },
-    {
       "src": "site/**/*.html",
       "use": "@vercel/static"
     },
@@ -26,10 +22,6 @@
     {
       "src": "/api/health",
       "dest": "/site/api/health.js"
-    },
-    {
-      "src": "/api/auth/callback",
-      "dest": "/site/api/auth/callback.js"
     },
     {
       "src": "/",
@@ -52,7 +44,7 @@
       "dest": "/site/nova_analise.html"
     },
     {
-      "src": "/historico", 
+      "src": "/historico",
       "dest": "/site/historico.html"
     },
     {
@@ -75,5 +67,13 @@
       "src": "/(.*)",
       "dest": "/site/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "site/api/health.js": {
+      "includeFiles": "site/api/**"
+    }
+  },
+  "env": {
+    "PYTHON_VERSION": "null"
+  }
 }
