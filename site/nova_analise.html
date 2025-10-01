@@ -411,9 +411,9 @@
       
       <!-- 🔥 INFO VERCEL -->
       <div class="vercel-info">
-        <h3>🚀 Sistema Configurado para Vercel</h3>
-        <p><strong>API URL:</strong> <code id="currentApiUrl">https://ttc-analise-postural.vercel.app</code></p>
-        <p><strong>Status:</strong> <span id="apiStatus">Testando conexão...</span></p>
+        <h3>🚀 Sistema Frontend Only - Vercel</h3>
+        <p><strong>Modo:</strong> <span style="color: green;">✅ Apenas Frontend (Simulação)</span></p>
+        <p><strong>Status:</strong> <span id="apiStatus">Pronto para análise simulada</span></p>
       </div>
       
       <div class="upload-grid">
@@ -478,14 +478,14 @@
         
         <div class="processing-steps">
           <div class="processing-step" id="step1">Carregando vídeos...</div>
-          <div class="processing-step" id="step2">Enviando para API Vercel...</div>
-          <div class="processing-step" id="step3">Simulando processamento...</div>
+          <div class="processing-step" id="step2">Gerando dados de análise...</div>
+          <div class="processing-step" id="step3">Processando métricas posturais...</div>
           <div class="processing-step" id="step4">Gerando resultados...</div>
         </div>
 
         <div id="processingResults" style="display: none; margin-top: 20px;">
           <h3 style="color: #4caf50;">✓ Análise Concluída!</h3>
-          <p><small>⚠️ Processamento simulado - Vercel não suporta OpenCV</small></p>
+          <p><small>✅ Dados de demonstração gerados com sucesso</small></p>
           <button onclick="redirectToConsulta()" style="
             background-color: #4d77ff;
             color: white;
@@ -507,15 +507,13 @@
         <a href="#">Terms & Conditions</a>
       </div>
       <div class="copyright">
-        © 2025 Análise Postural
+        © 2025 The Posture Lab
       </div>
     </div>
   </div>
 
   <script>
-    // 🔥🔥🔥 CONFIGURAÇÃO PARA VERCEL 🔥🔥🔥
-    const API_BASE_URL = 'https://ttc-analise-postural.vercel.app';
-
+    // 🔥 CONFIGURAÇÃO FRONTEND ONLY
     const frontalUploadArea = document.getElementById('frontalUploadArea');
     const transversalUploadArea = document.getElementById('transversalUploadArea');
     const frontalFileInput = document.getElementById('frontalFileInput');
@@ -528,7 +526,6 @@
     const debugInfo = document.getElementById('debugInfo');
     const debugContent = document.getElementById('debugContent');
     const apiStatus = document.getElementById('apiStatus');
-    const currentApiUrl = document.getElementById('currentApiUrl');
 
     let files = [];
     let debugLog = [];
@@ -543,65 +540,6 @@
     function toggleDebug() {
       debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
     }
-
-    // 🔧 FUNÇÃO MELHORADA DE TESTE DE CONEXÃO
-    async function testApiConnection() {
-      try {
-        logDebug(`🔍 Testando conexão com Vercel: ${API_BASE_URL}/api/health`);
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
-        
-        const response = await fetch(`${API_BASE_URL}/api/health`, {
-          method: 'GET',
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          const data = await response.json();
-          apiStatus.innerHTML = `<span style="color: green;">✅ API Vercel conectada! (${data.environment})</span>`;
-          logDebug('✅ Conexão com Vercel estabelecida');
-        } else {
-          // Se der erro, mas a API respondeu, mostra o status
-          apiStatus.innerHTML = `<span style="color: orange;">⚠️ Health check retornou status ${response.status}</span>`;
-          logDebug(`⚠️ Health check retornou status: ${response.status}`);
-          
-          // Tenta obter mais detalhes do erro
-          try {
-            const errorData = await response.text();
-            logDebug(`📄 Resposta do health check: ${errorData}`);
-          } catch (e) {
-            logDebug('📄 Não foi possível ler resposta de erro');
-          }
-        }
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          apiStatus.innerHTML = `<span style="color: orange;">⚠️ Timeout na conexão com API</span>`;
-          logDebug('⏰ Timeout na conexão com Vercel');
-        } else {
-          apiStatus.innerHTML = `<span style="color: orange;">⚠️ Erro de conexão: ${error.message}</span>`;
-          logDebug(`🌐 Erro de rede: ${error.message}`);
-        }
-      }
-    }
-
-    // 🧪 FUNÇÃO PARA TESTE MANUAL NO CONSOLE
-    window.testHealth = async function() {
-      try {
-        console.log('🧪 Testando /api/health manualmente...');
-        const response = await fetch('https://ttc-analise-postural.vercel.app/api/health');
-        console.log('Status:', response.status);
-        console.log('Headers:', Object.fromEntries(response.headers.entries()));
-        const text = await response.text();
-        console.log('Response:', text);
-        return { status: response.status, text: text };
-      } catch (error) {
-        console.error('Erro no teste manual:', error);
-        return { error: error.message };
-      }
-    };
 
     // 🎯 CONFIGURAÇÃO DAS ÁREAS DE UPLOAD
     setupUploadArea(frontalUploadArea, frontalFileInput, 'frontal');
@@ -624,11 +562,11 @@
 
     // ✅ FUNÇÃO DE VALIDAÇÃO DE TAMANHO DE ARQUIVO
     function validateFileSize(file) {
-      const maxSize = 4 * 1024 * 1024; // 4MB - limite do Vercel
+      const maxSize = 50 * 1024 * 1024; // 50MB - limite mais generoso para frontend
       if (file.size > maxSize) {
         const sizeMB = (file.size / 1024 / 1024).toFixed(1);
         const maxMB = (maxSize / 1024 / 1024).toFixed(0);
-        alert(`❌ Vídeo muito grande!\n\nTamanho: ${sizeMB}MB\nMáximo permitido: ${maxMB}MB\n\nDica: Use vídeos mais curtos ou compacte o vídeo.`);
+        alert(`❌ Vídeo muito grande!\n\nTamanho: ${sizeMB}MB\nMáximo permitido: ${maxMB}MB\n\nDica: Use vídeos mais curtos.`);
         return false;
       }
       return true;
@@ -640,7 +578,7 @@
         
         // 🔥 VALIDA TAMANHO ANTES DE ADICIONAR
         if (!validateFileSize(file)) {
-          continue; // Pula arquivos muito grandes
+          continue;
         }
         
         if(!files.some(f=>f.name===file.name && f.size===file.size)){
@@ -707,7 +645,7 @@
       return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
     }
 
-    // 🚀 PROCESSAMENTO DA ANÁLISE
+    // 🚀 PROCESSAMENTO DA ANÁLISE (SIMULAÇÃO)
     async function processAnalysis() {
       const hasFrontal = files.some(f=>f.type==='frontal');
       
@@ -720,74 +658,74 @@
 
       validationSuccess.style.display='block';
       validationError.style.display='none';
-      logDebug('✅ Validação passou: processando análise no Vercel...');
+      logDebug('✅ Validação passou: iniciando simulação de análise...');
       
       processingOverlay.style.display = 'flex';
       
       try {
-        logDebug(`📤 Iniciando upload para Vercel: ${API_BASE_URL}`);
-        const uploadSuccess = await uploadFilesToServer();
+        logDebug('🔧 Iniciando simulação de análise...');
+        await simulateProcessing();
         
-        if (uploadSuccess) {
-          logDebug('🔧 Simulando processamento no Vercel...');
-          await simulateProcessing();
-          
-          processingResults.style.display = 'block';
-          logDebug('🎉 Processamento concluído no Vercel!');
-        } else {
-          logDebug('❌ Upload falhou no Vercel');
-          alert('Erro no upload para Vercel - verifique o console (F12)');
-          processingOverlay.style.display = 'none';
-        }
+        // 🔥 GERAR DADOS DE DEMONSTRAÇÃO
+        const mockResults = {
+          analysisId: 'demo_' + Date.now(),
+          success: true,
+          data: {
+            posture_score: Math.floor(Math.random() * 30) + 70,
+            symmetry_score: Math.floor(Math.random() * 20) + 75,
+            gait_quality: Math.floor(Math.random() * 25) + 70,
+            overall_health: Math.floor(Math.random() * 25) + 70,
+            videos: {
+              frontal_original: URL.createObjectURL(files.find(f => f.type === 'frontal')?.file),
+              frontal_processed: URL.createObjectURL(files.find(f => f.type === 'frontal')?.file),
+              transversal_original: files.find(f => f.type === 'transversal') ? 
+                URL.createObjectURL(files.find(f => f.type === 'transversal').file) : 
+                'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
+              transversal_processed: files.find(f => f.type === 'transversal') ? 
+                URL.createObjectURL(files.find(f => f.type === 'transversal').file) : 
+                'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4'
+            },
+            detailed_analysis: {
+              angulos: {
+                ombro_esquerdo: { media: 45, variacao: 15 },
+                ombro_direito: { media: 43, variacao: 12 },
+                quadril_esquerdo: { media: 25, variacao: 8 },
+                quadril_direito: { media: 26, variacao: 7 },
+                joelho_esquerdo: { media: 15, variacao: 5 },
+                joelho_direito: { media: 16, variacao: 6 }
+              },
+              assimetrias: {
+                ombros: 0.02,
+                quadris: 0.01,
+                joelhos: 0.03
+              },
+              recomendacoes: [
+                'Fortalecimento do core abdominal',
+                'Alongamento de isquiotibiais',
+                'Exercícios de equilíbrio unilateral',
+                'Correção da postura durante caminhada',
+                'Fortalecimento de glúteos médio'
+              ]
+            }
+          }
+        };
+        
+        // Salvar dados para a página de consulta
+        localStorage.setItem('currentAnalysisId', mockResults.analysisId);
+        localStorage.setItem('analysisResults', JSON.stringify(mockResults.data));
+        localStorage.setItem('uploadedFiles', JSON.stringify(files.map(f => ({
+          name: f.file.name,
+          type: f.type,
+          size: f.file.size
+        }))));
+        
+        processingResults.style.display = 'block';
+        logDebug('🎉 Análise simulada concluída!');
         
       } catch (error) {
-        logDebug(`💥 Erro no processamento Vercel: ${error.message}`);
-        console.error('Erro:', error);
-        alert('Erro ao processar análise no Vercel: ' + error.message);
+        logDebug(`💥 Erro na simulação: ${error.message}`);
+        alert('Erro ao processar análise: ' + error.message);
         processingOverlay.style.display = 'none';
-      }
-    }
-
-    async function uploadFilesToServer() {
-      const formData = new FormData();
-      
-      files.forEach((fileObj) => {
-        formData.append(`video_${fileObj.type}`, fileObj.file);
-        logDebug(`➕ Adicionando ao FormData: video_${fileObj.type}`);
-      });
-      
-      try {
-        logDebug(`🌐 Enviando para Vercel: ${API_BASE_URL}/api/process-analysis`);
-        logDebug(`📦 Total de arquivos: ${files.length}`);
-        
-        const response = await fetch(`${API_BASE_URL}/api/process-analysis`, {
-          method: 'POST',
-          body: formData
-        });
-        
-        logDebug(`📡 Resposta do Vercel: ${response.status}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        logDebug(`📊 Resposta da API Vercel: ${JSON.stringify(result, null, 2)}`);
-        
-        if (result.success) {
-          logDebug('✅ Upload realizado com sucesso no Vercel!');
-          localStorage.setItem('currentAnalysisId', result.analysisId);
-          localStorage.setItem('uploadedFiles', JSON.stringify(result.data.uploaded_files));
-          localStorage.setItem('apiResponse', JSON.stringify(result));
-          return true;
-        } else {
-          logDebug(`❌ Erro da API Vercel: ${result.error}`);
-          throw new Error(result.error || 'Erro desconhecido da API Vercel');
-        }
-      } catch (error) {
-        logDebug(`💥 Erro no upload Vercel: ${error.message}`);
-        console.error('Erro no upload Vercel:', error);
-        return false;
       }
     }
 
@@ -798,13 +736,13 @@
       logDebug('📹 Vídeos carregados');
       
       await updateStep(steps[1], 1500);
-      logDebug('📤 Dados enviados para Vercel');
+      logDebug('📊 Gerando dados de análise...');
       
       await updateStep(steps[2], 2000);
-      logDebug('🔧 Processamento simulado no Vercel');
+      logDebug('🔧 Processando métricas posturais...');
       
       await updateStep(steps[3], 1500);
-      logDebug('📊 Resultados gerados');
+      logDebug('📈 Resultados gerados');
     }
 
     function updateStep(stepElement, delay) {
@@ -826,10 +764,9 @@
     }
 
     // 🏁 INICIALIZAÇÃO
-    logDebug('🔄 Página carregada no Vercel');
-    logDebug(`🔧 API Base URL: ${API_BASE_URL}`);
-    currentApiUrl.textContent = API_BASE_URL;
-    testApiConnection();
+    logDebug('🔄 Página nova_analise.html carregada');
+    logDebug('🎯 Modo: Frontend Only (Simulação)');
+    apiStatus.innerHTML = '<span style="color: green;">✅ Pronto para análise simulada</span>';
   </script>
 </body>
 </html>
