@@ -1,18 +1,55 @@
 {
   "version": 2,
-  "functions": {
-    "site/api/app.py": {
-      "runtime": "python3.11",
-      "maxDuration": 30,
-      "memory": 1024,
-      "includeFiles": "site/api/**"
+  "builds": [
+    {
+      "src": "site/api/app.py",
+      "use": "@vercel/python"
     },
-    "site/api/auth/callback.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 30,
-      "memory": 1024
+    {
+      "src": "site/api/auth/callback.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "site/index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/login.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/poslogin.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/review_new.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/nova_analise.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/historico.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/configuracoes.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/consulta.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/style.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/img/**/*",
+      "use": "@vercel/static"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/process-analysis",
@@ -87,8 +124,5 @@
       "src": "/(.*)",
       "dest": "/site/index.html"
     }
-  ],
-  "env": {
-    "PYTHONPATH": "/var/task/site/api"
-  }
+  ]
 }
