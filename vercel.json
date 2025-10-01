@@ -2,11 +2,11 @@
   "version": 2,
   "builds": [
     {
-      "src": "site/api/app.py",
+      "src": "site/api/*.py",
       "use": "@vercel/python"
     },
     {
-      "src": "site/api/auth/callback.js",  
+      "src": "site/api/auth/*.js",
       "use": "@vercel/node"
     },
     {
@@ -18,88 +18,33 @@
       "use": "@vercel/static"
     },
     {
-      "src": "site/img/**/*",
+      "src": "site/**/*.js",
       "use": "@vercel/static"
     },
     {
-      "src": "site/**/*.js",
+      "src": "site/img/**/*",
       "use": "@vercel/static"
     }
   ],
   "routes": [
-    {
-      "src": "/api/process-analysis",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "POST", "OPTIONS"]
-    },
-    {
-      "src": "/api/analysis/(.*)",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/videos/(.*)",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/health",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/debug/info",
-      "dest": "/site/api/app.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/auth/callback",  
-      "dest": "/site/api/auth/callback.js"
-    },
-    {
-      "src": "/",
-      "dest": "/site/index.html"
-    },
-    {
-      "src": "/login",
-      "dest": "/site/login.html"
-    },
-    {
-      "src": "/poslogin",
-      "dest": "/site/poslogin.html"
-    },
-    {
-      "src": "/review_new",
-      "dest": "/site/review_new.html"
-    },
-    {
-      "src": "/nova-analise",
-      "dest": "/site/nova_analise.html"
-    },
-    {
-      "src": "/historico",
-      "dest": "/site/historico.html"
-    },
-    {
-      "src": "/configuracoes",
-      "dest": "/site/configuracoes.html"
-    },
-    {
-      "src": "/consulta",
-      "dest": "/site/consulta.html"
-    },
-    {
-      "src": "/style.css",
-      "dest": "/site/style.css"
-    },
-    {
-      "src": "/img/(.*)",
-      "dest": "/site/img/$1"
-    },
-    { 
-      "src": "/(.*)",
-      "dest": "/site/index.html"
-    }
+    { "src": "/api/process-analysis", "dest": "/site/api/app.py", "methods": ["GET","POST","OPTIONS"] },
+    { "src": "/api/analysis/(.*)", "dest": "/site/api/app.py", "methods": ["GET","OPTIONS"] },
+    { "src": "/api/videos/(.*)", "dest": "/site/api/app.py", "methods": ["GET","OPTIONS"] },
+    { "src": "/api/health", "dest": "/site/api/app.py", "methods": ["GET","OPTIONS"] },
+    { "src": "/api/debug/info", "dest": "/site/api/app.py", "methods": ["GET","OPTIONS"] },
+    { "src": "/api/auth/callback", "dest": "/site/api/auth/callback.js" },
+
+    { "src": "/", "dest": "/site/index.html" },
+    { "src": "/login", "dest": "/site/login.html" },
+    { "src": "/poslogin", "dest": "/site/poslogin.html" },
+    { "src": "/review_new", "dest": "/site/review_new.html" },
+    { "src": "/nova-analise", "dest": "/site/nova_analise.html" },
+    { "src": "/historico", "dest": "/site/historico.html" },
+    { "src": "/configuracoes", "dest": "/site/configuracoes.html" },
+    { "src": "/consulta", "dest": "/site/consulta.html" },
+    { "src": "/style.css", "dest": "/site/style.css" },
+    { "src": "/img/(.*)", "dest": "/site/img/$1" },
+    { "src": "/(.*)", "dest": "/site/index.html" }
   ],
   "functions": {
     "site/api/app.py": {
