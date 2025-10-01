@@ -2,78 +2,59 @@
   "version": 2,
   "builds": [
     {
-      "src": "site/index.html", 
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/login.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/poslogin.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/review_new.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/nova_analise.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/historico.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/configuracoes.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/consulta.html",
-      "use": "@vercel/static"
+      "src": "site/api/app.py",
+      "use": "@vercel/python"
     },
     {
       "src": "site/api/auth/callback.js",  
       "use": "@vercel/node"
     },
     {
-      "src": "site/api/app.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "site/*.css",
+      "src": "site/**/*.html",
       "use": "@vercel/static"
     },
     {
-      "src": "site/img/*",
+      "src": "site/**/*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/img/**/*",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "site/**/*.js",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/api/auth/callback",  
-      "dest": "/site/api/auth/callback.js"
-    },
-    {
       "src": "/api/process-analysis",
-      "dest": "/site/api/app.py"
+      "dest": "/site/api/app.py",
+      "methods": ["GET", "POST", "OPTIONS"]
     },
     {
       "src": "/api/analysis/(.*)",
-      "dest": "/site/api/app.py"
+      "dest": "/site/api/app.py",
+      "methods": ["GET", "OPTIONS"]
     },
     {
       "src": "/api/videos/(.*)",
-      "dest": "/site/api/app.py"
+      "dest": "/site/api/app.py",
+      "methods": ["GET", "OPTIONS"]
     },
     {
-      "src": "/(.*).css",
-      "dest": "/site/$1.css"
+      "src": "/api/health",
+      "dest": "/site/api/app.py",
+      "methods": ["GET", "OPTIONS"]
     },
     {
-      "src": "/img/(.*)",
-      "dest": "/site/img/$1"
+      "src": "/api/debug/info",
+      "dest": "/site/api/app.py",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/auth/callback",  
+      "dest": "/site/api/auth/callback.js"
     },
     {
       "src": "/",
@@ -106,10 +87,28 @@
     {
       "src": "/consulta",
       "dest": "/site/consulta.html"
-    },  
+    },
+    {
+      "src": "/style.css",
+      "dest": "/site/style.css"
+    },
+    {
+      "src": "/img/(.*)",
+      "dest": "/site/img/$1"
+    },
     { 
       "src": "/(.*)",
       "dest": "/site/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "site/api/app.py": {
+      "maxDuration": 30,
+      "memory": 1024,
+      "includeFiles": "site/api/**"
+    }
+  },
+  "env": {
+    "PYTHONPATH": "/var/task/site/api"
+  }
 }
