@@ -385,6 +385,32 @@
       color: #999;
       font-size: 14px;
     }
+
+    .config-section {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+
+    .config-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 5px 0;
+    }
+
+    .config-button {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
@@ -409,11 +435,22 @@
       <h1 class="upload-title">Upload para Análise Postural</h1>
       <p class="upload-subtitle">Selecione o tipo de vídeo de acordo com a orientação da câmera durante a gravação do exame</p>
       
-      <!-- 🔥 INFO VERCEL -->
+      <!-- 🔥 INFO VERCEL + RAILWAY -->
       <div class="vercel-info">
-        <h3>🚀 Sistema Frontend Only - Vercel</h3>
-        <p><strong>Modo:</strong> <span style="color: green;">✅ Apenas Frontend (Simulação)</span></p>
-        <p><strong>Status:</strong> <span id="apiStatus">Pronto para análise simulada</span></p>
+        <h3>🚀 Sistema Integrado Vercel + Railway</h3>
+        
+        <!-- Configuração Manual -->
+        <div class="config-section">
+          <h4>🔧 Configuração do Railway (Opcional)</h4>
+          <p><small>Se a detecção automática não funcionar, cole a URL do seu projeto Railway:</small></p>
+          <input type="text" id="railwayUrlInput" class="config-input" 
+                 placeholder="https://seu-projeto.up.railway.app">
+          <button class="config-button" onclick="saveRailwayUrl()">Salvar URL</button>
+          <button class="config-button" onclick="testRailwayConnection()" style="background: #17a2b8;">Testar Conexão</button>
+        </div>
+
+        <p><strong>Status:</strong> <span id="apiStatus">Inicializando...</span></p>
+        <p><strong>Modo:</strong> <span id="modeStatus">Detectando...</span></p>
       </div>
       
       <div class="upload-grid">
@@ -478,14 +515,14 @@
         
         <div class="processing-steps">
           <div class="processing-step" id="step1">Carregando vídeos...</div>
-          <div class="processing-step" id="step2">Gerando dados de análise...</div>
-          <div class="processing-step" id="step3">Processando métricas posturais...</div>
+          <div class="processing-step" id="step2">Conectando com backend...</div>
+          <div class="processing-step" id="step3">Processando análise...</div>
           <div class="processing-step" id="step4">Gerando resultados...</div>
         </div>
 
         <div id="processingResults" style="display: none; margin-top: 20px;">
-          <h3 style="color: #4caf50;">✓ Análise Concluída!</h3>
-          <p><small>✅ Dados de demonstração gerados com sucesso</small></p>
+          <h3 style="color: #4caf50;" id="resultsTitle">✓ Análise Concluída!</h3>
+          <p id="resultsSubtitle"><small>Processamento finalizado</small></p>
           <button onclick="redirectToConsulta()" style="
             background-color: #4d77ff;
             color: white;
@@ -513,7 +550,7 @@
   </div>
 
   <script>
-    // 🔥 CONFIGURAÇÃO FRONTEND ONLY
+    // 🔥 CONFIGURAÇÃO INTELIGENTE VERCEL + RAILWAY
     const frontalUploadArea = document.getElementById('frontalUploadArea');
     const transversalUploadArea = document.getElementById('transversalUploadArea');
     const frontalFileInput = document.getElementById('frontalFileInput');
@@ -526,9 +563,13 @@
     const debugInfo = document.getElementById('debugInfo');
     const debugContent = document.getElementById('debugContent');
     const apiStatus = document.getElementById('apiStatus');
+    const modeStatus = document.getElementById('modeStatus');
+    const resultsTitle = document.getElementById('resultsTitle');
+    const resultsSubtitle = document.getElementById('resultsSubtitle');
 
     let files = [];
     let debugLog = [];
+    let currentRailwayUrl = null;
 
     function logDebug(message) {
       const timestamp = new Date().toLocaleTimeString();
@@ -645,7 +686,81 @@
       return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
     }
 
-    // 🚀 PROCESSAMENTO DA ANÁLISE (SIMULAÇÃO)
+    // 🔧 CONFIGURAÇÃO RAILWAY
+    function saveRailwayUrl() {
+      const url = document.getElementById('railwayUrlInput').value.trim();
+      if (url) {
+        localStorage.setItem('railwayUrl', url);
+        logDebug(`🔗 URL do Railway salva: ${url}`);
+        testRailwayConnection(url);
+      }
+    }
+
+    async function testRailwayConnection(url) {
+      try {
+        apiStatus.innerHTML = '<span style="color: orange;">🔍 Testando conexão...</span>';
+        
+        const response = await fetch(`${url}/api/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000)
+        });
+        
+        if (response.ok) {
+          apiStatus.innerHTML = `<span style="color: green;">✅ Conectado ao Railway!</span>`;
+          modeStatus.innerHTML = '<span style="color: green;">🚂 Modo Real (Railway)</span>';
+          currentRailwayUrl = url;
+          logDebug(`✅ Conexão Railway estabelecida: ${url}`);
+        } else {
+          apiStatus.innerHTML = `<span style="color: red;">❌ Railway respondeu com erro</span>`;
+        }
+      } catch (error) {
+        apiStatus.innerHTML = '<span style="color: red;">❌ Falha na conexão com Railway</span>';
+        logDebug(`❌ Erro de conexão: ${error.message}`);
+      }
+    }
+
+    // 🔍 FUNÇÃO INTELIGENTE PARA DESCOBRIR RAILWAY
+    async function discoverRailwayUrl() {
+      const possibleSources = [
+        // 1. URL salva manualmente
+        localStorage.getItem('railwayUrl'),
+        // 2. Tentativa com nome comum do projeto
+        'https://analise-postural.up.railway.app',
+        'https://posture-lab.up.railway.app',
+        'https://ttc-analise.up.railway.app',
+        // 3. Baseado no domínio atual (se estiver no Vercel)
+        window.location.hostname.includes('vercel.app') 
+          ? `https://${window.location.hostname.replace('vercel.app', 'up.railway.app')}`
+          : null
+      ].filter(url => url && url !== 'null' && url !== 'undefined');
+
+      logDebug('🔍 Procurando Railway...');
+      
+      for (const url of possibleSources) {
+        const cleanUrl = url.trim();
+        if (!cleanUrl) continue;
+        
+        try {
+          logDebug(`   Testando: ${cleanUrl}`);
+          const response = await fetch(`${cleanUrl}/api/health`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(3000)
+          });
+          
+          if (response.ok) {
+            logDebug(`✅ Conectado: ${cleanUrl}`);
+            localStorage.setItem('railwayUrl', cleanUrl);
+            return cleanUrl;
+          }
+        } catch (error) {
+          logDebug(`   ❌ ${cleanUrl} - ${error.message}`);
+        }
+      }
+      
+      return null;
+    }
+
+    // 🚀 PROCESSAMENTO DA ANÁLISE (Agora automático)
     async function processAnalysis() {
       const hasFrontal = files.some(f=>f.type==='frontal');
       
@@ -658,75 +773,133 @@
 
       validationSuccess.style.display='block';
       validationError.style.display='none';
-      logDebug('✅ Validação passou: iniciando simulação de análise...');
-      
       processingOverlay.style.display = 'flex';
       
       try {
-        logDebug('🔧 Iniciando simulação de análise...');
-        await simulateProcessing();
+        // 🔥 TENTA RAILWAY PRIMEIRO
+        let usedRailway = false;
         
-        // 🔥 GERAR DADOS DE DEMONSTRAÇÃO
-        const mockResults = {
-          analysisId: 'demo_' + Date.now(),
-          success: true,
-          data: {
-            posture_score: Math.floor(Math.random() * 30) + 70,
-            symmetry_score: Math.floor(Math.random() * 20) + 75,
-            gait_quality: Math.floor(Math.random() * 25) + 70,
-            overall_health: Math.floor(Math.random() * 25) + 70,
-            videos: {
-              frontal_original: URL.createObjectURL(files.find(f => f.type === 'frontal')?.file),
-              frontal_processed: URL.createObjectURL(files.find(f => f.type === 'frontal')?.file),
-              transversal_original: files.find(f => f.type === 'transversal') ? 
-                URL.createObjectURL(files.find(f => f.type === 'transversal').file) : 
-                'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
-              transversal_processed: files.find(f => f.type === 'transversal') ? 
-                URL.createObjectURL(files.find(f => f.type === 'transversal').file) : 
-                'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4'
-            },
-            detailed_analysis: {
-              angulos: {
-                ombro_esquerdo: { media: 45, variacao: 15 },
-                ombro_direito: { media: 43, variacao: 12 },
-                quadril_esquerdo: { media: 25, variacao: 8 },
-                quadril_direito: { media: 26, variacao: 7 },
-                joelho_esquerdo: { media: 15, variacao: 5 },
-                joelho_direito: { media: 16, variacao: 6 }
-              },
-              assimetrias: {
-                ombros: 0.02,
-                quadris: 0.01,
-                joelhos: 0.03
-              },
-              recomendacoes: [
-                'Fortalecimento do core abdominal',
-                'Alongamento de isquiotibiais',
-                'Exercícios de equilíbrio unilateral',
-                'Correção da postura durante caminhada',
-                'Fortalecimento de glúteos médio'
-              ]
-            }
-          }
-        };
+        if (!currentRailwayUrl) {
+          currentRailwayUrl = await discoverRailwayUrl();
+        }
         
-        // Salvar dados para a página de consulta
-        localStorage.setItem('currentAnalysisId', mockResults.analysisId);
-        localStorage.setItem('analysisResults', JSON.stringify(mockResults.data));
-        localStorage.setItem('uploadedFiles', JSON.stringify(files.map(f => ({
-          name: f.file.name,
-          type: f.type,
-          size: f.file.size
-        }))));
+        if (currentRailwayUrl) {
+          logDebug(`🚂 Tentando análise real no Railway: ${currentRailwayUrl}`);
+          usedRailway = await tryRailwayAnalysis(currentRailwayUrl);
+        }
+        
+        // 🔥 SE NÃO CONSEGUIR RAILWAY, USA SIMULAÇÃO
+        if (!usedRailway) {
+          logDebug('🔧 Usando simulação (Railway não disponível)');
+          await simulateProcessing();
+          await generateDemoResults();
+          resultsTitle.textContent = '✓ Análise Simulada Concluída!';
+          resultsSubtitle.innerHTML = '<small>🔧 Modo Demonstração - Dados simulados</small>';
+        } else {
+          resultsTitle.textContent = '✓ Análise Real Concluída!';
+          resultsSubtitle.innerHTML = '<small>🚂 Processado no Railway</small>';
+        }
         
         processingResults.style.display = 'block';
-        logDebug('🎉 Análise simulada concluída!');
         
       } catch (error) {
-        logDebug(`💥 Erro na simulação: ${error.message}`);
+        logDebug(`💥 Erro no processamento: ${error.message}`);
         alert('Erro ao processar análise: ' + error.message);
         processingOverlay.style.display = 'none';
       }
+    }
+
+    // 🚂 TENTA ANÁLISE NO RAILWAY
+    async function tryRailwayAnalysis(railwayUrl) {
+      try {
+        const formData = new FormData();
+        
+        files.forEach((fileObj) => {
+          formData.append(`video_${fileObj.type}`, fileObj.file);
+          logDebug(`➕ Adicionando ao form: video_${fileObj.type}`);
+        });
+
+        logDebug(`📤 Enviando para Railway: ${railwayUrl}/api/analyze`);
+        const response = await fetch(`${railwayUrl}/api/analyze`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          logDebug('✅ Análise real concluída no Railway!');
+          
+          // Salva resultados reais
+          localStorage.setItem('currentAnalysisId', result.analysis_id);
+          localStorage.setItem('analysisResults', JSON.stringify(result));
+          localStorage.setItem('isRealAnalysis', 'true');
+          localStorage.setItem('railwayUrl', railwayUrl);
+          
+          return true;
+        } else {
+          logDebug(`❌ Railway respondeu com erro: ${response.status}`);
+          const errorText = await response.text();
+          logDebug(`📄 Detalhes do erro: ${errorText}`);
+        }
+      } catch (error) {
+        logDebug(`🌐 Erro de conexão com Railway: ${error.message}`);
+      }
+      
+      return false;
+    }
+
+    // 🎯 FUNÇÃO PARA GERAR RESULTADOS DEMO
+    async function generateDemoResults() {
+      const mockResults = {
+        analysis_id: 'demo_' + Date.now(),
+        status: 'completed',
+        videos: {
+          frontal_original: files.find(f => f.type === 'frontal') ? 
+            URL.createObjectURL(files.find(f => f.type === 'frontal').file) : 
+            'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
+          frontal_processed: files.find(f => f.type === 'frontal') ? 
+            URL.createObjectURL(files.find(f => f.type === 'frontal').file) : 
+            'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
+          transversal_original: files.find(f => f.type === 'transversal') ? 
+            URL.createObjectURL(files.find(f => f.type === 'transversal').file) : 
+            'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
+          transversal_processed: files.find(f => f.type === 'transversal') ? 
+            URL.createObjectURL(files.find(f => f.type === 'transversal').file) : 
+            'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4'
+        },
+        metrics: {
+          posture_score: Math.floor(Math.random() * 30) + 70,
+          symmetry_score: Math.floor(Math.random() * 20) + 75,
+          gait_quality: Math.floor(Math.random() * 25) + 70,
+          overall_health: Math.floor(Math.random() * 25) + 70
+        },
+        detailed_analysis: {
+          angulos: {
+            ombro_esquerdo: { media: 45, variacao: 15 },
+            ombro_direito: { media: 43, variacao: 12 },
+            quadril_esquerdo: { media: 25, variacao: 8 },
+            quadril_direito: { media: 26, variacao: 7 },
+            joelho_esquerdo: { media: 15, variacao: 5 },
+            joelho_direito: { media: 16, variacao: 6 }
+          },
+          assimetrias: {
+            ombros: 0.02,
+            quadris: 0.01,
+            joelhos: 0.03
+          },
+          recomendacoes: [
+            'Fortalecimento do core abdominal',
+            'Alongamento de isquiotibiais',
+            'Exercícios de equilíbrio unilateral',
+            'Correção da postura durante caminhada',
+            'Fortalecimento de glúteos médio'
+          ]
+        }
+      };
+      
+      localStorage.setItem('currentAnalysisId', mockResults.analysis_id);
+      localStorage.setItem('analysisResults', JSON.stringify(mockResults));
+      localStorage.setItem('isRealAnalysis', 'false');
     }
 
     async function simulateProcessing() {
@@ -736,13 +909,13 @@
       logDebug('📹 Vídeos carregados');
       
       await updateStep(steps[1], 1500);
-      logDebug('📊 Gerando dados de análise...');
+      logDebug('🔗 Verificando conexão...');
       
       await updateStep(steps[2], 2000);
-      logDebug('🔧 Processando métricas posturais...');
+      logDebug('🔧 Processando análise...');
       
       await updateStep(steps[3], 1500);
-      logDebug('📈 Resultados gerados');
+      logDebug('📊 Resultados gerados');
     }
 
     function updateStep(stepElement, delay) {
@@ -763,10 +936,45 @@
       window.location.href = '/consulta';
     }
 
-    // 🏁 INICIALIZAÇÃO
-    logDebug('🔄 Página nova_analise.html carregada');
-    logDebug('🎯 Modo: Frontend Only (Simulação)');
-    apiStatus.innerHTML = '<span style="color: green;">✅ Pronto para análise simulada</span>';
+    // 🏁 INICIALIZAÇÃO AUTOMÁTICA
+    document.addEventListener('DOMContentLoaded', async function() {
+      logDebug('🔄 Página nova_analise.html carregada');
+      
+      // Carrega URL salva no input
+      const savedUrl = localStorage.getItem('railwayUrl');
+      if (savedUrl) {
+        document.getElementById('railwayUrlInput').value = savedUrl;
+      }
+      
+      // Tenta descobrir Railway automaticamente
+      currentRailwayUrl = await discoverRailwayUrl();
+      
+      if (currentRailwayUrl) {
+        apiStatus.innerHTML = `<span style="color: green;">✅ Conectado ao Railway!</span>`;
+        modeStatus.innerHTML = '<span style="color: green;">🚂 Modo Real (Railway)</span>';
+        logDebug(`🎯 Modo: Railway (${currentRailwayUrl})`);
+      } else {
+        apiStatus.innerHTML = '<span style="color: orange;">🔧 Modo Simulação</span>';
+        modeStatus.innerHTML = '<span style="color: orange;">🔧 Backend não detectado</span>';
+        logDebug('🎯 Modo: Simulação (Frontend Only)');
+      }
+    });
+
+    // 🛠️ FUNÇÕES ÚTEIS PARA DEBUG
+    window.debugRailway = function() {
+      console.log('🔍 Debug Railway:');
+      console.log(' - currentRailwayUrl:', currentRailwayUrl);
+      console.log(' - localStorage railwayUrl:', localStorage.getItem('railwayUrl'));
+      console.log(' - files:', files);
+    };
+
+    window.clearRailwayConfig = function() {
+      localStorage.removeItem('railwayUrl');
+      document.getElementById('railwayUrlInput').value = '';
+      currentRailwayUrl = null;
+      apiStatus.innerHTML = '<span style="color: orange;">🔧 Configuração resetada</span>';
+      logDebug('🗑️ Configuração Railway limpa');
+    };
   </script>
 </body>
 </html>
