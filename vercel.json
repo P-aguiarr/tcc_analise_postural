@@ -6,7 +6,11 @@
       "use": "@vercel/python"
     },
     {
-      "src": "site/api/auth/callback.js",
+      "src": "site/api/health.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "site/api/auth/callback.js", 
       "use": "@vercel/node"
     },
     {
@@ -25,7 +29,7 @@
   "routes": [
     {
       "src": "/api/health",
-      "dest": "/site/api/app.py"
+      "dest": "/site/api/health.js"
     },
     {
       "src": "/api/process-analysis",
