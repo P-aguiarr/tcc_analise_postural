@@ -1,4 +1,4 @@
-// api/health.js
+// site/api/health.js
 export default function handler(req, res) {
   // Configura CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
