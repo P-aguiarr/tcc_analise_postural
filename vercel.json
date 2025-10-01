@@ -1,31 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "site/api/*.py",
-      "use": "@vercel/python"
+  "functions": {
+    "site/api/app.py": {
+      "runtime": "python3.11",
+      "maxDuration": 30,
+      "memory": 1024,
+      "includeFiles": "site/api/**"
     },
-    {
-      "src": "site/api/auth/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "site/**/*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/**/*.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/**/*.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "site/img/**/*",
-      "use": "@vercel/static"
+    "site/api/auth/callback.js": {
+      "runtime": "nodejs18.x"
     }
-  ],
+  },
   "routes": [
     { "src": "/api/process-analysis", "dest": "/site/api/app.py", "methods": ["GET","POST","OPTIONS"] },
     { "src": "/api/analysis/(.*)", "dest": "/site/api/app.py", "methods": ["GET","OPTIONS"] },
@@ -45,15 +30,5 @@
     { "src": "/style.css", "dest": "/site/style.css" },
     { "src": "/img/(.*)", "dest": "/site/img/$1" },
     { "src": "/(.*)", "dest": "/site/index.html" }
-  ],
-  "functions": {
-    "site/api/app.py": {
-      "maxDuration": 30,
-      "memory": 1024,
-      "includeFiles": "site/api/**"
-    }
-  },
-  "env": {
-    "PYTHONPATH": "/var/task/site/api"
-  }
+  ]
 }
