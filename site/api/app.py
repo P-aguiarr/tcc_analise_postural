@@ -1,5 +1,5 @@
 # site/api/app.py
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import json
@@ -14,29 +14,25 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# 🔥🔥🔥 CORS CONFIGURADO PARA PERMITIR TUDO (PARA TESTE) 🔥🔥🔥
-CORS(app, origins="*")  # ⚠️ ISSO PERMITE QUALQUER DOMÍNIO ACESSAR
+# 🔥 CORS CONFIGURADO PARA O VERCEL 🔥
+CORS(app, origins=[
+    "https://ttc-analise-postural.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+])
 
 # Configurações
-UPLOAD_FOLDER = 'uploads'
-RESULTS_FOLDER = 'results'
+UPLOAD_FOLDER = '/tmp/uploads'  # 🔥 No Vercel usa /tmp
+RESULTS_FOLDER = '/tmp/results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
-@app.route('/api/process-analysis', methods=['POST', 'OPTIONS'])
+@app.route('/api/process-analysis', methods=['POST'])
 def process_analysis():
     try:
-        logger.info("🎬 ========== INICIANDO PROCESSAMENTO ==========")
+        logger.info("🎬 ========== INICIANDO PROCESSAMENTO NO VERCEL ==========")
         logger.info(f"📦 Headers: {dict(request.headers)}")
         logger.info(f"📦 Files: {list(request.files.keys())}")
-        
-        # 🔥 HANDLE CORS PREFLIGHT
-        if request.method == 'OPTIONS':
-            response = jsonify({'status': 'ok'})
-            response.headers.add('Access-Control-Allow-Origin', '*')
-            response.headers.add('Access-Control-Allow-Headers', '*')
-            response.headers.add('Access-Control-Allow-Methods', '*')
-            return response
         
         # Verificar se tem arquivos
         if not request.files:
@@ -63,14 +59,11 @@ def process_analysis():
             logger.info(f"💾 Salvando frontal em: {frontal_path}")
             frontal_file.save(frontal_path)
             
-            # Verificar se arquivo foi salvo
             if os.path.exists(frontal_path):
                 file_size = os.path.getsize(frontal_path)
                 logger.info(f"✅ Frontal salvo - Tamanho: {file_size} bytes")
                 uploaded_files.append('frontal')
                 file_paths['frontal'] = frontal_path
-            else:
-                logger.error("❌ Falha ao salvar arquivo frontal")
         
         # Processar vídeo transversal
         if transversal_file and transversal_file.filename:
@@ -78,19 +71,16 @@ def process_analysis():
             logger.info(f"💾 Salvando transversal em: {transversal_path}")
             transversal_file.save(transversal_path)
             
-            # Verificar se arquivo foi salvo
             if os.path.exists(transversal_path):
                 file_size = os.path.getsize(transversal_path)
                 logger.info(f"✅ Transversal salvo - Tamanho: {file_size} bytes")
                 uploaded_files.append('transversal')
                 file_paths['transversal'] = transversal_path
-            else:
-                logger.error("❌ Falha ao salvar arquivo transversal")
         
         logger.info(f"📋 Arquivos processados: {uploaded_files}")
         
-        # Executar análise Python (simulada por enquanto)
-        analysis_results = execute_python_analysis(analysis_id, file_paths)
+        # Simular análise (no Vercel não podemos rodar OpenCV)
+        analysis_results = simulate_python_analysis(analysis_id, file_paths)
         
         result_data = {
             'analysis_id': analysis_id,
@@ -100,66 +90,39 @@ def process_analysis():
             'videos': generate_video_urls(analysis_id, uploaded_files),
             'metrics': generate_metrics(uploaded_files),
             'debug_info': {
-                'upload_folder': UPLOAD_FOLDER,
-                'results_folder': RESULTS_FOLDER,
+                'environment': 'vercel',
                 'files_received': [f.filename for f in request.files.values() if f.filename],
                 'files_saved': uploaded_files
             }
         }
         
-        logger.info("🎉 PROCESSAMENTO CONCLUÍDO COM SUCESSO!")
+        logger.info("🎉 PROCESSAMENTO CONCLUÍDO NO VERCEL!")
         
-        response = jsonify({
+        return jsonify({
             'success': True,
             'analysisId': analysis_id,
             'data': result_data
         })
         
-        # 🔥 CORS HEADERS NA RESPOSTA
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
-        
     except Exception as e:
         logger.error(f"💥 ERRO NO PROCESSAMENTO: {str(e)}", exc_info=True)
-        response = jsonify({
+        return jsonify({
             'success': False, 
-            'error': str(e),
-            'debug_info': {
-                'exception_type': type(e).__name__,
-                'traceback': str(e.__traceback__)
-            }
-        })
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response, 500
+            'error': str(e)
+        }), 500
 
-def execute_python_analysis(analysis_id, file_paths):
-    """Executa o script Python de análise"""
-    try:
-        logger.info("🐍 INICIANDO EXECUÇÃO DO analise_completa.py")
-        
-        # Verificar se os arquivos existem
-        for file_type, path in file_paths.items():
-            if os.path.exists(path):
-                file_size = os.path.getsize(path)
-                logger.info(f"📁 {file_type}: {path} ({file_size} bytes)")
-            else:
-                logger.error(f"❌ Arquivo não encontrado: {path}")
-        
-        # Por enquanto só simular - depois integra com analise_completa.py
-        logger.info("🔧 Execução do Python simulada")
-        
-        return {
-            'status': 'simulated_success',
-            'message': 'Análise simulada - integrar com analise_completa.py depois',
-            'graphs_generated': ['ombros', 'quadris', 'coluna', 'assimetrias']
-        }
-        
-    except Exception as e:
-        logger.error(f"❌ ERRO na execução Python: {str(e)}")
-        return {'status': 'error', 'error': str(e)}
+def simulate_python_analysis(analysis_id, file_paths):
+    """Simula a análise Python (no Vercel não roda OpenCV)"""
+    logger.info("🔧 Simulando análise Python no Vercel")
+    
+    return {
+        'status': 'simulated_vercel',
+        'message': 'Análise simulada - Vercel não suporta OpenCV/MediaPipe',
+        'graphs_generated': ['ombros', 'quadris', 'coluna', 'assimetrias']
+    }
 
 def generate_video_urls(analysis_id, uploaded_files):
-    """Gera URLs para os vídeos processados"""
+    """Gera URLs para os vídeos"""
     videos = {}
     
     if 'frontal' in uploaded_files:
@@ -170,11 +133,10 @@ def generate_video_urls(analysis_id, uploaded_files):
         videos['transversal_original'] = f'/api/videos/{analysis_id}_transversal.mp4'
         videos['transversal_processed'] = f'/api/videos/{analysis_id}_transversal_processed.mp4'
     
-    logger.info(f"🎥 URLs geradas: {list(videos.keys())}")
     return videos
 
 def generate_metrics(uploaded_files):
-    """Gera métricas baseadas nos arquivos enviados"""
+    """Gera métricas simuladas"""
     metrics = {
         'posture_score': 78,
         'symmetry_score': 85,
@@ -183,25 +145,21 @@ def generate_metrics(uploaded_files):
     
     if 'transversal' in uploaded_files:
         metrics['gait_quality'] = 72
-        metrics['march_analysis'] = 75
     else:
         metrics['gait_quality'] = 0
-        metrics['march_analysis'] = 'Não disponível'
     
-    logger.info(f"📊 Métricas geradas: {metrics}")
     return metrics
 
 @app.route('/api/analysis/<analysis_id>')
 def get_analysis(analysis_id):
-    """Retorna dados da análise específica"""
+    """Retorna dados da análise"""
     try:
         logger.info(f"📂 Buscando análise: {analysis_id}")
         
-        # Simular dados
         analysis_data = {
             'analysis_id': analysis_id,
             'status': 'completed',
-            'uploaded_files': ['frontal'],  # Simulado
+            'uploaded_files': ['frontal'],
             'videos': {
                 'frontal_original': f'/api/videos/{analysis_id}_frontal.mp4',
                 'frontal_processed': f'/api/videos/{analysis_id}_frontal_processed.mp4'
@@ -211,64 +169,33 @@ def get_analysis(analysis_id):
                 'symmetry_score': 85,
                 'gait_quality': 0,
                 'overall_health': 80
-            },
-            'debug': {
-                'endpoint_called': f'/api/analysis/{analysis_id}',
-                'timestamp': datetime.now().isoformat()
             }
         }
         
-        response = jsonify(analysis_data)
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
+        return jsonify(analysis_data)
         
     except Exception as e:
         logger.error(f"❌ Erro ao buscar análise: {str(e)}")
-        response = jsonify({'error': str(e)})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response, 404
-
-@app.route('/api/videos/<video_name>')
-def get_video(video_name):
-    """Serve vídeos processados"""
-    try:
-        logger.info(f"🎬 Servindo vídeo: {video_name}")
-        response = send_from_directory(UPLOAD_FOLDER, video_name)
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
-    except Exception as e:
-        logger.error(f"❌ Erro ao servir vídeo {video_name}: {str(e)}")
-        response = jsonify({'error': f'Vídeo não encontrado: {video_name}'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response, 404
-
-@app.route('/api/debug/info')
-def debug_info():
-    """Endpoint para informações de debug"""
-    response = jsonify({
-        'upload_folder': UPLOAD_FOLDER,
-        'results_folder': RESULTS_FOLDER,
-        'upload_files': os.listdir(UPLOAD_FOLDER) if os.path.exists(UPLOAD_FOLDER) else [],
-        'results_files': os.listdir(RESULTS_FOLDER) if os.path.exists(RESULTS_FOLDER) else [],
-        'python_version': sys.version,
-        'working_directory': os.getcwd()
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
+        return jsonify({'error': str(e)}), 404
 
 @app.route('/api/health')
 def health_check():
     """Health check endpoint"""
-    response = jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
+    return jsonify({
+        'status': 'healthy', 
+        'environment': 'vercel',
+        'timestamp': datetime.now().isoformat()
+    })
+
+# 🔥 Handler para Vercel Functions
+def handler(request):
+    from flask import make_response
+    
+    with app.app_context():
+        response = make_response()
+        response = app.full_dispatch_request()
+        return response
 
 if __name__ == '__main__':
-    logger.info("🚀 Iniciando servidor Flask...")
-    logger.info(f"📁 Upload folder: {os.path.abspath(UPLOAD_FOLDER)}")
-    logger.info(f"📁 Results folder: {os.path.abspath(RESULTS_FOLDER)}")
-    logger.info(f"🐍 Python path: {sys.executable}")
-    logger.info("🔥 CORS CONFIGURADO: * (permitindo todos os domínios)")
-    
-    # 🔥 RODAR NA PORTA 5000 E ACEITAR CONEXÕES EXTERNAS
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    logger.info("🚀 Servidor Flask rodando localmente...")
+    app.run(debug=True, port=5000)
