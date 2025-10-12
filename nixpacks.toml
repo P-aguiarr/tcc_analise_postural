@@ -1,0 +1,8 @@
+[phases.setup]
+# Estas são as dependências de sistema necessárias para que MediaPipe/OpenCV funcionem corretamente.
+# Elas garantem que as bibliotecas C++ subjacentes sejam encontradas em tempo de execução.
+nixPkgs = ["python39", "gcc", "pkg-config", "ffmpeg", "gfortran", "libglvnd"]
+
+[start]
+# Com este comando, a sua aplicação irá usar a porta padrão 8080 do Railway.
+cmd = "gunicorn --bind 0.0.0.0:$PORT site.api.app:app"
