@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+
+[build.environment]
+LD_LIBRARY_PATH = "/opt/venv/lib"
+
+[deploy]
+startCommand = "python backend_app.py"
+
+[deploy.healthcheckPath]
+path = "/api/health"
