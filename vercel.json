@@ -2,10 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "site/api/health.js",
-      "use": "@vercel/node"
-    },
-    {
       "src": "site/**/*.html",
       "use": "@vercel/static"
     },
@@ -14,15 +10,15 @@
       "use": "@vercel/static"
     },
     {
+      "src": "site/**/*.js",
+      "use": "@vercel/static"
+    },
+    {
       "src": "site/img/**/*",
       "use": "@vercel/static"
     }
   ],
   "routes": [
-    {
-      "src": "/api/health",
-      "dest": "/site/api/health.js"
-    },
     {
       "src": "/",
       "dest": "/site/index.html"
@@ -56,24 +52,12 @@
       "dest": "/site/consulta.html"
     },
     {
-      "src": "/style.css",
-      "dest": "/site/style.css"
-    },
-    {
-      "src": "/img/(.*)",
-      "dest": "/site/img/$1"
+      "src": "/(.*\\.(css|js|html|png|jpg|jpeg|gif))",
+      "dest": "/site/$1"
     },
     {
       "src": "/(.*)",
       "dest": "/site/index.html"
     }
-  ],
-  "functions": {
-    "site/api/health.js": {
-      "includeFiles": "site/api/**"
-    }
-  },
-  "env": {
-    "PYTHON_VERSION": "null"
-  }
+  ]
 }
