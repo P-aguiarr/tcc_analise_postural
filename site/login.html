@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="landing-page">
-    <!-- NAVBAR -->
     <div class="navbar">
       <div class="frame-16">
         <p class="the-posture-lab">
@@ -22,36 +21,29 @@
       </div>
     </div>
 
-    <!-- CONTEÚDO LOGIN -->
     <div class="login-section">
       <p class="central-login">
         Entre na plataforma e descubra um mundo de possibilidades!
       </p>
       
-      <!-- Container para o botão do Google -->
       <div class="google-login-container">
-        <!-- Botão personalizado que o usuário vê -->
         <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
           <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
         </div>
         
-        <!-- Div onde o botão oficial do Google será renderizado (escondido) -->
         <div id="googleButton" style="display: none;"></div>
       </div>
       
-      <!-- Loading spinner -->
       <div class="loading" id="loadingSpinner">
         <div class="spinner"></div>
         <p>Processando login...</p>
       </div>
 
-      <!-- Mensagem de sucesso -->
       <div class="success-message" id="successMessage">
         <h3>✅ Login realizado com sucesso!</h3>
         <p>Redirecionando para a página principal...</p>
       </div>
 
-      <!-- Detalhes do erro -->
       <div class="error-details" id="errorDetails">
         <h3>❌ Erro no Login:</h3>
         <pre id="errorMessage">Nenhum detalhe disponível</pre>
@@ -59,10 +51,8 @@
       </div>
     </div>
     
-    <!-- IMAGEM DECORATIVA -->
     <img src="/img/Group%206.png" alt="Decoração" class="corner-image" />
 
-    <!-- FOOTER (IGUAL AO DA PÓS-LOGIN) -->
     <div class="footer">
       <div class="footer-links">
         <a href="#">Careers</a> | 
@@ -75,12 +65,16 @@
     </div>
   </div>
 
-  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
   <script>
-    // URL base da API
-    const API_BASE_URL = window.location.origin;
+    // 🔥 CORREÇÃO PRINCIPAL: FORÇAR A URL DO RAILWAY
+    // Substitua 'SUA_URL_PUBLICA_DO_RAILWAY' pelo domínio que você encontrou no painel!
+    // Ex: "https://tcc-analise-postural.up.railway.app"
+    const RAILWAY_BACKEND_URL = "https://tcc-analise-postural.up.railway.app";
+    
+    // Fallback: usar a URL do Vercel apenas para testes locais
+    const API_BASE_URL = RAILWAY_BACKEND_URL || window.location.origin;
     const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
 
     // Configuração do Google Sign-In
@@ -177,6 +171,7 @@
         localStorage.setItem('loginTime', new Date().getTime().toString());
         
         // 🔥 AGORA: Esperar a API completar antes de redirecionar
+        // O sendToAPI usará a URL CORRETA do RAILWAY
         await sendToAPI(response.credential, userData);
         
         // Se chegou aqui, a API foi bem-sucedida
@@ -241,23 +236,23 @@
     // Função para testar conexão com API
     async function testAPIConnection() {
       try {
-        console.log('Testando conexão com API:', API_AUTH_URL);
-        const response = await fetch(API_AUTH_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ test: true })
-        });
+        // Usar rota de healthcheck ou outra rota GET
+        const healthCheckUrl = `${API_BASE_URL}/api/health`; 
+        console.log('Testando conexão com API:', healthCheckUrl);
+        const response = await fetch(healthCheckUrl, { method: 'GET' });
+        
+        if (response.status !== 200) {
+           throw new Error(`Status ${response.status}. Servidor pode estar com erro.`);
+        }
         
         // Verificar se a resposta é JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Resposta não é JSON. Servidor pode estar com erro.');
+          throw new Error('Resposta não é JSON.');
         }
         
         const data = await response.json();
-        console.log('Teste de API:', data);
+        console.log('Teste de API (Healthcheck):', data);
         return data.success === true;
       } catch (error) {
         console.error('API não disponível:', error);
@@ -337,4 +332,4 @@
     window.testAPI = testAPI;
   </script>
 </body>
-</html> 
+</html>
