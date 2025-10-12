@@ -1,99 +1,116 @@
 # site/api/app.py
-from http.server import BaseHTTPRequestHandler
 import json
 import os
 import uuid
 from datetime import datetime
-import urllib.request
-import urllib.parse
+import requests # Usaremos a biblioteca 'requests' para o proxy (mais moderna que urllib)
+
+# Importações do Flask
+from flask import Flask, jsonify, request, abort, make_response
+from flask_cors import CORS
 
 # 🔥 URL DO SEU BACKEND (Render.com ou outro serviço)
-BACKEND_URL = "https://seu-backend.onrender.com"  # ← SUBSTITUA COM SUA URL
+# É crucial que esta URL esteja correta.
+BACKEND_URL = os.environ.get("BACKEND_URL", "https://seu-backend.onrender.com")
 
-class Handler(BaseHTTPRequestHandler):
+# 1. INICIALIZAR A APLICAÇÃO FLASK
+app = Flask(__name__)
+# Aplicar CORS globalmente, assim como o seu código original fazia
+CORS(app)
+
+# -----------------------------------------------------
+# FUNÇÃO CENTRAL DE PROXY (Encaminhamento)
+# -----------------------------------------------------
+
+def proxy_to_backend(endpoint, method, data=None, headers=None):
+    """Encaminha requisições para o backend real usando a biblioteca 'requests'."""
+    url = f"{BACKEND_URL}{endpoint}"
     
-    def set_cors_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.set_cors_headers()
-        self.end_headers()
-    
-    def do_GET(self):
-        if self.path.startswith('/api/analysis/'):
-            analysis_id = self.path.split('/')[-1]
-            self.proxy_to_backend('GET', f'/api/analysis/{analysis_id}')
-        elif self.path == '/api/health':
-            self.health_check()
-        else:
-            self.send_error(404, "Endpoint não encontrado")
-    
-    def do_POST(self):
-        if self.path == '/api/process-analysis':
-            self.proxy_to_backend('POST', '/api/process-analysis')
-        else:
-            self.send_error(404, "Endpoint não encontrado")
-    
-    def health_check(self):
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.set_cors_headers()
-        self.end_headers()
+    # Prepara os headers a enviar para o backend
+    proxy_headers = {
+        'Content-Type': request.headers.get('Content-Type', 'application/json'),
+        'User-Agent': 'Railway-Proxy/1.0',
+    }
+    # Adiciona/Substitui quaisquer headers passados
+    if headers:
+        proxy_headers.update(headers)
         
-        response = {
-            "success": True,
-            "message": "API Vercel está funcionando",
-            "backend_url": BACKEND_URL,
-            "timestamp": datetime.now().isoformat()
-        }
-        self.wfile.write(json.dumps(response).encode())
-    
-    def proxy_to_backend(self, method, endpoint):
-        """Encaminha requisições para o backend real"""
-        try:
-            print(f"🔀 Encaminhando {method} {endpoint} para backend...")
-            
-            # Ler dados da requisição original
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length) if content_length > 0 else None
-            
-            # Preparar requisição para o backend
-            backend_url = f"{BACKEND_URL}{endpoint}"
-            headers = {
-                'Content-Type': self.headers.get('Content-Type', 'application/json'),
-                'User-Agent': 'Vercel-Proxy/1.0'
-            }
-            
-            # Fazer requisição para o backend
-            req = urllib.request.Request(
-                backend_url,
-                data=post_data,
-                headers=headers,
-                method=method
-            )
-            
-            with urllib.request.urlopen(req) as response:
-                backend_data = response.read()
-                backend_status = response.getcode()
-                
-                print(f"✅ Backend respondeu: {backend_status}")
-                
-                # Repassar resposta do backend para o cliente
-                self.send_response(backend_status)
-                self.send_header('Content-Type', response.headers.get('Content-Type', 'application/json'))
-                self.set_cors_headers()
-                self.end_headers()
-                self.wfile.write(backend_data)
-                
-        except urllib.error.HTTPError as e:
-            print(f"❌ Erro no backend: {e.code} - {e.reason}")
-            self.send_error(e.code, f"Backend error: {e.reason}")
-        except Exception as e:
-            print(f"❌ Erro no proxy: {str(e)}")
-            self.send_error(500, f"Proxy error: {str(e)}")
+    print(f"🔀 Encaminhando {method} {url}...")
 
-def handler(request, context):
-    return Handler().handle_request(request)
+    try:
+        # Fazer a requisição para o backend
+        response = requests.request(
+            method=method,
+            url=url,
+            data=data,
+            headers=proxy_headers,
+            verify=True # Garantir segurança SSL
+        )
+        
+        print(f"✅ Backend respondeu: {response.status_code}")
+        
+        # Cria a resposta para o cliente com o conteúdo e status do backend
+        client_response = make_response(response.content, response.status_code)
+        
+        # Copia o Content-Type do backend
+        client_response.headers['Content-Type'] = response.headers.get('Content-Type', 'application/json')
+        
+        # O CORS já está a ser gerido pela extensão CORS, mas podemos adicionar outros headers se necessário
+        
+        return client_response
+
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ Erro no backend (HTTP): {e.response.status_code}")
+        abort(make_response(jsonify(message=f"Backend Error: {str(e)}"), e.response.status_code))
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Erro no proxy (Conexão): {str(e)}")
+        # Em caso de falha de conexão (503 Service Unavailable)
+        abort(make_response(jsonify(message=f"Proxy Connection Error: {str(e)}"), 503))
+
+
+# -----------------------------------------------------
+# ROTAS FLASK (Substituindo os métodos do_GET/do_POST)
+# -----------------------------------------------------
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """
+    Rota de Healthcheck. O Railway usa isto para verificar se a app está OK (Status 200).
+    """
+    return jsonify({
+        "success": True,
+        "message": "API Proxy Flask está funcionando",
+        "backend_url": BACKEND_URL,
+        "timestamp": datetime.now().isoformat()
+    }), 200 # Retorna 200 OK
+
+@app.route('/api/process-analysis', methods=['POST'])
+def process_analysis_route():
+    """Rota POST para encaminhar para /api/process-analysis."""
+    # O Flask cuida de obter o body (request.data)
+    return proxy_to_backend(
+        endpoint='/api/process-analysis',
+        method='POST',
+        data=request.data
+    )
+
+@app.route('/api/analysis/<analysis_id>', methods=['GET'])
+def get_analysis_route(analysis_id):
+    """Rota GET para /api/analysis/<id>."""
+    return proxy_to_backend(
+        endpoint=f'/api/analysis/{analysis_id}',
+        method='GET'
+    )
+
+# -----------------------------------------------------
+# COMANDO DE INICIALIZAÇÃO (NECESSÁRIO PARA TESTE LOCAL)
+# -----------------------------------------------------
+
+# Isto só será executado quando correr 'python app.py' localmente.
+# O Gunicorn (no Railway) irá ignorar esta parte.
+if __name__ == '__main__':
+    # O Gunicorn irá usar o 0.0.0.0 e a porta de ambiente
+    # Para testes locais, pode usar a porta 5000
+    print("⚠️ A rodar em modo de desenvolvimento. Use 'gunicorn' em produção.")
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
