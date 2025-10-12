@@ -16,8 +16,16 @@ BACKEND_URL = os.environ.get("BACKEND_URL", "https://seu-backend.onrender.com")
 
 # 1. INICIALIZAR A APLICAÇÃO FLASK
 app = Flask(__name__)
-# Aplicar CORS globalmente, assim como o seu código original fazia
-CORS(app)
+
+# 🔥 CORREÇÃO CRÍTICA (1): Configurar CORS para aceitar o domínio Vercel
+# Usaremos o domínio exato do seu log.
+# Adicione também http://localhost:5000 para testes locais no backend.
+CORS(app, resources={r"/*": {"origins": [
+    "https://ttc-analise-postural.vercel.app",  # Seu Frontend Vercel
+    "http://localhost:8080",                   # Localhost Vercel/Frontend
+    "http://localhost:5000",                   # Localhost Backend
+    "http://127.0.0.1:5000"                    # Fallback
+]}})
 
 # -----------------------------------------------------
 # FUNÇÃO CENTRAL DE PROXY (Encaminhamento)
@@ -95,8 +103,19 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     }), 200 # Retorna 200 OK
 
-# Note: O endpoint que você precisa para o seu frontend é provavelmente /api/analyze,
-# mas estou mantendo o nome /api/process-analysis que estava no seu snippet.
+# 🔥 CORREÇÃO CRÍTICA (2): ADICIONAR ROTA DE LOGIN
+@app.route('/api/auth/callback', methods=['POST'])
+def google_auth_callback_route():
+    """
+    Rota para receber o token do Google (via POST do Frontend) e encaminhar
+    para o Backend para validação.
+    """
+    return proxy_to_backend(
+        endpoint='/api/auth/callback',
+        method='POST',
+        data=request.data
+    )
+
 @app.route('/api/process-analysis', methods=['POST'])
 def process_analysis_route():
     """Rota POST para encaminhar para /api/process-analysis (ou /api/analyze)."""
