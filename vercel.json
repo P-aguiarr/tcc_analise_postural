@@ -19,26 +19,25 @@
     }
   ],
   "routes": [
-
     {
       "src": "/config",
-      "dest": "https://YOUR_RAILWAY_URL/config"
+      "dest": "https://tccanalisepostural-production.up.railway.app/config"
     },
     {
       "src": "/auth/callback",
-      "dest": "https://YOUR_RAILWAY_URL/auth/callback"
+      "dest": "https://tccanalisepostural-production.up.railway.app/auth/callback"
     },
     {
       "src": "/analyze",
-      "dest": "https://YOUR_RAILWAY_URL/analyze"
+      "dest": "https://tccanalisepostural-production.up.railway.app/analyze"
     },
     {
       "src": "/ping",
-      "dest": "https://YOUR_RAILWAY_URL/ping"
+      "dest": "https://tccanalisepostural-production.up.railway.app/ping"
     },
     {
       "src": "/analysis/(.*)",
-      "dest": "https://YOUR_RAILWAY_URL/analysis/$1"
+      "dest": "https://tccanalisepostural-production.up.railway.app/analysis/$1"
     },
     {
       "src": "/",
@@ -76,7 +75,6 @@
       "src": "/(.*\\.(css|js|html|png|jpg|jpeg|gif|ico))",
       "dest": "/site/$1"
     },
-    
     {
       "src": "/(.*)",
       "dest": "/site/login.html"
