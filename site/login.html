@@ -1,247 +1,229 @@
-<!DOCTYPE html> 
+<!DOCTYPE html> 
 <html lang="pt-br">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta charset="utf-8" />
-  <!-- A folha de estilo original é mantida para restaurar a aparência -->
-  <link rel="stylesheet" href="/style.css" />
-  <title>Login - The Posture Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <!-- A folha de estilo original é mantida para restaurar a aparência -->
+  <link rel="stylesheet" href="/style.css" />
+  <title>Login - The Posture Lab</title>
 
-  <!-- Script da Google Identity Services para SSO -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Script da Google Identity Services para SSO -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <div class="landing-page">
-    <!-- NAVBAR (Estrutura visual original preservada) -->
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
-        </div>
-      </div>
-    </div>
+  <div class="landing-page">
+    <!-- NAVBAR (Estrutura visual original preservada) -->
+    <div class="navbar">
+      <div class="frame-16">
+        <p class="the-posture-lab">
+          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+        </p>
+        <div class="frame-17">
+          <a href="/" class="text-wrapper-26">Home</a>
+          <a href="/login" class="text-wrapper-26">Login</a>
+          <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
+        </div>
+      </div>
+    </div>
 
-    <!-- CONTEÚDO LOGIN (Estrutura visual original preservada) -->
-    <div class="login-section">
-      <p class="central-login">
-        Entre na plataforma e descubra um mundo de possibilidades!
-      </p>
-      
-      <!-- Container para o botão do Google -->
-      <div class="google-login-container">
-        
-        <!-- Botão personalizado que o usuário vê (mantendo a referência /img/google.png) -->
-        <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
-          <!-- Assumindo que esta imagem define a estética visual que você deseja -->
-          <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
-        </div>
-        
-        <!-- Div onde o botão real do Google fica invisível, apenas para o script do Google -->
-        <div 
-          id="g_id_onload" 
-          data-client_id="G_CLIENT_ID_PLACEHOLDER"
-          data-context="signin"
-          data-ux_mode="popup"
-          data-callback="handleGoogleSignIn"
-          data-auto_prompt="false"
-          style="display: none;"
-        ></div>
-        
-      </div>
+    <!-- CONTEÚDO LOGIN (Estrutura visual original preservada) -->
+    <div class="login-section">
+      <p class="central-login">
+        Entre na plataforma e descubra um mundo de possibilidades!
+      </p>
+      
+      <!-- Container para o botão do Google -->
+      <div class="google-login-container">
+        
+        <!-- Botão personalizado que o usuário vê (mantendo a referência /img/google.png) -->
+        <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
+          <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
+        </div>
+        
+        <!-- 🚩 CORRIGIDO: Este elemento deve estar no HTML para que o GSI o encontre imediatamente. -->
+        <div 
+          id="g_id_onload" 
+          data-client_id="G_CLIENT_ID_PLACEHOLDER"
+          data-context="signin"
+          data-ux_mode="popup"
+          data-callback="handleGoogleSignIn"
+          data-auto_prompt="false"
+          style="display: none;"
+        ></div>
 
-      <!-- Mensagens de Feedback -->
-      <div id="loadingSpinner" style="display: none; color: #10B981; margin-top: 1rem;">
-        Carregando...
-      </div>
-      <div id="errorDetails" style="display: none; color: #EF4444; margin-top: 1rem; padding: 0.5rem; border: 1px solid #FCA5A5; background-color: #FEF2F2; border-radius: 8px;">
-        <p class="font-bold">Erro de Login:</p>
-        <p id="errorMessage"></p>
-        <button onclick="hideError()" style="margin-top: 0.5rem; background: none; border: none; color: #9CA3AF; cursor: pointer; text-decoration: underline;">Fechar</button>
-      </div>
-
-    </div>
-  </div>
-
-  <script type="module">
-    // ===============================================
-    // Configuração e Lógica de Autenticação (PRESERVADA)
-    // ===============================================
-    
-    // Importações do Firebase Auth e Firestore (Garantindo que a autenticação SSO funcione)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    // Variáveis Globais (Fornecidas pelo ambiente Canvas)
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-    
-    let app, auth, db;
-    let isAuthReady = false;
-
-    // Funções de UI
-    function showLoading() {
-      document.getElementById('loadingSpinner').style.display = 'block';
-      hideError();
-    }
-
-    function hideLoading() {
-      document.getElementById('loadingSpinner').style.display = 'none';
-    }
-
-    function showError(message) {
-      document.getElementById('errorMessage').textContent = message;
-      document.getElementById('errorDetails').style.display = 'block';
-    }
-    
-    function hideError() {
-      document.getElementById('errorDetails').style.display = 'none';
-    }
-
-    // Função de Redirecionamento Pós-Login
-    function redirectToApp() {
-      console.log("Redirecionando para a página principal...");
-      // Nota: Use window.location.href = '/' ou window.location.replace('/') 
-      // se precisar ir para outra página após o login.
-      // Por enquanto, apenas loga e mantém na página de login, já que o fluxo exato de app não foi fornecido.
-      // Se necessário, descomente a linha abaixo para redirecionar
-      // window.location.href = '/'; 
-    }
-
-    // 1. Inicialização do Firebase e Autenticação Inicial
-    async function authInit() {
-      try {
-        if (Object.keys(firebaseConfig).length === 0) {
-          console.error("Configuração do Firebase não encontrada.");
-          return;
-        }
-
-        // 1.1 Inicializa o App e Serviços
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        setLogLevel('Debug'); // Ativa logs do Firestore para debug
-        
-        // 1.2 Autenticação inicial com token customizado (ambiente Canvas)
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            console.log("Usuário autenticado:", user.uid);
-            // Se o usuário já está logado (por token inicial ou SSO), podemos redirecionar ou atualizar a UI.
-            // Para o contexto de uma página de login, se já logado, o ideal é redirecionar.
-            if (isAuthReady) {
-              redirectToApp();
-            }
-          } else {
-            console.log("Nenhum usuário logado. Pronto para login.");
-          }
-          isAuthReady = true;
-          hideLoading();
-        });
-
-        // Tenta fazer login com o token inicial fornecido pelo ambiente Canvas
-        if (initialAuthToken) {
-          showLoading();
-          await signInWithCustomToken(auth, initialAuthToken);
-          console.log("Login automático com token inicial bem-sucedido.");
-        } else {
-          console.log("Token de autenticação inicial não encontrado. Usuário deve fazer login.");
-        }
-        
-      } catch (error) {
-        console.error("Erro ao inicializar Firebase ou Autenticar:", error);
-        showError("Falha na inicialização da autenticação. Tente novamente.");
-        hideLoading();
-      }
-    }
-
-    // 2. Lógica de Callback do Google SSO
-    window.handleGoogleSignIn = async (response) => {
-      showLoading();
-      if (!auth) {
-        console.error("Firebase Auth não está inicializado.");
-        showError("O sistema de autenticação não está pronto. Tente novamente.");
-        hideLoading();
-        return;
-      }
-
-      try {
-        // Usa a credencial do Google para autenticar no Firebase
-        const credential = GoogleAuthProvider.credential(response.credential);
-        const result = await signInWithCredential(auth, credential);
-        
-        console.log("✅ Login com Google e Firebase bem-sucedido!", result.user);
-        hideLoading();
-        redirectToApp(); // Redireciona após o sucesso
-        
-      } catch (error) {
-        console.error("❌ Erro no signInWithCredential:", error);
-        // Códigos de erro específicos do Firebase
-        let errorMessage = "Erro desconhecido ao processar o login com Google.";
-        if (error.code) {
-          errorMessage = `Erro de Autenticação (${error.code}): ${error.message}`;
-        }
-        showError(errorMessage);
-        hideLoading();
-      }
-    };
-
-    // 3. Ativar o Botão de Login Personalizado
-    function setupCustomButton() {
-      const customButton = document.getElementById('customGoogleButton');
-      if (customButton) {
-        // Encontra o botão real e invisível do Google dentro do container
-        const googleButtonContainer = document.querySelector('.google-login-container .g_id_signin');
-        
-        if (googleButtonContainer) {
-          customButton.addEventListener('click', () => {
-            // Simula um clique no botão invisível real do Google
-            googleButtonContainer.click();
-          });
-        } else {
-          // Se o botão real ainda não carregou, tentamos encontrá-lo ou logamos um erro.
-          // Adicionamos um pequeno timeout para dar tempo ao GSI para renderizar (pode ser necessário)
-          setTimeout(() => {
-              const googleButtonContainerRetry = document.querySelector('.google-login-container .g_id_signin');
-              if (googleButtonContainerRetry) {
-                  customButton.addEventListener('click', () => {
-                      googleButtonContainerRetry.click();
-                  });
-              } else {
-                  console.error("Botão de login do Google (g_id_signin) não encontrado após o carregamento.");
-                  customButton.addEventListener('click', () => {
-                      showError("O serviço de login do Google não carregou corretamente. Recarregue a página.");
-                  });
-              }
-          }, 500); // 500ms de espera
-        }
-      }
-      
-      // Adiciona o botão real (invisível) do Google para que o serviço GSI o inicialize
-      document.querySelector('.google-login-container').innerHTML += `
-        <div class="g_id_signin" 
-             data-type="icon" 
-             data-size="large" 
-             data-theme="outline" 
-             data-text="signin_with" 
+        <!-- 🚩 CORRIGIDO: O placeholder do botão real do Google (invisível) foi adicionado permanentemente. -->
+        <div class="g_id_signin" 
+             data-type="icon" 
+             data-size="large" 
+             data-theme="outline" 
+             data-text="signin_with" 
              data-shape="rectangular"
              style="display: none;"
         ></div>
-      `;
-    }
+      </div>
 
-    // Início da Aplicação
-    window.onload = () => {
-      authInit();
-      setupCustomButton();
-      // Oculta o loading inicial (se necessário)
-      hideLoading(); 
-    };
-  </script>
+      <!-- Mensagens de Feedback -->
+      <div id="loadingSpinner" style="display: none; color: #10B981; margin-top: 1rem;">
+        Carregando...
+      </div>
+      <div id="errorDetails" style="display: none; color: #EF4444; margin-top: 1rem; padding: 0.5rem; border: 1px solid #FCA5A5; background-color: #FEF2F2; border-radius: 8px;">
+        <p class="font-bold">Erro de Login:</p>
+        <p id="errorMessage"></p>
+        <button onclick="hideError()" style="margin-top: 0.5rem; background: none; border: none; color: #9CA3AF; cursor: pointer; text-decoration: underline;">Fechar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    // ===============================================
+    // Configuração e Lógica de Autenticação (PRESERVADA)
+    // ===============================================
+    
+    // Importações do Firebase Auth e Firestore
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Variáveis Globais (Fornecidas pelo ambiente Canvas)
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    
+    let app, auth, db;
+    let isAuthReady = false;
+
+    // Funções de UI
+    function showLoading() {
+      document.getElementById('loadingSpinner').style.display = 'block';
+      hideError();
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingSpinner').style.display = 'none';
+    }
+
+    function showError(message) {
+      document.getElementById('errorMessage').textContent = message;
+      document.getElementById('errorDetails').style.display = 'block';
+    }
+    
+    function hideError() {
+      document.getElementById('errorDetails').style.display = 'none';
+    }
+
+    // Função de Redirecionamento Pós-Login
+    function redirectToApp() {
+      console.log("Redirecionando para a página principal...");
+      // window.location.href = '/'; 
+    }
+
+    // 1. Inicialização do Firebase e Autenticação Inicial
+    async function authInit() {
+      try {
+        if (Object.keys(firebaseConfig).length === 0) {
+          console.error("Configuração do Firebase não encontrada.");
+          return;
+        }
+
+        // 1.1 Inicializa o App e Serviços
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        setLogLevel('Debug'); // Ativa logs do Firestore para debug
+        
+        // 1.2 Autenticação inicial com token customizado (ambiente Canvas)
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            console.log("Usuário autenticado:", user.uid);
+            if (isAuthReady) {
+              redirectToApp();
+            }
+          } else {
+            console.log("Nenhum usuário logado. Pronto para login.");
+          }
+          isAuthReady = true;
+          hideLoading();
+        });
+
+        // Tenta fazer login com o token inicial fornecido pelo ambiente Canvas
+        if (initialAuthToken) {
+          showLoading();
+          await signInWithCustomToken(auth, initialAuthToken);
+          console.log("Login automático com token inicial bem-sucedido.");
+        } else {
+          console.log("Token de autenticação inicial não encontrado. Usuário deve fazer login.");
+        }
+        
+      } catch (error) {
+        console.error("Erro ao inicializar Firebase ou Autenticar:", error);
+        showError("Falha na inicialização da autenticação. Tente novamente.");
+        hideLoading();
+      }
+    }
+
+    // 2. Lógica de Callback do Google SSO
+    window.handleGoogleSignIn = async (response) => {
+      showLoading();
+      if (!auth) {
+        console.error("Firebase Auth não está inicializado.");
+        showError("O sistema de autenticação não está pronto. Tente novamente.");
+        hideLoading();
+        return;
+      }
+
+      try {
+        // Usa a credencial do Google para autenticar no Firebase
+        const credential = GoogleAuthProvider.credential(response.credential);
+        const result = await signInWithCredential(auth, credential);
+        
+        console.log("✅ Login com Google e Firebase bem-sucedido!", result.user);
+        hideLoading();
+        redirectToApp(); // Redireciona após o sucesso
+        
+      } catch (error) {
+        console.error("❌ Erro no signInWithCredential:", error);
+        // Códigos de erro específicos do Firebase
+        let errorMessage = "Erro desconhecido ao processar o login com Google.";
+        if (error.code) {
+          errorMessage = `Erro de Autenticação (${error.code}): ${error.message}`;
+        }
+        showError(errorMessage);
+        hideLoading();
+      }
+    };
+
+    // 3. Ativar o Botão de Login Personalizado
+    function setupCustomButton() {
+      const customButton = document.getElementById('customGoogleButton');
+      if (customButton) {
+        // 🚩 CORREÇÃO: O botão real do Google já está no HTML (g_id_signin).
+        // Apenas precisamos de um evento de click para disparar o clique no elemento invisível.
+        const googleButtonContainer = document.querySelector('.google-login-container .g_id_signin');
+        
+        if (googleButtonContainer) {
+          customButton.addEventListener('click', () => {
+            // Simula um clique no botão invisível real do Google
+            googleButtonContainer.click();
+            console.log("Clique no botão Google real disparado.");
+          });
+        } else {
+          // Se falhar, registra um erro para o usuário
+          console.error("Erro: Botão de login do Google (g_id_signin) não foi encontrado. O GSI pode ter falhado ao carregar.");
+          customButton.addEventListener('click', () => {
+             showError("O serviço de login do Google não carregou corretamente. Recarregue a página.");
+          });
+        }
+      }
+    }
+
+    // Início da Aplicação
+    window.onload = () => {
+      authInit();
+      setupCustomButton();
+      // Oculta o loading inicial (se necessário)
+      hideLoading(); 
+    };
+  </script>
 </body>
 </html>
