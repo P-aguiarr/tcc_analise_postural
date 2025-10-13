@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="/style.css" />
   <title>Login - The Posture Lab</title>
 
-  <!-- Script da Google Identity Services para SSO (Mantido no head, async defer) -->
+  <!-- Script da Google Identity Services para SSO (CRÍTICO: mantido no head) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <!-- A função checkUserAndRedirect é mantida para verificar login existente -->
@@ -32,25 +32,33 @@
         Entre na plataforma e descubra um mundo de possibilidades!
       </p>
 
-      <!-- Container para o botão do Google -->
+      <!-- Container para o botão do Google (Com lógica de imagem customizada) -->
       <div class="google-login-container">
         
-        <!-- CRÍTICO: GSI renderiza o botão oficial imediatamente para máxima confiabilidade. -->
+        <!-- 1. IMAGEM CUSTOMIZADA QUE O USUÁRIO CLICA -->
+        <div id="customGoogleButton" 
+             style="cursor: pointer; display: inline-block;" 
+             onclick="triggerGoogleSignIn()">
+          <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
+        </div>
+        
+        <!-- 2. BOTÃO OFICIAL GSI (ESCONDIDO) PARA ACIONAR O FLUXO -->
         <div id="g_id_onload"
              data-client_id="584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com"
              data-context="signin"
              data-ux_mode="popup"
              data-callback="handleCredentialResponse"
              data-auto_prompt="false"
-             data-type="standard"       
-             data-size="large"          
-             data-theme="outline"       
-             data-text="signin_with"    
-             data-shape="rectangular"   
+             data-type="standard"
+             data-size="large"
+             data-theme="outline"
+             data-text="signin_with"
+             data-shape="rectangular"
              data-logo_alignment="left"
-             >
+             style="display: none; visibility: hidden;"> 
+             <!-- O ID CRÍTICO AQUI é 'g_id_onload'. O GSI renderiza um botão interno com ID 'gsi-button' aqui. -->
         </div>
-        
+
       </div>
 
       <!-- Área de Feedback -->
@@ -111,6 +119,28 @@
     }
 
     // ==========================================================
+    // LÓGICA DE CLIQUE CUSTOMIZADO (COM DELAY DE SEGURANÇA)
+    // ==========================================================
+    function triggerGoogleSignIn() {
+        showLoading();
+        
+        // CRÍTICO: Delay de 100ms para garantir que o GSI terminou de injetar o iframe
+        // e o botão interno (gsi-button) está pronto, mitigando o erro de aba anônima.
+        setTimeout(() => {
+            // O GSI injeta um botão interno com ID "gsi-button" dentro do container 'g_id_onload'.
+            const gsiButton = document.getElementById('gsi-button');
+            
+            if (gsiButton) {
+                console.log('Botão GSI interno encontrado, simulando clique...');
+                gsiButton.click();
+            } else {
+                console.error('O serviço de login do Google não está pronto. O botão interno não foi encontrado.');
+                showError('O serviço de login do Google não está pronto. Tente recarregar a página ou verificar o console.');
+            }
+        }, 100); 
+    }
+
+    // ==========================================================
     // REDIRECIONAMENTO DE PRÉ-LOGIN
     // ==========================================================
     function checkUserAndRedirect() {
@@ -168,6 +198,7 @@
         const data = await apiResponse.json();
 
         if (data.success) {
+          // Os dados do usuário são retornados pelo seu callback.js
           localStorage.setItem('user', JSON.stringify(data.user));
           localStorage.setItem('loginTime', new Date().getTime().toString());
           
@@ -187,7 +218,6 @@
         console.error('❌ Erro ao comunicar com o servidor de callback:', error);
         showError('Não foi possível se conectar com o servidor para finalizar o login.');
       } finally {
-        // Garantir que o spinner desapareça, independentemente do sucesso ou falha
         hideLoading();
       }
     }
@@ -198,13 +228,13 @@
     // ==========================================================
     async function testAPIConnection() {
       try {
-        const response = await fetch(`${RAILWAY_API_BASE_URL}/ping`); 
+        // Rota de Healthcheck do seu backend Flask (app.py)
+        const response = await fetch(`${RAILWAY_API_BASE_URL}/api/health`); 
         // Retorna true se o status for 200-299
         return response.ok; 
       } catch (error) {
         // Erro de rede/CORS
         console.error('Erro de rede ou CORS ao tentar conectar com a API Railway:', error);
-        // Lançamos o erro para ser capturado no .catch() de testAPI()
         throw new Error('Falha de rede (CORS?) ao tentar acessar a API Railway. Verifique o console.');
       }
     }
@@ -216,7 +246,7 @@
         const available = await testAPIConnection();
         
         if (available) {
-          showSuccess('✅ API Railway disponível e a rota /ping funciona!');
+          showSuccess('✅ API Railway disponível e a rota /api/health funciona!');
         } else {
           // Se não estiver OK, mas sem erro de rede (ex: status 404, 500)
           showError('❌ Conexão estabelecida, mas a API não respondeu OK (Verifique 404/500 no console).');
@@ -234,6 +264,7 @@
     window.handleCredentialResponse = handleCredentialResponse;
     window.checkUserAndRedirect = checkUserAndRedirect;
     window.testAPI = testAPI;
+    window.triggerGoogleSignIn = triggerGoogleSignIn;
   </script>
 </body>
 </html>
