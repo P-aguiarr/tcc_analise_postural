@@ -84,7 +84,7 @@
                 const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
                 const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`;
                 
-                // MUDANÇA: O atributo onerror foi removido para não exibir mensagens feias ao usuário.
+                // MENSAGEM DE ERRO REMOVIDA: Usamos a tag <video> sem onerror.
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
@@ -147,7 +147,6 @@
                 
                 // Armazena os dados globalmente
                 currentAnalysisData = apiResponse.data.temporal_data_frontal;
-                // Verifica se há dados suficientes para plotar os gráficos (motivo de você ver menos gráficos)
                 const validFrames = currentAnalysisData ? currentAnalysisData.filter(d => d.angulo_ombro_esquerdo != null).length : 0;
 
                 if (currentAnalysisData && validFrames > 5) {
@@ -159,7 +158,7 @@
                      // Exibe aviso se o processamento não gerou dados suficientes
                      loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
                         <h2 class="font-bold text-xl">Análise com Baixa Detecção</h2>
-                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo. Verifique se o vídeo processado (com landmarks) está sendo gerado.</p></div>`;
+                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo. Se o vídeo original não reproduzir por completo, o processamento pode ter sido interrompido.</p></div>`;
                 }
             }
             
