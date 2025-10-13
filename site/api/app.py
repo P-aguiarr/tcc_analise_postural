@@ -16,20 +16,15 @@ import json
 app = Flask(__name__)
 
 # CONFIGURAÇÃO DO CORS
-CORS(app, resources={r"/api/*": {"origins": [
-    "https://ttc-analise-postural.vercel.app",
-    "http://localhost:8080", "http://127.0.0.1:5000", "http://localhost:5000"
-], "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
+CORS(app, resources={r"/api/*": {"origins": "https://ttc-analise-postural.vercel.app"}})
 
-# Diretório para salvar os resultados temporários
+# Diretórios para salvar os resultados temporários
 RESULT_DIR = "/tmp/analysis_results"
-VIDEO_DIR = "/tmp/analysis_videos" # Diretório para vídeos processados
-if not os.path.exists(RESULT_DIR):
-    os.makedirs(RESULT_DIR)
-if not os.path.exists(VIDEO_DIR):
-    os.makedirs(VIDEO_DIR)
+VIDEO_DIR = "/tmp/analysis_videos"
+if not os.path.exists(RESULT_DIR): os.makedirs(RESULT_DIR)
+if not os.path.exists(VIDEO_DIR): os.makedirs(VIDEO_DIR)
 
-print("✅ Backend Definitivo com Health Check - Pronto para Análise!")
+print("✅ Backend Definitivo - Pronto para Análise!")
 
 @app.before_request
 def handle_options_request():
@@ -38,7 +33,7 @@ def handle_options_request():
         return make_response('', 204, headers)
 
 # =================================================================
-# FUNÇÕES DE ANÁLISE POSTURAL (COMPLETAS)
+# FUNÇÕES DE ANÁLISE POSTURAL
 # =================================================================
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
@@ -58,20 +53,15 @@ def get_landmark_coords(landmarks, landmark_enum, shape):
 
 def analyze_video_complete(video_path, output_video_path):
     cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened(): raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
+    if not cap.isOpened(): raise IOError(f"Não foi possível abrir: {video_path}")
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if fps == 0: fps = 30
-    
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30
     width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
 
     temporal_data = []
     frame_count = 0
-    total_distance = 0
-    last_hip_center_x = None
-
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
             ret, frame = cap.read()
@@ -86,17 +76,21 @@ def analyze_video_complete(video_path, output_video_path):
                 points = {lm: get_landmark_coords(landmarks, lm, shape) for lm in mp_pose.PoseLandmark}
                 
                 try:
-                    if all(points.get(p) for p in [mp_pose.PoseLandmark.LEFT_HIP, mp_pose.PoseLandmark.LEFT_SHOULDER, mp_pose.PoseLandmark.LEFT_ELBOW]):
-                        frame_data["angulo_ombro_esquerdo"] = calcular_angulo(points[mp_pose.PoseLandmark.LEFT_HIP], points[mp_pose.PoseLandmark.LEFT_SHOULDER], points[mp_pose.PoseLandmark.LEFT_ELBOW])
-                    if all(points.get(p) for p in [mp_pose.PoseLandmark.RIGHT_HIP, mp_pose.PoseLandmark.RIGHT_SHOULDER, mp_pose.PoseLandmark.RIGHT_ELBOW]):
-                        frame_data["angulo_ombro_direito"] = calcular_angulo(points[mp_pose.PoseLandmark.RIGHT_HIP], points[mp_pose.PoseLandmark.RIGHT_SHOULDER], points[mp_pose.PoseLandmark.RIGHT_ELBOW])
-                    # (Adicionar validações similares para outros ângulos se necessário)
+                    # Tenta calcular todos os pontos. Falhas são ignoradas para não quebrar o processo.
+                    if all(points.get(p) for p in [mp_pose.PoseLandmark.LEFT_HIP, mp_pose.PoseLandmark.LEFT_SHOULDER, mp_pose.PoseLandmark.LEFT_KNEE]):
+                        frame_data["angulo_quadril_esquerdo"] = calcular_angulo(points[mp_pose.PoseLandmark.LEFT_SHOULDER], points[mp_pose.PoseLandmark.LEFT_HIP], points[mp_pose.PoseLandmark.LEFT_KNEE])
+                    if all(points.get(p) for p in [mp_pose.PoseLandmark.RIGHT_HIP, mp_pose.PoseLandmark.RIGHT_SHOULDER, mp_pose.PoseLandmark.RIGHT_KNEE]):
+                        frame_data["angulo_quadril_direito"] = calcular_angulo(points[mp_pose.PoseLandmark.RIGHT_SHOULDER], points[mp_pose.PoseLandmark.RIGHT_HIP], points[mp_pose.PoseLandmark.RIGHT_KNEE])
                     
-                    frame_data["angulo_joelho_esquerdo"] = calcular_angulo(points[mp_pose.PoseLandmark.LEFT_HIP], points[mp_pose.PoseLandmark.LEFT_KNEE], points[mp_pose.PoseLandmark.LEFT_ANKLE])
-                    frame_data["angulo_joelho_direito"] = calcular_angulo(points[mp_pose.PoseLandmark.RIGHT_HIP], points[mp_pose.PoseLandmark.RIGHT_KNEE], points[mp_pose.PoseLandmark.RIGHT_ANKLE])
+                    mid_shoulder = np.mean([points[mp_pose.PoseLandmark.LEFT_SHOULDER], points[mp_pose.PoseLandmark.RIGHT_SHOULDER]], axis=0)
+                    mid_hip = np.mean([points[mp_pose.PoseLandmark.LEFT_HIP], points[mp_pose.PoseLandmark.RIGHT_HIP]], axis=0)
+                    if all(p is not None for p in [mid_shoulder, mid_hip, points[mp_pose.PoseLandmark.NOSE]]):
+                         frame_data["angulo_coluna_cervical"] = calcular_angulo(mid_hip, mid_shoulder, points[mp_pose.PoseLandmark.NOSE])
+
                     frame_data["assimetria_ombros_metros"] = abs(points[mp_pose.PoseLandmark.LEFT_SHOULDER][1] - points[mp_pose.PoseLandmark.RIGHT_SHOULDER][1]) / height
-                except (TypeError, IndexError):
-                    pass # Ignora o cálculo do frame se algum ponto chave estiver faltando
+                    frame_data["LEFT_HIP_y_metros"] = points[mp_pose.PoseLandmark.LEFT_HIP][1] / height
+                except (TypeError, IndexError, KeyError):
+                    pass 
 
                 mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
             
@@ -113,60 +107,75 @@ def analyze_video_complete(video_path, output_video_path):
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Endpoint de health check para o Railway."""
-    return jsonify({"status": "ok", "message": "Serviço está funcionando"}), 200
+    return jsonify({"status": "ok"}), 200
 
 @app.route('/api/process-analysis', methods=['POST'])
 def process_analysis_route():
     analysis_id = str(uuid.uuid4())
-    video_path = None
+    frontal_video_path, transversal_video_path = None, None
     try:
         if 'frontalImage' not in request.files: return jsonify({"success": False, "error": "'frontalImage' é obrigatório."}), 400
-        video_file = request.files['frontalImage']
-        ext = os.path.splitext(video_file.filename)[1] or '.mp4'
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as temp_file:
-            video_path = temp_file.name
-            video_file.save(video_path)
+        # Processa vídeo frontal
+        frontal_file = request.files['frontalImage']
+        ext_f = os.path.splitext(frontal_file.filename)[1] or '.mp4'
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext_f) as temp_f:
+            frontal_video_path = temp_f.name
+            frontal_file.save(frontal_video_path)
+        output_frontal_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4")
+        temporal_data_frontal = analyze_video_complete(frontal_video_path, output_frontal_video_path)
 
-        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}.mp4")
-        temporal_data = analyze_video_complete(video_path, output_video_path)
+        # Processa vídeo transversal se existir
+        temporal_data_transversal = None
+        if 'transversalImage' in request.files:
+            transversal_file = request.files['transversalImage']
+            ext_t = os.path.splitext(transversal_file.filename)[1] or '.mp4'
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext_t) as temp_t:
+                transversal_video_path = temp_t.name
+                transversal_file.save(transversal_video_path)
+            output_transversal_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_transversal.mp4")
+            temporal_data_transversal = analyze_video_complete(transversal_video_path, output_transversal_video_path)
 
-        full_result = { "success": True, "analysis_id": analysis_id, "data": { "temporal_data": temporal_data } }
+        full_result = { 
+            "success": True, "analysis_id": analysis_id, 
+            "data": { 
+                "temporal_data_frontal": temporal_data_frontal,
+                "temporal_data_transversal": temporal_data_transversal
+            } 
+        }
         
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         with open(result_filepath, 'w') as f: json.dump(full_result, f)
         
-        print(f"✅ Análise {analysis_id} concluída. Dados e vídeo salvos.")
+        print(f"✅ Análise {analysis_id} concluída. Dados e vídeos salvos.")
         return jsonify({"success": True, "analysis_id": analysis_id})
         
     except Exception as e:
         print(f"❌ Erro na análise: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
     finally:
-        if video_path and os.path.exists(video_path): os.unlink(video_path)
+        if frontal_video_path and os.path.exists(frontal_video_path): os.unlink(frontal_video_path)
+        if transversal_video_path and os.path.exists(transversal_video_path): os.unlink(transversal_video_path)
 
 @app.route('/api/analysis/<analysis_id>', methods=['GET'])
 def get_analysis_route(analysis_id):
+    # ... (código mantido igual)
     try:
         if '..' in analysis_id or '/' in analysis_id: return jsonify({"success": False, "error": "ID inválido."}), 400
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         if not os.path.exists(result_filepath): return jsonify({"success": False, "error": "Análise não encontrada."}), 404
         with open(result_filepath, 'r') as f: data = json.load(f)
         return jsonify(data)
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route('/api/video/<analysis_id>', methods=['GET'])
-def get_video_route(analysis_id):
+@app.route('/api/video/<video_filename>', methods=['GET'])
+def get_video_route(video_filename):
+    # ... (código mantido igual)
     try:
-        if '..' in analysis_id or '/' in analysis_id: return "ID inválido", 400
-        video_filename = f"{analysis_id}.mp4"
+        if '..' in video_filename or '/' in video_filename: return "Nome de arquivo inválido", 400
         return send_from_directory(VIDEO_DIR, video_filename, as_attachment=False)
-    except FileNotFoundError:
-        return "Vídeo não encontrado.", 404
-    except Exception as e:
-        return str(e), 500
+    except FileNotFoundError: return "Vídeo não encontrado.", 404
+    except Exception as e: return str(e), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
