@@ -1,31 +1,36 @@
-# app.py (Proxy) - CORRIGIDO
+# app.py (Proxy) - VERSÃO FINAL COM FIX DE CORS REFORÇADO E ROTA DE LOGIN
+
 import json
 import os
 import uuid
 from datetime import datetime
-import requests # Usaremos a biblioteca 'requests' para o proxy (mais moderna que urllib)
+import requests 
 
 # Importações do Flask
 from flask import Flask, jsonify, request, abort, make_response
 from flask_cors import CORS
 
-# 🔥 URL DO SEU BACKEND (Railway/Render.com ou outro serviço)
-# É crucial que esta URL esteja correta e acessível.
-# No Railway, esta variável deve ser configurada na seção "Variables" do serviço.
-BACKEND_URL = os.environ.get("BACKEND_URL", "https://seu-backend.onrender.com")
+# 🔥 URL DO SEU BACKEND DE ANÁLISE (O servidor que realmente processa o login/análise)
+# CERTIFIQUE-SE de que esta variável está configurada no painel do Railway
+# ou que o fallback (se usar) é o endereço correto.
+BACKEND_URL = os.environ.get("BACKEND_URL", "https://seu-backend-de-analise.com")
 
 # 1. INICIALIZAR A APLICAÇÃO FLASK
 app = Flask(__name__)
 
-# 🔥 CORREÇÃO CRÍTICA (1): Configurar CORS para aceitar o domínio Vercel
-# Usaremos o domínio exato do seu log.
-# Adicione também http://localhost:5000 para testes locais no backend.
+# 🔥 CORREÇÃO CRÍTICA DO CORS:
+# Configuração super-reforçada para aceitar seu Frontend Vercel
+# Isto garante que o preflight OPTIONS (onde o erro ocorria) seja permitido.
 CORS(app, resources={r"/*": {"origins": [
-    "https://ttc-analise-postural.vercel.app",  # Seu Frontend Vercel
-    "http://localhost:8080",                   # Localhost Vercel/Frontend
-    "http://localhost:5000",                   # Localhost Backend
-    "http://127.0.0.1:5000"                    # Fallback
-]}})
+    "https://ttc-analise-postural.vercel.app",  # SEU DOMÍNIO VERCEL (Exato)
+    "http://localhost:8080",                   # Para desenvolvimento local do Frontend
+    "http://localhost:5000",                   # Para desenvolvimento local do Proxy/Backend
+    "http://127.0.0.1:5000"                    
+], 
+"methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Incluir OPTIONS é CRÍTICO para CORS
+"allow_headers": ["Content-Type", "Authorization"], 
+"supports_credentials": True 
+}})
 
 # -----------------------------------------------------
 # FUNÇÃO CENTRAL DE PROXY (Encaminhamento)
@@ -37,10 +42,16 @@ def proxy_to_backend(endpoint, method, data=None, headers=None):
     
     # Prepara os headers a enviar para o backend
     proxy_headers = {
+        # Mantém o Content-Type original do cliente se ele veio
         'Content-Type': request.headers.get('Content-Type', 'application/json'),
         'User-Agent': 'Railway-Proxy/1.0',
     }
-    # Adiciona/Substitui quaisquer headers passados
+    
+    # Copia o header de Authorization se existir, necessário para autenticação
+    if 'Authorization' in request.headers:
+        proxy_headers['Authorization'] = request.headers['Authorization']
+
+    # Adiciona/Substitui quaisquer headers adicionais passados
     if headers:
         proxy_headers.update(headers)
         
@@ -52,16 +63,16 @@ def proxy_to_backend(endpoint, method, data=None, headers=None):
             method=method,
             url=url,
             headers=proxy_headers,
-            data=data, # O corpo da requisição POST/PUT
+            # Se a requisição for GET, data é None. Se for POST/PUT, usa request.data
+            data=request.data if method in ['POST', 'PUT'] else None,
             timeout=30 # Timeout para evitar requisições presas
         )
 
         # Criar a resposta do Flask com o conteúdo e status do backend
         flask_response = make_response(response.content, response.status_code)
         
-        # Copia todos os headers do backend para o cliente (incluindo CORS)
+        # Copia todos os headers do backend para o cliente
         for key, value in response.headers.items():
-            # Evitar headers que o Flask ou o Gunicorn podem querer gerenciar
             if key.lower() not in ['content-encoding', 'transfer-encoding', 'content-length']:
                 flask_response.headers[key] = value
 
@@ -80,16 +91,16 @@ def proxy_to_backend(endpoint, method, data=None, headers=None):
 
 
 # -----------------------------------------------------
-# ROTAS DO PROXY (Rotas configuradas pelo seu frontend)
+# ROTAS DO PROXY
 # -----------------------------------------------------
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """
-    Rota de Healthcheck. O Railway usa isto para verificar se a app está OK (Status 200).
+    Rota de Healthcheck.
     """
-    # Adiciona um teste simples de conexão com o backend
     try:
+        # Testa a conexão com o backend real
         requests.get(f"{BACKEND_URL}/api/health", timeout=5)
         backend_status = "ok"
     except:
@@ -101,14 +112,13 @@ def health_check():
         "backend_url": BACKEND_URL,
         "backend_status": backend_status,
         "timestamp": datetime.now().isoformat()
-    }), 200 # Retorna 200 OK
+    }), 200 
 
-# 🔥 CORREÇÃO CRÍTICA (2): ADICIONAR ROTA DE LOGIN
+# 🔥 ROTA CRÍTICA DE LOGIN (Agora presente e esperando POST)
 @app.route('/api/auth/callback', methods=['POST'])
 def google_auth_callback_route():
     """
-    Rota para receber o token do Google (via POST do Frontend) e encaminhar
-    para o Backend para validação.
+    Recebe o token do Google (via POST do Frontend) e encaminha para o Backend.
     """
     return proxy_to_backend(
         endpoint='/api/auth/callback',
@@ -118,10 +128,9 @@ def google_auth_callback_route():
 
 @app.route('/api/process-analysis', methods=['POST'])
 def process_analysis_route():
-    """Rota POST para encaminhar para /api/process-analysis (ou /api/analyze)."""
-    # O Flask cuida de obter o body (request.data)
+    """Rota POST para encaminhar /api/process-analysis."""
     return proxy_to_backend(
-        endpoint='/api/analyze', # Ajustei para /api/analyze que é a rota do backend_app.py
+        endpoint='/api/process-analysis', 
         method='POST',
         data=request.data
     )
@@ -135,11 +144,10 @@ def get_analysis_route(analysis_id):
     )
 
 # -----------------------------------------------------
-# COMANDO DE INICIALIZAÇÃO (DEV - Ignorado pelo Gunicorn)
+# COMANDO DE INICIALIZAÇÃO
 # -----------------------------------------------------
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    # Para deploy, o Gunicorn usará 0.0.0.0 e a porta $PORT
     print(f"🌐 Servidor Proxy Flask rodando em http://0.0.0.0:{port}")
     app.run(host='0.0.0.0', port=port)
