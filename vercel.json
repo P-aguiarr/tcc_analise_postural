@@ -41,7 +41,7 @@
     },
     {
       "src": "/",
-      "dest": "/site/login.html"
+      "dest": "/site/index.html"
     },
     {
       "src": "/login",
@@ -77,7 +77,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/site/login.html"
+      "dest": "/site/index.html"
     }
   ]
 }
