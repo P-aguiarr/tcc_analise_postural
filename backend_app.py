@@ -1,4 +1,4 @@
-# backend_app.py - VERSÃO COMPLETA COM AUTENTICAÇÃO GOOGLE, ROTAS HTML E ANÁLISE POSTURAL
+# backend_app.py - VERSÃO FINAL SEM O PREFIXO /api/ NAS ROTAS DE API
 
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
@@ -27,6 +27,7 @@ from functools import wraps
 # CONFIGURAÇÃO DA APLICAÇÃO FLASK (CRUCIAL)
 # A pasta 'site' agora é usada como 'template_folder' e 'static_folder'.
 # ==========================================================
+# A opção strict_slashes=False garante que /ping e /ping/ funcionem
 app = Flask(__name__, template_folder='site', static_folder='site')
 CORS(app)
 
@@ -49,6 +50,7 @@ print("✅ Backend Railway - Análise Postural Avançado Iniciado!")
 
 # ==========================================================
 # ROTAS DE SERVIÇO DE ARQUIVOS HTML (Templates na pasta 'site')
+# Estas rotas continuam iguais.
 # ==========================================================
 
 @app.route('/')
@@ -58,13 +60,10 @@ def home_page():
 
 @app.route('/login')
 def login_page():
-    """
-    Rota explícita para o arquivo login.html (procurado em 'site/login.html').
-    """
+    """Rota explícita para o arquivo login.html."""
     try:
         return render_template('login.html')
     except Exception as e:
-        # Mensagem de erro se o template não for encontrado
         return f"Erro ao renderizar 'login.html'. Verifique se ele está na pasta 'site'. Detalhe: {str(e)}", 500
 
 @app.route('/poslogin')
@@ -84,22 +83,21 @@ def configuracoes_page():
         return f"Erro ao renderizar 'configuracoes.html'. Verifique se ele está na pasta 'site'.", 500
 
 # ==========================================================
-# ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO (JSON APIs)
+# ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO (ROTAS AGORA DIRETAS)
 # ==========================================================
 
-@app.route('/api/ping', methods=['GET'], strict_slashes=False)
+@app.route('/ping', methods=['GET'], strict_slashes=False)
 def ping():
-    """Endpoint de health check para verificar se o prefixo /api/ está funcionando."""
+    """Endpoint de health check (agora em /ping)."""
     return jsonify({
         "status": "ok",
-        "message": "API está no ar!"
+        "message": "API está no ar! (Rota direta)"
     })
 
-@app.route('/api/config', methods=['GET'], strict_slashes=False)
+@app.route('/config', methods=['GET'], strict_slashes=False)
 def get_config():
     """
-    Endpoint para fornecer o GOOGLE_CLIENT_ID ao frontend.
-    Esta rota deve retornar JSON.
+    Endpoint para fornecer o GOOGLE_CLIENT_ID ao frontend (agora em /config).
     """
     if not GOOGLE_CLIENT_ID:
         return jsonify({
@@ -112,11 +110,10 @@ def get_config():
         "googleClientId": GOOGLE_CLIENT_ID
     })
 
-@app.route('/api/auth/callback', methods=['POST'], strict_slashes=False)
+@app.route('/auth/callback', methods=['POST'], strict_slashes=False)
 def auth_callback():
     """
-    Endpoint chamado pelo frontend após o login do Google.
-    Valida o token JWT no servidor.
+    Endpoint chamado pelo frontend após o login do Google (agora em /auth/callback).
     """
     data = request.get_json()
     token = data.get('token')
@@ -291,12 +288,12 @@ def generate_analysis_data(angles, view):
     }
 
 # ==========================================================
-# ENDPOINTS PRINCIPAIS DA APLICAÇÃO
+# ENDPOINTS PRINCIPAIS DA APLICAÇÃO (ROTAS AGORA DIRETAS)
 # ==========================================================
 
-@app.route('/api/analyze', methods=['POST'], strict_slashes=False)
+@app.route('/analyze', methods=['POST'], strict_slashes=False)
 def analyze_images():
-    """Endpoint principal para análise postural."""
+    """Endpoint principal para análise postural (agora em /analyze)."""
     try:
         data = request.get_json()
         
@@ -396,9 +393,9 @@ def analyze_images():
             "error": f"Erro no processamento: {str(e)}"
         }), 500
 
-@app.route('/api/analysis/<analysis_id>', methods=['GET'], strict_slashes=False)
+@app.route('/analysis/<analysis_id>', methods=['GET'], strict_slashes=False)
 def get_analysis(analysis_id):
-    """Endpoint para recuperar análise existente (simulado)."""
+    """Endpoint para recuperar análise existente (simulado) (agora em /analysis/<id>)."""
     return jsonify({
         "analysis_id": analysis_id,
         "status": "completed",
@@ -406,6 +403,6 @@ def get_analysis(analysis_id):
     })
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080)) # Usando 8080 conforme sua configuração
+    port = int(os.environ.get('PORT', 8080))
     print(f"🌐 Servidor Railway rodando na porta {port}")
     app.run(host='0.0.0.0', port=port)
