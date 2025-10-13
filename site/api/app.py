@@ -1,4 +1,4 @@
-# app.py - VERSÃO FINAL COM VERIFICAÇÃO DE ARQUIVO
+# app.py - VERSÃO FINAL E CORRIGIDA
 
 from flask import Flask, request, jsonify, make_response, send_from_directory
 from flask_cors import CORS
@@ -13,14 +13,16 @@ import json
 
 app = Flask(__name__)
 
+# CONFIGURAÇÃO DO CORS
 CORS(app, resources={r"/api/*": {"origins": "https://ttc-analise-postural.vercel.app"}})
 
+# Diretórios para salvar os resultados
 RESULT_DIR = "/tmp/analysis_results"
 VIDEO_DIR = "/tmp/analysis_videos"
 if not os.path.exists(RESULT_DIR): os.makedirs(RESULT_DIR)
 if not os.path.exists(VIDEO_DIR): os.makedirs(VIDEO_DIR)
 
-print("✅ Backend com Verificação de Arquivo - Pronto!")
+print("✅ Backend Definitivo - Pronto para Análise!")
 
 @app.before_request
 def handle_options_request():
@@ -50,7 +52,6 @@ def analyze_video_complete(video_path, output_video_path):
 
             image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = pose.process(image_rgb)
-            
             frame_data = { "frame": frame_count, "tempo_segundos": frame_count / fps }
             
             if results.pose_landmarks:
@@ -61,6 +62,10 @@ def analyze_video_complete(video_path, output_video_path):
             frame_count += 1
     
     cap.release(); out.release()
+    # Adiciona uma verificação para garantir que o vídeo foi criado
+    if not os.path.exists(output_video_path) or os.path.getsize(output_video_path) == 0:
+        raise IOError("Arquivo de vídeo de saída não foi gerado ou está vazio.")
+        
     return temporal_data
 
 @app.route('/api/health', methods=['GET'])
@@ -71,7 +76,6 @@ def health_check():
 def process_analysis_route():
     analysis_id = str(uuid.uuid4())
     video_path = None
-    output_video_path = None # Definir aqui para estar acessível no 'finally'
     try:
         if 'frontalImage' not in request.files: return jsonify({"success": False, "error": "Arquivo 'frontalImage' é obrigatório."}), 400
         
@@ -81,14 +85,11 @@ def process_analysis_route():
             video_path = temp_file.name
             video_file.save(video_path)
 
-        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}.mp4")
+        # ===== CORREÇÃO CRÍTICA APLICADA AQUI =====
+        # Garante que o nome do arquivo salvo seja o mesmo que o frontend irá pedir.
+        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4")
+
         temporal_data = analyze_video_complete(video_path, output_video_path)
-        
-        # ===== VERIFICAÇÃO CRÍTICA ADICIONADA =====
-        if not os.path.exists(output_video_path) or os.path.getsize(output_video_path) == 0:
-            print(f"❌ ERRO CRÍTICO: O arquivo de vídeo de saída '{output_video_path}' não foi gerado ou está vazio. O MediaPipe provavelmente falhou. Verifique os logs de erro 'gl_context'.")
-            raise IOError("Falha na geração do vídeo de análise pelo MediaPipe devido a um erro de ambiente no servidor.")
-        # ==========================================
 
         full_result = { "success": True, "analysis_id": analysis_id, "data": { "temporal_data": temporal_data } }
         
@@ -100,9 +101,6 @@ def process_analysis_route():
         
     except Exception as e:
         print(f"❌ Erro na análise: {e}")
-        # Limpa o arquivo de vídeo de saída se ele foi criado mas deu erro depois
-        if output_video_path and os.path.exists(output_video_path):
-             os.unlink(output_video_path)
         return jsonify({"success": False, "error": str(e)}), 500
     finally:
         if video_path and os.path.exists(video_path): os.unlink(video_path)
