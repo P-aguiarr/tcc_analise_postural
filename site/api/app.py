@@ -12,7 +12,7 @@ from flask_cors import CORS
 
 # 🔥 URL DO SEU BACKEND DE ANÁLISE 
 # Aqui, a variável de ambiente é lida.
-BACKEND_URL = os.environ.get("BACKEND_URL", "https://seu-backend-de-analise.com")
+BACKEND_URL = os.environ.get("BACKEND_URL", "https://tccanalisepostural-production.up.railway.app")
 
 # 1. INICIALIZAR A APLICAÇÃO FLASK
 app = Flask(__name__)
