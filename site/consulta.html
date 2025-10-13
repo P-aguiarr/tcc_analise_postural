@@ -80,9 +80,11 @@
             videoContainer.innerHTML = '';
             
             if (apiResponse.data.temporal_data_frontal) {
-                // URLs corrigidas para buscar o vídeo original e o processado
+                // URLs para buscar o vídeo original e o processado
                 const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
                 const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`;
+                
+                // MUDANÇA: O atributo onerror foi removido para não exibir mensagens feias ao usuário.
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
@@ -145,6 +147,7 @@
                 
                 // Armazena os dados globalmente
                 currentAnalysisData = apiResponse.data.temporal_data_frontal;
+                // Verifica se há dados suficientes para plotar os gráficos (motivo de você ver menos gráficos)
                 const validFrames = currentAnalysisData ? currentAnalysisData.filter(d => d.angulo_ombro_esquerdo != null).length : 0;
 
                 if (currentAnalysisData && validFrames > 5) {
@@ -153,9 +156,10 @@
                     setupAllCharts(currentAnalysisData);
                     lucide.createIcons();
                 } else {
+                     // Exibe aviso se o processamento não gerou dados suficientes
                      loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
                         <h2 class="font-bold text-xl">Análise com Baixa Detecção</h2>
-                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo.</p></div>`;
+                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo. Verifique se o vídeo processado (com landmarks) está sendo gerado.</p></div>`;
                 }
             }
             
@@ -169,15 +173,12 @@
             });
             
             // --- LÓGICA DE CLEANUP AO NAVEGAR/FECHAR ---
-            
-            // 1. Limpeza ao fechar/navegar (antes de descarregar a página)
             window.addEventListener('beforeunload', () => {
                 if (currentAnalysisId) {
                     cleanupAnalysis(currentAnalysisId);
                 }
             });
             
-            // 2. Limpeza ao clicar em "Nova Análise" ou "Home"
             document.querySelectorAll('.text-wrapper-26').forEach(link => {
                 link.addEventListener('click', (event) => {
                     if (currentAnalysisId && (link.getAttribute('href') === '/' || link.getAttribute('href') === '/nova-analise')) {
