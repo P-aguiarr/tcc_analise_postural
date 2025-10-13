@@ -1,4 +1,4 @@
-# app.py - VERSÃO FINAL (PARA USAR COM requirements.txt CORRIGIDO)
+# app.py - VERSÃO FINAL COM VERIFICAÇÃO DE ARQUIVO
 
 from flask import Flask, request, jsonify, make_response, send_from_directory
 from flask_cors import CORS
@@ -13,14 +13,14 @@ import json
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/api/*": {"origins": "https://ttc-analisepostural.vercel.app"}})
+CORS(app, resources={r"/api/*": {"origins": "https://ttc-analise-postural.vercel.app"}})
 
 RESULT_DIR = "/tmp/analysis_results"
 VIDEO_DIR = "/tmp/analysis_videos"
 if not os.path.exists(RESULT_DIR): os.makedirs(RESULT_DIR)
 if not os.path.exists(VIDEO_DIR): os.makedirs(VIDEO_DIR)
 
-print("✅ Backend com Dependências Corrigidas - Pronto!")
+print("✅ Backend com Verificação de Arquivo - Pronto!")
 
 @app.before_request
 def handle_options_request():
@@ -41,10 +41,9 @@ def analyze_video_complete(video_path, output_video_path):
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
 
     temporal_data = []
-    frame_count = 0
     
-    # Usando static_image_mode=True para forçar o uso da CPU
     with mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5) as pose:
+        frame_count = 0
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret: break
@@ -52,7 +51,6 @@ def analyze_video_complete(video_path, output_video_path):
             image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = pose.process(image_rgb)
             
-            # Inicializa frame_data com chaves nulas para garantir consistência
             frame_data = { "frame": frame_count, "tempo_segundos": frame_count / fps }
             
             if results.pose_landmarks:
@@ -73,6 +71,7 @@ def health_check():
 def process_analysis_route():
     analysis_id = str(uuid.uuid4())
     video_path = None
+    output_video_path = None # Definir aqui para estar acessível no 'finally'
     try:
         if 'frontalImage' not in request.files: return jsonify({"success": False, "error": "Arquivo 'frontalImage' é obrigatório."}), 400
         
@@ -84,6 +83,12 @@ def process_analysis_route():
 
         output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}.mp4")
         temporal_data = analyze_video_complete(video_path, output_video_path)
+        
+        # ===== VERIFICAÇÃO CRÍTICA ADICIONADA =====
+        if not os.path.exists(output_video_path) or os.path.getsize(output_video_path) == 0:
+            print(f"❌ ERRO CRÍTICO: O arquivo de vídeo de saída '{output_video_path}' não foi gerado ou está vazio. O MediaPipe provavelmente falhou. Verifique os logs de erro 'gl_context'.")
+            raise IOError("Falha na geração do vídeo de análise pelo MediaPipe devido a um erro de ambiente no servidor.")
+        # ==========================================
 
         full_result = { "success": True, "analysis_id": analysis_id, "data": { "temporal_data": temporal_data } }
         
@@ -95,6 +100,9 @@ def process_analysis_route():
         
     except Exception as e:
         print(f"❌ Erro na análise: {e}")
+        # Limpa o arquivo de vídeo de saída se ele foi criado mas deu erro depois
+        if output_video_path and os.path.exists(output_video_path):
+             os.unlink(output_video_path)
         return jsonify({"success": False, "error": str(e)}), 500
     finally:
         if video_path and os.path.exists(video_path): os.unlink(video_path)
