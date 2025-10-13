@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,7 +9,7 @@
   <!-- Script da Google Identity Services para SSO -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body>
+<body onload="initGoogleSignIn(); checkUserAndRedirect()">
   <div class="landing-page">
     <!-- NAVBAR -->
     <div class="navbar">
@@ -21,449 +21,219 @@
           <a href="/" class="text-wrapper-26">Home</a>
           <a href="/login" class="text-wrapper-26">Login</a>
           <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
-          <a href="#" id="logoutButton" class="text-wrapper-26 hidden">Sair</a>
         </div>
       </div>
     </div>
-    <!-- END NAVBAR -->
 
-    <!-- HERO / CONTENT -->
-    <div class="hero-section">
-      <div class="container-1">
-        <h1 class="main-title">Acesse o seu Portal</h1>
-        <p class="subtitle">Faça login com sua conta Google para iniciar suas análises posturais.</p>
+    <!-- CONTEÚDO LOGIN -->
+    <div class="login-section">
+      <p class="central-login">
+        Entre na plataforma e descubra um mundo de possibilidades!
+      </p>
 
-        <!-- Container do Google Sign-In -->
-        <!-- O data-client_id será definido dinamicamente via JS após carregar /config -->
-        <div id="gsi-container" class="mt-8 flex justify-center">
-            <div id="g_id_onload"
-                data-client_id=""
-                data-callback="handleCredentialResponse"
-                data-auto_prompt="false"
-                class="hidden" <!-- Escondido até carregar o client_id -->
-            >
-            </div>
-            <div class="g_id_signin"
-                data-type="standard"
-                data-size="large"
-                data-theme="outline"
-                data-text="sign_in_with"
-                data-shape="rectangular"
-                data-logo_alignment="left">
-            </div>
+      <!-- Container para o botão do Google -->
+      <div class="google-login-container">
+        <!-- Botão personalizado que o usuário vê -->
+        <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
+          <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
         </div>
 
-        <button id="testApiButton" onclick="testAPI()" class="mt-4 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg shadow hover:bg-gray-300 transition duration-300">
-            Testar Conexão com API
-        </button>
-
-        <!-- Mensagens de Erro/Status -->
-        <div id="errorBox" class="error-box mt-6 hidden">
-          <p id="errorDetails" class="error-details"></p>
+        <!-- Div onde o botão oficial do Google é renderizado (CORRIGIDO: Removido data-login_uri) -->
+        <div id="g_id_onload"
+             data-client_id="584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com"
+             data-context="signin"
+             data-ux_mode="popup"
+             data-callback="handleCredentialResponse"
+             data-auto_prompt="false"
+             style="display: none;">
         </div>
-        
-        <!-- Loading Indicator -->
-        <div id="loadingIndicator" class="loading-indicator hidden">
-            <div class="spinner"></div>
-            <p id="loadingMessage">Carregando...</p>
-        </div>
-
       </div>
-      <!--  -->
+
+      <!-- Área de Feedback -->
+      <div id="loadingSpinner" class="loading-spinner" style="display: none;"></div>
+      <div id="errorDetails" class="error-message" style="display: none;"></div>
+      <div id="successMessage" class="success-message" style="display: none;">Login bem-sucedido! Redirecionando...</div>
+
+      <!-- Botão de Debug/Teste -->
+      <div class="debug-area">
+        <button onclick="testAPI()" class="test-api-button">Testar Conexão Railway API</button>
+      </div>
+
     </div>
+  </div>
 
-    <!-- FOOTER (Simplificado) -->
-    <div class="footer">
-        <p class="copyright">© 2025 The Posture Lab. Todos os direitos reservados.</p>
-    </div>
-
-  </div> <!-- end landing-page -->
-
-<script>
-    // IMPORTANTE: Configure a URL base do seu backend Railway.
-    // Substitua pelo seu domínio real do Railway (ex: https://meu-backend-app.up.railway.app)
-    const BASE_URL_RAILWAY = 'https://tccanalisepostural-production.up.railway.app'; 
+  <script>
+    // **CRÍTICO: URL BASE DA API DE ANÁLISE (RAILWAY)**
+    // Use esta URL para /ping, /config e /analyze
+    const RAILWAY_API_BASE_URL = 'https://tccanalisepostural-production.up.railway.app';
     
-    let user_info = null;
+    // **Vercel Serverless Function URL (Local)**
+    // Usada para o /api/callback, pois está no mesmo domínio do frontend Vercel
+    const VERCEL_CALLBACK_URL = window.location.origin; 
 
-    // ===============================================
-    // Funções de UI
-    // ===============================================
-
-    function showLoading(message = 'Carregando...') {
-        document.getElementById('loadingMessage').textContent = message;
-        document.getElementById('loadingIndicator').classList.remove('hidden');
-    }
-
-    function hideLoading() {
-        document.getElementById('loadingIndicator').classList.add('hidden');
+    // ==========================================================
+    // FUNÇÕES DE EXIBIÇÃO
+    // ==========================================================
+    function showLoading() {
+      document.getElementById('loadingSpinner').style.display = 'block';
+      hideError();
+      hideSuccess();
     }
 
     function showError(message) {
-        const errorBox = document.getElementById('errorBox');
-        const errorDetails = document.getElementById('errorDetails');
-        errorDetails.textContent = message;
-        errorBox.classList.remove('hidden');
-        
-        // Estilização temporária para mensagens de erro/sucesso
-        errorDetails.style.backgroundColor = '#FEF2F2';
-        errorDetails.style.borderColor = '#FCA5A5';
-        errorDetails.style.color = '#B91C1C';
-        
-        // Limpar a mensagem após 5 segundos
-        setTimeout(hideError, 5000);
+      const errorElement = document.getElementById('errorDetails');
+      errorElement.innerText = '❌ Erro: ' + message;
+      errorElement.style.display = 'block';
+      document.getElementById('loadingSpinner').style.display = 'none';
+      document.getElementById('successMessage').style.display = 'none';
     }
 
     function hideError() {
-        document.getElementById('errorBox').classList.add('hidden');
-    }
-
-    // ===============================================
-    // 1. OBTENÇÃO DA CONFIGURAÇÃO (CLIENT ID)
-    // ===============================================
-    async function getConfig() {
-        showLoading('Carregando configurações de autenticação...');
-        try {
-            // Chamada à nova rota /config do backend
-            const response = await fetch(`${BASE_URL_RAILWAY}/config`);
-            if (!response.ok) {
-                throw new Error(`Erro ${response.status}: Falha ao obter Client ID.`);
-            }
-            const config = await response.json();
-            
-            if (config.client_id) {
-                // Configura o Client ID dinamicamente e inicializa o GSI
-                const gsiContainer = document.getElementById('g_id_onload');
-                gsiContainer.setAttribute('data-client_id', config.client_id);
-                gsiContainer.classList.remove('hidden'); // Mostra o container
-                
-                // Inicializa o GSI (importante para que o botão seja renderizado)
-                if (typeof google !== 'undefined' && google.accounts.id.initialize) {
-                    google.accounts.id.initialize({
-                        client_id: config.client_id,
-                        callback: handleCredentialResponse // Nome da função de callback
-                    });
-                    
-                    // Renderiza o botão de login do Google
-                    google.accounts.id.renderButton(
-                        document.querySelector('.g_id_signin'),
-                        { type: 'standard', size: 'large', theme: 'outline', text: 'signin_with', shape: 'rectangular', logo_alignment: 'left' }
-                    );
-                    
-                    console.log("✅ GSI inicializado com Client ID do backend.");
-                } else {
-                    console.error("Google Identity Services (GSI) não carregado ou inicializado.");
-                }
-            } else {
-                throw new Error("Client ID não encontrado na resposta /config.");
-            }
-        } catch (error) {
-            showError(`Erro Crítico de Configuração: ${error.message}. Verifique a URL do Railway e a rota /config.`);
-            console.error('Erro de configuração:', error);
-        } finally {
-            hideLoading();
-        }
-    }
-
-    // ===============================================
-    // 2. CALLBACK DO GOOGLE (ENVIO PARA O BACKEND)
-    // ===============================================
-    window.handleCredentialResponse = async function(response) {
-        showLoading('Autenticando com o The Posture Lab...');
-        
-        try {
-            // Token de credencial do Google
-            const token = response.credential;
-            
-            // 3. Envia o token para o endpoint /auth/callback do Railway
-            const backendResponse = await fetch(`${BASE_URL_RAILWAY}/auth/callback`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ token: token })
-            });
-            
-            const data = await backendResponse.json();
-            
-            if (backendResponse.ok) {
-                // Login bem-sucedido
-                user_info = data.user_info; // O backend deve retornar user_info
-                
-                // Armazena no localStorage para manter a sessão
-                localStorage.setItem('user_info', JSON.stringify(user_info));
-                
-                // 4. Redireciona para a página pós-login
-                window.location.href = '/poslogin.html';
-            } else {
-                // Erro do backend (e.g., token inválido, erro de servidor)
-                throw new Error(data.error || 'Falha na autenticação com o backend.');
-            }
-        } catch (error) {
-            hideLoading();
-            showError(`Erro de Login: ${error.message}.`);
-            console.error('Erro no callback de autenticação:', error);
-        }
-    }
-
-    // ===============================================
-    // Funções Auxiliares
-    // ===============================================
-    
-    async function testAPIConnection() {
-        try {
-            // Testa a rota simples /ping
-            const response = await fetch(`${BASE_URL_RAILWAY}/ping`);
-            if (response.ok) {
-                return true;
-            } else {
-                console.error(`Status API: ${response.status}`);
-                return false;
-            }
-        } catch (e) {
-            console.error('Erro de conexão com a API:', e);
-            return false;
-        }
+      document.getElementById('errorDetails').style.display = 'none';
     }
     
-    function testAPI() {
-        showLoading('Testando conexão com o Railway...');
-        testAPIConnection().then(available => {
-            hideLoading();
-            if (available) {
-                // Usando showError para exibir sucesso temporariamente
-                const successMessage = '✅ API Railway disponível e funcionando na rota /ping!';
-                showError(successMessage);
-                const errorElement = document.getElementById('errorDetails');
-                // Estilos para parecer uma mensagem de sucesso
-                errorElement.style.backgroundColor = '#D1FAE5'; 
-                errorElement.style.borderColor = '#34D399';
-                errorElement.style.color = '#065f46';
-                
-                // Limpar a mensagem de "sucesso" após 3 segundos
-                setTimeout(() => {
-                    hideError();
-                    // Restaura os estilos padrão (vermelho)
-                    errorElement.style.backgroundColor = '#FEF2F2';
-                    errorElement.style.borderColor = '#FCA5A5';
-                    errorElement.style.color = '#B91C1C';
-                }, 3000);
-
-            } else {
-                showError('❌ Falha na conexão com o backend Railway. Verifique a URL e o deploy.');
-            }
-        });
+    function showSuccess(message) {
+      const successElement = document.getElementById('successMessage');
+      successElement.innerText = message;
+      successElement.style.display = 'block';
+      document.getElementById('loadingSpinner').style.display = 'none';
+      document.getElementById('errorDetails').style.display = 'none';
+    }
+    
+    function hideSuccess() {
+      document.getElementById('successMessage').style.display = 'none';
     }
 
-    function checkAuthStatus() {
-      // Verifica se há informação de usuário no localStorage
-      const storedUserInfo = localStorage.getItem('user_info');
-      if (storedUserInfo) {
-        try {
-          user_info = JSON.parse(storedUserInfo);
-          console.log('Usuário logado:', user_info.email);
-          // Se estiver logado, redireciona imediatamente (com delay para UI)
-          setTimeout(() => {
-             window.location.href = '/poslogin.html';
-          }, 100);
-        } catch (e) {
-          console.error('Erro ao parsear usuário:', e);
-          // Limpa o item se estiver corrompido
-          localStorage.removeItem('user_info');
-        }
-      } else {
-        console.log('Nenhum usuário logado');
+    // ==========================================================
+    // INICIALIZAÇÃO DO GOOGLE SIGN-IN
+    // ==========================================================
+    function initGoogleSignIn() {
+      if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+          google.accounts.id.renderButton(
+              document.getElementById('customGoogleButton'),
+              { type: 'icon', size: 'large', width: '250', click_listener: function() {
+                  const officialButton = document.querySelector('#g_id_onload div[role="button"]');
+                  if (officialButton) officialButton.click();
+              }}
+          );
       }
     }
 
-    window.onload = () => {
-        // 1. Verifica se já está logado e redireciona (se sim)
-        checkAuthStatus();
-        
-        // 2. Obtém o Client ID do backend e inicializa o GSI
-        getConfig();
-    };
-</script>
+    // ==========================================================
+    // REDIRECIONAMENTO DE PRÉ-LOGIN
+    // ==========================================================
+    function checkUserAndRedirect() {
+      const userJSON = localStorage.getItem('user');
+      const loginTime = localStorage.getItem('loginTime');
 
-<style>
-/* Estilos Tailwind CSS emulados para uma aparência moderna */
-body {
-    font-family: 'Inter', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f7f9fc;
-    color: #333;
-}
+      if (userJSON && loginTime) {
+        try {
+          const userData = JSON.parse(userJSON);
+          const currentTime = new Date().getTime();
+          const EXPIRATION_TIME_MS = 86400000; // 24 horas
 
-.landing-page {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* NAVBAR */
-.navbar {
-    width: 100%;
-    background-color: #ffffff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.frame-16 {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1rem 1.5rem;
-}
-
-.the-posture-lab {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #3b82f6; /* Blue 500 */
-}
-
-.text-wrapper {
-    color: #1f2937; /* Gray 800 */
-}
-
-.span {
-    color: #3b82f6; /* Blue 500 */
-}
-
-.frame-17 {
-    display: flex;
-    gap: 1.5rem;
-}
-
-.text-wrapper-26 {
-    color: #6b7280; /* Gray 500 */
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s;
-}
-
-.text-wrapper-26:hover {
-    color: #3b82f6;
-}
-
-/* HERO */
-.hero-section {
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 4rem 1.5rem;
-    text-align: center;
-}
-
-.container-1 {
-    max-width: 500px;
-    width: 100%;
-    padding: 2rem;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.main-title {
-    font-size: 2.25rem;
-    font-weight: 800;
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-}
-
-.subtitle {
-    font-size: 1.125rem;
-    color: #6b7280;
-    margin-bottom: 2rem;
-}
-
-/* Utility classes */
-.mt-8 { margin-top: 2rem; }
-.mt-6 { margin-top: 1.5rem; }
-.mt-4 { margin-top: 1rem; }
-.mb-4 { margin-bottom: 1rem; }
-.flex { display: flex; }
-.justify-center { justify-content: center; }
-.hidden { display: none !important; }
-
-/* Google Sign-In Button Container Styling */
-#gsi-container {
-    padding: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    background-color: #f9fafb;
-}
-
-/* Error/Status Box */
-.error-box {
-    padding: 0.75rem;
-    border: 1px solid #FCA5A5; /* Red 400 */
-    background-color: #FEF2F2; /* Red 50 */
-    color: #B91C1C; /* Red 700 */
-    border-radius: 6px;
-    margin-top: 1rem;
-    font-size: 0.875rem;
-    text-align: left;
-    transition: all 0.3s ease;
-}
-
-/* Loading Indicator */
-.loading-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 1rem;
-    color: #3b82f6;
-    font-weight: 600;
-}
-
-.spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #3b82f6;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    animation: spin 1s linear infinite;
-    margin-right: 0.5rem;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* FOOTER */
-.footer {
-    width: 100%;
-    padding: 1rem;
-    text-align: center;
-    font-size: 0.875rem;
-    color: #9ca3af; /* Gray 400 */
-    border-top: 1px solid #e5e7eb;
-}
-
-/* Responsividade */
-@media (max-width: 600px) {
-    .frame-16 {
-        flex-direction: column;
-        gap: 1rem;
+          if (currentTime - parseInt(loginTime) < EXPIRATION_TIME_MS) {
+            console.log('Usuário válido encontrado. Redirecionando...');
+            showSuccess(`Bem-vindo de volta, ${userData.name.split(' ')[0]}! Redirecionando...`);
+            setTimeout(() => {
+              window.location.href = '/poslogin';
+            }, 1000); 
+            return true;
+          } else {
+            console.log('Login expirado. Favor logar novamente.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('loginTime');
+          }
+        } catch (e) {
+          console.error('Erro ao parsear dados de usuário do localStorage:', e);
+          localStorage.removeItem('user');
+          localStorage.removeItem('loginTime');
+        }
+      }
+      return false;
     }
-    .frame-17 {
-        gap: 1rem;
+    
+    // ==========================================================
+    // FUNÇÃO PRINCIPAL DE RESPOSTA DO GOOGLE (CHAMA VERCEL CALLBACK)
+    // ==========================================================
+    async function handleCredentialResponse(response) {
+      if (!response.credential) {
+        showError('Falha ao receber a credencial do Google.');
+        return;
+      }
+      
+      showLoading();
+
+      try {
+        // CHAMA A VERCEL SERVERLESS FUNCTION (CALLBACK.JS)
+        const apiResponse = await fetch(`${VERCEL_CALLBACK_URL}/api/callback`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id_token: response.credential })
+        });
+
+        const data = await apiResponse.json();
+
+        if (data.success) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('loginTime', new Date().getTime().toString());
+          
+          console.log('✅ Login completo. Dados salvos:', data.user);
+          showSuccess(`Login bem-sucedido! Bem-vindo(a), ${data.user.name.split(' ')[0]}. Redirecionando...`);
+          
+          setTimeout(() => {
+            window.location.href = '/poslogin';
+          }, 1500); 
+
+        } else {
+          console.error('❌ Erro na API de Callback:', data.error, data.details);
+          showError(data.error || 'Erro desconhecido ao processar o login.');
+        }
+
+      } catch (error) {
+        console.error('❌ Erro ao comunicar com o servidor de callback:', error);
+        showError('Não foi possível se conectar com o servidor para finalizar o login.');
+      } finally {
+        document.getElementById('loadingSpinner').style.display = 'none';
+      }
     }
-    .main-title {
-        font-size: 1.75rem;
+
+
+    // ==========================================================
+    // FUNÇÕES DE DEBUG (CHAMA RAILWAY API)
+    // ==========================================================
+    async function testAPIConnection() {
+      // Usa a URL do Railway para testar a conexão no endpoint /ping
+      try {
+        const response = await fetch(`${RAILWAY_API_BASE_URL}/ping`); 
+        // Verifica se a resposta foi 200-299. Mesmo que não tenha CORS, o console vai mostrar o erro, 
+        // mas o status deve ser 200 se a rota existir.
+        return response.ok; 
+      } catch (error) {
+        console.error('Erro ao tentar conectar com a API Railway. Isso PODE ser um erro de CORS/404.', error);
+        // O `fetch` falha com TypeError em caso de bloqueio CORS no pré-voo (OPTIONS).
+        return false; 
+      }
     }
-    .subtitle {
-        font-size: 1rem;
+
+    function testAPI() {
+      showLoading();
+      testAPIConnection().then(available => {
+        if (available) {
+          showSuccess('✅ API Railway disponível e a rota /ping funciona!');
+        } else {
+          // Se falhou, é provavelmente CORS ou a rota /ping não está no Railway.
+          showError('❌ Falha ao conectar à API Railway. Verifique no console se é erro de CORS ou 404. Certifique-se de que o backend_app.py está atualizado!');
+        }
+      });
     }
-    .container-1 {
-        padding: 1.5rem;
-    }
-}
-</style>
+
+    // Expor funções para console
+    window.handleCredentialResponse = handleCredentialResponse;
+    window.checkUserAndRedirect = checkUserAndRedirect;
+    window.testAPI = testAPI;
+  </script>
 </body>
 </html>
