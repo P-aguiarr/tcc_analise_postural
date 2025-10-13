@@ -71,14 +71,16 @@
 
     <script>
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
-        // --- MUDANÇA 1: Armazenar os dados em uma variável global para acesso fácil ---
+        // Variáveis globais para armazenar os dados e o ID da análise
         let currentAnalysisData = null;
+        let currentAnalysisId = null; 
 
         function populateVideosUI(analysisId, apiResponse) {
             const videoContainer = document.getElementById("video-container");
             videoContainer.innerHTML = '';
             
             if (apiResponse.data.temporal_data_frontal) {
+                // URLs corrigidas para buscar o vídeo original e o processado
                 const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
                 const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`;
                 videoContainer.innerHTML += `
@@ -108,6 +110,22 @@
                 return null;
             }
         }
+        
+        /**
+         * Envia uma requisição DELETE para a API para limpar os arquivos da análise.
+         * Usa navigator.sendBeacon para garantir que a requisição seja enviada 
+         * mesmo que o usuário feche a página imediatamente.
+         */
+        function cleanupAnalysis(id) {
+            if (!id) return;
+            const deleteUrl = `${backendBaseUrl}/api/delete-analysis/${id}`;
+            const data = new Blob([''], {type : 'application/json'}); 
+            
+            // SendBeacon para garantir a requisição na saída da página
+            navigator.sendBeacon(deleteUrl, data);
+            
+            console.log(`Cleanup request sent for analysis ID: ${id}`);
+        }
 
         window.addEventListener('load', async () => {
             const loadingIndicator = document.getElementById('loading-indicator');
@@ -119,6 +137,8 @@
                 loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado na URL.</h2>';
                 return;
             }
+            
+            currentAnalysisId = analysisId; // Armazena o ID globalmente
 
             const apiResponse = await fetchAnalysisData(analysisId);
             
@@ -149,6 +169,24 @@
                     document.getElementById(`${tab.dataset.tab}-content`).classList.remove('hidden');
                 });
             });
+            
+            // --- LÓGICA DE CLEANUP AO NAVEGAR/FECHAR ---
+            
+            // 1. Limpeza ao fechar/navegar (antes de descarregar a página)
+            window.addEventListener('beforeunload', () => {
+                if (currentAnalysisId) {
+                    cleanupAnalysis(currentAnalysisId);
+                }
+            });
+            
+            // 2. Limpeza ao clicar em "Nova Análise" ou "Home"
+            document.querySelectorAll('.text-wrapper-26').forEach(link => {
+                link.addEventListener('click', (event) => {
+                    if (currentAnalysisId && (link.getAttribute('href') === '/' || link.getAttribute('href') === '/nova-analise')) {
+                        cleanupAnalysis(currentAnalysisId);
+                    }
+                });
+            });
         });
         
         function exportToCSV(data, filename) {
@@ -168,7 +206,7 @@
             document.body.removeChild(link);
         }
         
-        // --- MUDANÇA 2: Adicionar um "vigia" de cliques para os botões de exportar ---
+        // Adiciona um "vigia" de cliques para os botões de exportar
         document.getElementById('tab-content').addEventListener('click', function(event) {
             const exportButton = event.target.closest('.export-button');
             if (!exportButton || !currentAnalysisData) return;
@@ -194,7 +232,22 @@
                     fileName = 'angulos_joelhos.csv';
                     dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, esquerdo_deg: d.angulo_joelho_esquerdo, direito_deg: d.angulo_joelho_direito }));
                     break;
-                // Adicione mais casos para outros gráficos aqui se necessário
+                case 'chartAssimetriaOmbros':
+                    fileName = 'simetria_ombros.csv';
+                    dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, assimetria_vertical: d.assimetria_ombros_vertical }));
+                    break;
+                case 'chartOscilacaoVertical':
+                    fileName = 'temporal_oscilacao_vertical.csv';
+                    dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, posicao_y_quadril: d.oscilacao_vertical_quadril }));
+                    break;
+                case 'chartPosicaoHorizontal':
+                    fileName = 'temporal_posicao_horizontal.csv';
+                    dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, posicao_x_quadril: d.posicao_horizontal_quadril }));
+                    break;
+                case 'chartDistribuicaoQuadris':
+                    fileName = 'distribuicao_vertical_quadril.csv';
+                    dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, posicao_y_quadril: d.oscilacao_vertical_quadril }));
+                    break;
             }
 
             if (dataToExport) {
@@ -202,11 +255,10 @@
             }
         });
 
-        // --- MUDANÇA 3: Simplificar a criação dos cards e botões ---
+        // Simplifica a criação dos cards e botões
         function createChartCard(id, title, category) {
             const container = document.getElementById(`${category}-content`);
             if (!container) return;
-            // O botão agora tem uma classe `export-button` e um `data-export-target`
             const cardHTML = `
                 <div class="bg-white p-6 rounded-xl shadow-sm">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
@@ -226,9 +278,18 @@
             });
 
             const timestamps = analysisData.map(d => (d.tempo_segundos || 0).toFixed(1));
-            const chartOptions = (yTitle, beginAtZero = false) => ({ responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: yTitle }, beginAtZero: beginAtZero } } });
+            const chartOptions = (yTitle, beginAtZero = false) => ({ 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { 
+                        title: { display: true, text: yTitle }, 
+                        beginAtZero: beginAtZero 
+                    } 
+                } 
+            });
 
-            // Ângulos
+            // Ângulos Articulares
             createChartCard('chartOmbros', 'Ângulos dos Ombros', 'angulos');
             new Chart('chartOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_ombro_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_ombro_direito) }] }, options: chartOptions('Ângulo (°)') });
             
@@ -241,7 +302,20 @@
             createChartCard('chartJoelhos', 'Ângulos dos Joelhos', 'angulos');
             new Chart('chartJoelhos', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_joelho_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_joelho_direito) }] }, options: chartOptions('Ângulo (°)') });
 
-            // --- MUDANÇA 4: As linhas que anexavam o 'onclick' foram removidas pois não são mais necessárias ---
+            // Simetria Corporal
+            createChartCard('chartAssimetriaOmbros', 'Assimetria Vertical dos Ombros', 'simetria');
+            new Chart('chartAssimetriaOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Diferença Y', data: analysisData.map(d => d.assimetria_ombros_vertical) }] }, options: chartOptions('Distância (0-1)') });
+
+            // Análise Temporal
+            createChartCard('chartOscilacaoVertical', 'Oscilação Vertical do Quadril (Y)', 'temporal');
+            new Chart('chartOscilacaoVertical', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Posição Y (Quadril)', data: analysisData.map(d => d.oscilacao_vertical_quadril) }] }, options: chartOptions('Posição (0-1)') });
+
+            createChartCard('chartPosicaoHorizontal', 'Posição Horizontal do Quadril (X)', 'temporal');
+            new Chart('chartPosicaoHorizontal', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Posição X (Quadril)', data: analysisData.map(d => d.posicao_horizontal_quadril) }] }, options: chartOptions('Posição (0-1)') });
+
+            // Distribuições
+            createChartCard('chartDistribuicaoQuadris', 'Distribuição Vertical do Quadril (Y)', 'distribuicoes');
+            new Chart('chartDistribuicaoQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Distribuição Y', data: analysisData.map(d => d.oscilacao_vertical_quadril), showLine: false, pointRadius: 3 }] }, options: chartOptions('Posição (0-1)') });
         }
     </script>
 </body>
