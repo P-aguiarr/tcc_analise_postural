@@ -73,7 +73,7 @@
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
         // Variáveis globais para armazenar os dados e o ID da análise
         let currentAnalysisData = null;
-        let currentAnalysisId = null; 
+        let currentAnalysisId = null;
 
         function populateVideosUI(analysisId, apiResponse) {
             const videoContainer = document.getElementById("video-container");
@@ -119,7 +119,7 @@
         function cleanupAnalysis(id) {
             if (!id) return;
             const deleteUrl = `${backendBaseUrl}/api/delete-analysis/${id}`;
-            const data = new Blob([''], {type : 'application/json'}); 
+            const data = new Blob([''], {type : 'application/json'});
             
             // SendBeacon para garantir a requisição na saída da página
             navigator.sendBeacon(deleteUrl, data);
