@@ -1,4 +1,4 @@
-# app.py (Proxy) - VERSÃO FINAL COM FIX DE CORS REFORÇADO E ROTA DE LOGIN
+# app.py (Proxy) - VERSÃO DEFINITIVA COM CORS REFORÇADO E ROTA DE DIAGNÓSTICO
 
 import json
 import os
@@ -11,26 +11,31 @@ from flask import Flask, jsonify, request, abort, make_response
 from flask_cors import CORS
 
 # 🔥 URL DO SEU BACKEND DE ANÁLISE (O servidor que realmente processa o login/análise)
-# CERTIFIQUE-SE de que esta variável está configurada no painel do Railway
-# ou que o fallback (se usar) é o endereço correto.
+# Aqui, a variável de ambiente é lida.
 BACKEND_URL = os.environ.get("BACKEND_URL", "https://seu-backend-de-analise.com")
 
 # 1. INICIALIZAR A APLICAÇÃO FLASK
 app = Flask(__name__)
 
-# 🔥 CORREÇÃO CRÍTICA DO CORS:
-# Configuração super-reforçada para aceitar seu Frontend Vercel
-# Isto garante que o preflight OPTIONS (onde o erro ocorria) seja permitido.
+# 🔥 CONFIGURAÇÃO CRÍTICA DO CORS:
 CORS(app, resources={r"/*": {"origins": [
     "https://ttc-analise-postural.vercel.app",  # SEU DOMÍNIO VERCEL (Exato)
     "http://localhost:8080",                   # Para desenvolvimento local do Frontend
     "http://localhost:5000",                   # Para desenvolvimento local do Proxy/Backend
     "http://127.0.0.1:5000"                    
 ], 
-"methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Incluir OPTIONS é CRÍTICO para CORS
+"methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
 "allow_headers": ["Content-Type", "Authorization"], 
 "supports_credentials": True 
 }})
+
+# -----------------------------------------------------
+# ** TRATAMENTO MANUAL DO PREFLIGHT OPTIONS **
+@app.before_request
+def handle_options_request():
+    if request.method == "OPTIONS":
+        return make_response('', 200)
+# -----------------------------------------------------
 
 # -----------------------------------------------------
 # FUNÇÃO CENTRAL DE PROXY (Encaminhamento)
@@ -40,38 +45,30 @@ def proxy_to_backend(endpoint, method, data=None, headers=None):
     """Encaminha requisições para o backend real usando a biblioteca 'requests'."""
     url = f"{BACKEND_URL}{endpoint}"
     
-    # Prepara os headers a enviar para o backend
     proxy_headers = {
-        # Mantém o Content-Type original do cliente se ele veio
         'Content-Type': request.headers.get('Content-Type', 'application/json'),
         'User-Agent': 'Railway-Proxy/1.0',
     }
     
-    # Copia o header de Authorization se existir, necessário para autenticação
     if 'Authorization' in request.headers:
         proxy_headers['Authorization'] = request.headers['Authorization']
 
-    # Adiciona/Substitui quaisquer headers adicionais passados
     if headers:
         proxy_headers.update(headers)
         
     print(f"🔀 Encaminhando {method} {url}...")
 
     try:
-        # Fazer a requisição para o backend
         response = requests.request(
             method=method,
             url=url,
             headers=proxy_headers,
-            # Se a requisição for GET, data é None. Se for POST/PUT, usa request.data
             data=request.data if method in ['POST', 'PUT'] else None,
-            timeout=30 # Timeout para evitar requisições presas
+            timeout=30 
         )
 
-        # Criar a resposta do Flask com o conteúdo e status do backend
         flask_response = make_response(response.content, response.status_code)
         
-        # Copia todos os headers do backend para o cliente
         for key, value in response.headers.items():
             if key.lower() not in ['content-encoding', 'transfer-encoding', 'content-length']:
                 flask_response.headers[key] = value
@@ -94,13 +91,23 @@ def proxy_to_backend(endpoint, method, data=None, headers=None):
 # ROTAS DO PROXY
 # -----------------------------------------------------
 
+# 🔥 NOVA ROTA DE DIAGNÓSTICO
+@app.route('/api/debug/backend-url', methods=['GET'])
+def debug_backend_url():
+    """Retorna a URL do backend configurada no ambiente."""
+    return jsonify({
+        "success": True,
+        "message": "URL do Backend lida pelo Proxy",
+        "backend_url_lida": BACKEND_URL,
+        "timestamp": datetime.now().isoformat()
+    }), 200 
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """
-    Rota de Healthcheck.
-    """
+    """Rota de Healthcheck."""
     try:
-        # Testa a conexão com o backend real
+        # Tenta checar a saúde do backend usando a URL lida
         requests.get(f"{BACKEND_URL}/api/health", timeout=5)
         backend_status = "ok"
     except:
@@ -109,17 +116,14 @@ def health_check():
     return jsonify({
         "success": True,
         "message": "API Proxy Flask está funcionando",
-        "backend_url": BACKEND_URL,
+        "backend_url": BACKEND_URL, # Continua retornando para facilitar o debug
         "backend_status": backend_status,
         "timestamp": datetime.now().isoformat()
     }), 200 
 
-# 🔥 ROTA CRÍTICA DE LOGIN (Agora presente e esperando POST)
 @app.route('/api/auth/callback', methods=['POST'])
 def google_auth_callback_route():
-    """
-    Recebe o token do Google (via POST do Frontend) e encaminha para o Backend.
-    """
+    """Recebe o token do Google (via POST) e encaminha para o Backend."""
     return proxy_to_backend(
         endpoint='/api/auth/callback',
         method='POST',
