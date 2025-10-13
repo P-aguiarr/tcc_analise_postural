@@ -1,10 +1,130 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="utf-8" />
-  <link rel="stylesheet" href="/style.css" />
+  <!-- O seu arquivo style.css deve conter a maioria dos estilos, mas adicionamos estilos cruciais aqui -->
+  <link rel="stylesheet" href="/style.css" /> 
   <title>Login - The Posture Lab</title>
+  <style>
+    /* Estilos base para feedback do usuário */
+    .login-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 50px 20px;
+      min-height: 50vh;
+      text-align: center;
+    }
+
+    .central-login {
+      font-size: 1.25rem;
+      color: #333;
+      margin-bottom: 30px;
+    }
+
+    /* Estilo para o Spinner de Carregamento */
+    .loading {
+      display: none; /* Controlado por JS */
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      background-color: #f0f8ff;
+      border: 1px solid #cceeff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      color: #4a90e2;
+      font-weight: 600;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-top: 4px solid #4a90e2;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Estilo para Mensagens de Sucesso */
+    .success-message {
+      display: none; /* Controlado por JS */
+      margin-top: 20px;
+      padding: 20px 40px;
+      border-radius: 12px;
+      background-color: #e6f7ee;
+      border: 1px solid #27ae60;
+      color: #27ae60;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+    .success-message h3 {
+      margin-top: 0;
+      color: #1e8449;
+    }
+
+    /* Estilo para Mensagens de Erro */
+    .error-details {
+      display: none; /* Controlado por JS */
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      background-color: #fbe6e6;
+      border: 1px solid #e74c3c;
+      color: #e74c3c;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      max-width: 400px;
+      text-align: left;
+    }
+
+    .error-details h3 {
+      margin-top: 0;
+      color: #c0392b;
+    }
+
+    .error-details pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background-color: #f7eded;
+      padding: 10px;
+      border-radius: 8px;
+      color: #c0392b;
+      font-size: 0.9em;
+    }
+
+    .error-details button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #c0392b;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .error-details button:hover {
+      background-color: #a93226;
+    }
+
+    /* Garante que a imagem do Google não fique muito grande */
+    .google-login-img {
+      width: 280px; /* Ajuste para o tamanho padrão do botão GSI */
+      height: auto;
+      border-radius: 8px;
+      transition: opacity 0.3s;
+    }
+
+    .google-login-img:hover {
+        opacity: 0.9;
+    }
+
+  </style>
 </head>
 <body>
   <div class="landing-page">
@@ -27,13 +147,17 @@
       </p>
       
       <div class="google-login-container">
+        <!-- Botão visual personalizado -->
         <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
-          <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
+          <!-- Nota: Esta imagem deve estar no seu diretório /img/ -->
+          <img src="/img/google.png" alt="Login com Google" class="google-login-img" /> 
         </div>
         
+        <!-- Div invisível onde o Google renderiza o botão oficial -->
         <div id="googleButton" style="display: none;"></div>
       </div>
       
+      <!-- Feedback de status -->
       <div class="loading" id="loadingSpinner">
         <div class="spinner"></div>
         <p>Processando login...</p>
@@ -69,11 +193,10 @@
   
   <script>
     // 🔥 CORREÇÃO PRINCIPAL: FORÇAR A URL DO RAILWAY
-    // Substitua 'SUA_URL_PUBLICA_DO_RAILWAY' pelo domínio que você encontrou no painel!
-    // Ex: "https://tcc-analise-postural.up.railway.app"
+    // A URL está correta: https://tccanalisepostural-production.up.railway.app
     const RAILWAY_BACKEND_URL = "https://tccanalisepostural-production.up.railway.app";
     
-    // Fallback: usar a URL do Vercel apenas para testes locais
+    // Fallback: usar a URL do Vercel apenas para testes locais (mantido como fallback)
     const API_BASE_URL = RAILWAY_BACKEND_URL || window.location.origin;
     const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
 
@@ -81,23 +204,29 @@
     window.onload = function () {
       console.log('Página carregada, URL da API:', API_AUTH_URL);
       
-      // Verificar se já está logado primeiro
+      // 1. Verificar se já está logado primeiro
       checkExistingLogin();
       
-      // Inicializar o Google Sign-In quando a biblioteca carregar
+      // 2. Inicializar o Google Sign-In quando a biblioteca carregar
       initializeGoogleSignIn();
+      
+      // 3. Ocultar todos os status ao iniciar
+      hideLoading();
+      hideSuccess();
+      hideError();
     };
 
     // Função para inicializar o Google Sign-In
     function initializeGoogleSignIn() {
       if (typeof google === 'undefined' || typeof google.accounts === 'undefined') {
-        console.log('Google library not loaded yet, retrying...');
+        // Tenta novamente se a biblioteca ainda não carregou
         setTimeout(initializeGoogleSignIn, 100);
         return;
       }
 
       google.accounts.id.initialize({
-        client_id: '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com',
+        // Substitua pelo seu Client ID real
+        client_id: '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com', 
         callback: handleGoogleSignIn,
         auto_select: false,
         context: 'signin',
@@ -116,7 +245,7 @@
         }
       );
       
-      console.log('Google Sign-In initialized successfully');
+      console.log('Google Sign-In inicializado com sucesso');
       
       // Adicionar evento de clique ao botão personalizado
       document.getElementById('customGoogleButton').addEventListener('click', function() {
@@ -132,7 +261,7 @@
       const loginTime = localStorage.getItem('loginTime');
       
       if (user && loginTime) {
-        // Verificar se o login foi feito há menos de 5 minutos
+        // Verificar se o login foi feito há menos de 5 minutos (evita logins obsoletos)
         const loginTimestamp = parseInt(loginTime);
         const currentTime = new Date().getTime();
         const fiveMinutes = 5 * 60 * 1000;
@@ -153,7 +282,7 @@
       showLoading();
       
       try {
-        // Extrair informações do payload do token JWT
+        // 1. Extrair informações do payload do token JWT
         const payload = JSON.parse(atob(response.credential.split('.')[1]));
         console.log('Payload do token:', payload);
         
@@ -165,19 +294,17 @@
           loginTimestamp: new Date().toISOString()
         };
         
-        // Salvar dados imediatamente no localStorage
+        // 2. Salvar dados locais
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userId', userData.id);
         localStorage.setItem('loginTime', new Date().getTime().toString());
         
-        // 🔥 AGORA: Esperar a API completar antes de redirecionar
-        // O sendToAPI usará a URL CORRETA do RAILWAY
+        // 3. Enviar token para API do backend (Railway)
         await sendToAPI(response.credential, userData);
         
-        // Se chegou aqui, a API foi bem-sucedida
+        // 4. Se chegou aqui, a API foi bem-sucedida e salva. Redirecionar.
         showSuccess();
         
-        // Redirecionar após breve delay
         setTimeout(() => {
           window.location.href = '/poslogin';
         }, 1500);
@@ -190,73 +317,80 @@
         localStorage.removeItem('userId');
         localStorage.removeItem('loginTime');
         
-        showError('Falha no login: ' + error.message);
-      }
-    }
-
-    // Função para enviar dados para API
-    async function sendToAPI(token, userData) {
-      try {
-        console.log('Enviando para API:', API_AUTH_URL);
-        const response = await fetch(API_AUTH_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ token: token })
-        });
-        
-        console.log('Resposta da API status:', response.status);
-        
-        // Verificar se a resposta é JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await response.text();
-          console.error('Resposta não é JSON:', text.substring(0, 200));
-          throw new Error('Resposta inválida do servidor');
-        }
-        
-        const data = await response.json();
-        console.log('Resposta da API:', data);
-        
-        if (data.success && data.saved) {
-          console.log('✅ Dados salvos com sucesso na API');
-          return true;
+        // Tratar erros de diferentes tipos
+        let displayMessage = 'Falha ao processar login. Tente novamente.';
+        if (error.message.includes('JSON')) {
+            displayMessage = 'Erro de comunicação com o servidor. A resposta não é válida.';
+        } else if (error.message.includes('Falha ao salvar dados')) {
+             displayMessage = 'O servidor Railway não conseguiu salvar seus dados de usuário.';
         } else {
-          console.error('❌ Erro na API:', data.error || 'Erro desconhecido');
-          throw new Error(data.error || 'Falha ao salvar dados');
+            displayMessage = error.message;
         }
-        
-      } catch (error) {
-        console.error('❌ Erro ao conectar com API:', error);
-        throw error;
+
+        showError('Erro: ' + displayMessage);
       }
     }
 
-    // Função para testar conexão com API
-    async function testAPIConnection() {
-      try {
-        // Usar rota de healthcheck ou outra rota GET
-        const healthCheckUrl = `${API_BASE_URL}/api/health`; 
-        console.log('Testando conexão com API:', healthCheckUrl);
-        const response = await fetch(healthCheckUrl, { method: 'GET' });
-        
-        if (response.status !== 200) {
-           throw new Error(`Status ${response.status}. Servidor pode estar com erro.`);
+    // Função para enviar dados para API do Railway
+    async function sendToAPI(token, userData) {
+      const MAX_RETRIES = 3;
+      let delay = 1000; // 1 second
+      
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          console.log(`Tentativa ${attempt}: Enviando para API ${API_AUTH_URL}`);
+          const response = await fetch(API_AUTH_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token: token })
+          });
+          
+          console.log('Resposta da API status:', response.status);
+          
+          if (!response.ok) {
+            // Se o status for de erro (4xx ou 5xx), tentamos ler o erro do JSON se possível
+            try {
+                const errorData = await response.json();
+                console.error(`Erro da API (Status ${response.status}):`, errorData.error);
+                throw new Error(errorData.error || `Erro HTTP ${response.status}`);
+            } catch (e) {
+                // Se falhar a leitura do JSON, retornamos o status e o texto
+                const text = await response.text();
+                throw new Error(`Erro HTTP ${response.status}. Resposta: ${text.substring(0, 100)}`);
+            }
+          }
+          
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Resposta não é JSON:', text.substring(0, 200));
+            throw new Error('Resposta inválida do servidor: não é JSON.');
+          }
+          
+          const data = await response.json();
+          console.log('Resposta da API:', data);
+          
+          if (data.success && data.saved) {
+            console.log('✅ Dados salvos com sucesso na API');
+            return true;
+          } else {
+            console.error('❌ Erro na API (sucesso=false):', data.error || 'Erro desconhecido');
+            throw new Error(data.error || 'Falha ao salvar dados (servidor retornou sucesso=false)');
+          }
+          
+        } catch (error) {
+          console.error(`❌ Erro na Tentativa ${attempt}:`, error.message);
+          
+          if (attempt === MAX_RETRIES) {
+            throw error; // Lançar o erro após a última tentativa
+          }
+          
+          // Espera exponencial antes de tentar novamente
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2; 
         }
-        
-        // Verificar se a resposta é JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Resposta não é JSON.');
-        }
-        
-        const data = await response.json();
-        console.log('Teste de API (Healthcheck):', data);
-        return data.success === true;
-      } catch (error) {
-        console.error('API não disponível:', error);
-        return false;
       }
     }
 
@@ -278,7 +412,7 @@
       document.getElementById('errorMessage').textContent = message;
       document.getElementById('errorDetails').style.display = 'block';
       hideSuccess();
-      console.error('Erro:', message);
+      console.error('Erro exibido para o usuário:', message);
     }
 
     function hideError() {
@@ -289,47 +423,74 @@
       document.getElementById('successMessage').style.display = 'none';
     }
 
+    function hideLoading() {
+      document.getElementById('loadingSpinner').style.display = 'none';
+    }
+    
+    /* ----------------------
+       Funções de Debug (expostas globalmente)
+       ---------------------- */
+
     // Debug: Verificar se o usuário está logado
-    function debugAuth() {
+    window.debugAuth = function() {
       const user = localStorage.getItem('user');
-      console.log('Usuário no localStorage:', user);
+      console.log('--- Status de Autenticação (localStorage) ---');
       
       if (user) {
         try {
           const userData = JSON.parse(user);
-          console.log('Dados do usuário:', userData);
-          console.log('Tempo desde o login:', (new Date().getTime() - parseInt(localStorage.getItem('loginTime'))) / 1000 + ' segundos');
+          const loginTime = parseInt(localStorage.getItem('loginTime'));
+          const timeElapsed = ((new Date().getTime() - loginTime) / 1000).toFixed(0);
+
+          console.log('✅ Usuário logado encontrado:');
+          console.log('  Nome:', userData.name);
+          console.log('  Email:', userData.email);
+          console.log('  UserID:', userData.id);
+          console.log('  Tempo desde o login:', timeElapsed + ' segundos');
+          
         } catch (e) {
-          console.error('Erro ao parsear usuário:', e);
+          console.error('❌ Erro ao parsear dados do usuário:', e);
         }
       } else {
-        console.log('Nenhum usuário logado');
+        console.log('🤷 Nenhum usuário logado encontrado.');
+      }
+      console.log('---------------------------------------------');
+    }
+
+    // Função para testar conexão com API (Healthcheck)
+    window.testAPI = async function() {
+      showLoading();
+      try {
+        const healthCheckUrl = `${API_BASE_URL}/api/health`; 
+        console.log('Testando conexão com API:', healthCheckUrl);
+        const response = await fetch(healthCheckUrl, { method: 'GET' });
+        
+        if (!response.ok) {
+            throw new Error(`Status ${response.status}. Servidor pode estar inacessível.`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Resposta não é JSON (Verifique o servidor).');
+        }
+        
+        const data = await response.json();
+        hideLoading();
+        // Usamos um modal customizado para não usar alert()
+        showError(`✅ API Conectada: ${data.message} (Backend: ${data.backend_url})`);
+        document.getElementById('errorDetails').style.backgroundColor = '#e6f7ee'; 
+        document.getElementById('errorDetails').style.borderColor = '#27ae60';
+        document.getElementById('errorDetails').style.color = '#27ae60';
+        document.getElementById('errorDetails').querySelector('h3').textContent = '✅ Sucesso no Healthcheck';
+        document.getElementById('errorDetails').querySelector('h3').style.color = '#1e8449';
+        document.getElementById('errorDetails').querySelector('button').style.backgroundColor = '#27ae60';
+
+
+      } catch (error) {
+        hideLoading();
+        showError('❌ Erro ao testar API: ' + error.message);
       }
     }
-
-    // Testar API manualmente
-    function testAPI() {
-      showLoading();
-      testAPIConnection().then(available => {
-        hideLoading();
-        if (available) {
-          alert('✅ API disponível e funcionando!');
-        } else {
-          alert('❌ API indisponível. Verifique o console para detalhes.');
-        }
-      }).catch(error => {
-        hideLoading();
-        alert('❌ Erro ao testar API: ' + error.message);
-      });
-    }
-
-    function hideLoading() {
-      document.getElementById('loadingSpinner').style.display = 'none';
-    }
-
-    // Expor funções para console
-    window.debugAuth = debugAuth;
-    window.testAPI = testAPI;
   </script>
 </body>
 </html>
