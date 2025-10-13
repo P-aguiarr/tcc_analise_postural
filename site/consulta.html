@@ -11,28 +11,11 @@
     <script src="https://unpkg.com/lucide@latest" defer></script>
 
     <style>
-        :root {
-            --primary: #4f46e5;
-            --light: #f3f4f6;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--light);
-        }
-        .chart-container {
-            position: relative;
-            height: 350px;
-            width: 100%;
-        }
-        .tab-button.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        .navbar {
-            background-color: white;
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+        :root { --primary: #4f46e5; --light: #f3f4f6; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--light); }
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .navbar { background-color: white; padding: 1rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .the-posture-lab { font-size: 1.5rem; font-weight: bold; }
         .span { color: var(--primary); }
         .frame-16 { display: flex; justify-content: space-between; align-items: center; }
@@ -63,11 +46,7 @@
         <section id="video-section" class="mb-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Vídeos da Análise</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="video-container">
-                 <div class="bg-white p-4 rounded-xl shadow-sm">
-                    <div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <p class="text-gray-500">Carregando vídeo...</p>
-                    </div>
-                </div>
+                 <div class="bg-white p-4 rounded-xl shadow-sm"><div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center"><p class="text-gray-500">Carregando vídeo...</p></div></div>
             </div>
         </section>
 
@@ -103,7 +82,10 @@
             videoContainer.innerHTML += `
                 <div class="bg-white p-4 rounded-xl shadow-sm">
                     <h3 class="font-bold mb-2">Plano Coronal (Frontal) com Landmarks</h3>
-                    <video controls muted class="w-full rounded-lg" src="${videoUrlFrontal}" type="video/mp4" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo.</p>';"></video>
+                    <video controls muted preload="auto" class="w-full rounded-lg" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo.</p>';">
+                        <source src="${videoUrlFrontal}" type="video/mp4">
+                        Seu navegador não suporta vídeos.
+                    </video>
                 </div>`;
             
             if (apiResponse.data.temporal_data_transversal) {
@@ -111,7 +93,9 @@
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Transversal (Axial) com Landmarks</h3>
-                        <video controls muted class="w-full rounded-lg" src="${videoUrlTransversal}" type="video/mp4" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo.</p>';"></video>
+                        <video controls muted preload="auto" class="w-full rounded-lg" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo.</p>';">
+                            <source src="${videoUrlTransversal}" type="video/mp4">
+                        </video>
                     </div>`;
             }
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
@@ -127,7 +111,7 @@
                 if (!apiResponse.success) throw new Error(`Erro no backend: ${apiResponse.error}`);
                 return apiResponse;
             } catch (error) {
-                document.getElementById('loading-indicator').innerHTML = `<h2 class="text-red-500 font-bold">${error.message}</h2>`;
+                document.getElementById('loading-indicator').innerHTML = `<h2 class="text-red-500">${error.message}</h2>`;
                 return null;
             }
         }
@@ -152,16 +136,16 @@
                 const analysisData = apiResponse.data.temporal_data_frontal;
                 const validFrames = analysisData ? analysisData.filter(d => d.angulo_ombro_esquerdo != null).length : 0;
 
-                if (analysisData && validFrames > 10) { // Exige um mínimo de frames com dados
+                if (analysisData && validFrames > 10) {
                     loadingIndicator.style.display = 'none';
                     tabContent.style.display = 'block';
                     setupAllCharts(analysisData);
                     if (window.lucide) lucide.createIcons();
                 } else {
-                    loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+                     loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
                         <h2 class="font-bold text-xl">Análise Concluída com Baixa Detecção</h2>
-                        <p>O sistema processou o vídeo, mas não conseguiu detectar os pontos corporais na maior parte do tempo.</p>
-                        <p class="mt-2">Dicas: Tente um vídeo com melhor iluminação, onde o corpo esteja mais visível e centralizado.</p>
+                        <p>O sistema não conseguiu detectar os pontos corporais na maior parte do vídeo.</p>
+                        <p class="mt-2">Dicas: Tente um vídeo com melhor iluminação e corpo mais visível.</p>
                         </div>`;
                 }
             }
