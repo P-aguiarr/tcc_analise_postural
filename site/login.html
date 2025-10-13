@@ -1,487 +1,473 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta charset="utf-8" />
-  <!-- O seu arquivo style.css deve conter a maioria dos estilos, mas adicionamos estilos cruciais aqui -->
-  <link rel="stylesheet" href="/style.css" /> 
-  <title>Login - The Posture Lab</title>
-  <style>
-    /* Estilos base para feedback do usuário */
-    .login-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 50px 20px;
-      min-height: 50vh;
-      text-align: center;
-    }
-
-    .central-login {
-      font-size: 1.25rem;
-      color: #333;
-      margin-bottom: 30px;
-    }
-
-    /* Estilo para o Spinner de Carregamento */
-    .loading {
-      display: none; /* Controlado por JS */
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 12px;
-      background-color: #f0f8ff;
-      border: 1px solid #cceeff;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-      color: #4a90e2;
-      font-weight: 600;
-    }
-
-    .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      border-top: 4px solid #4a90e2;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 10px auto;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Estilo para Mensagens de Sucesso */
-    .success-message {
-      display: none; /* Controlado por JS */
-      margin-top: 20px;
-      padding: 20px 40px;
-      border-radius: 12px;
-      background-color: #e6f7ee;
-      border: 1px solid #27ae60;
-      color: #27ae60;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-    .success-message h3 {
-      margin-top: 0;
-      color: #1e8449;
-    }
-
-    /* Estilo para Mensagens de Erro */
-    .error-details {
-      display: none; /* Controlado por JS */
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 12px;
-      background-color: #fbe6e6;
-      border: 1px solid #e74c3c;
-      color: #e74c3c;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-      max-width: 400px;
-      text-align: left;
-    }
-
-    .error-details h3 {
-      margin-top: 0;
-      color: #c0392b;
-    }
-
-    .error-details pre {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      background-color: #f7eded;
-      padding: 10px;
-      border-radius: 8px;
-      color: #c0392b;
-      font-size: 0.9em;
-    }
-
-    .error-details button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      background-color: #c0392b;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .error-details button:hover {
-      background-color: #a93226;
-    }
-
-    /* Garante que a imagem do Google não fique muito grande */
-    .google-login-img {
-      width: 280px; /* Ajuste para o tamanho padrão do botão GSI */
-      height: auto;
-      border-radius: 8px;
-      transition: opacity 0.3s;
-    }
-
-    .google-login-img:hover {
-        opacity: 0.9;
-    }
-
-  </style>
-</head>
-<body>
-  <div class="landing-page">
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="login-section">
-      <p class="central-login">
-        Entre na plataforma e descubra um mundo de possibilidades!
-      </p>
-      
-      <div class="google-login-container">
-        <!-- Botão visual personalizado -->
-        <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
-          <!-- Nota: Esta imagem deve estar no seu diretório /img/ -->
-          <img src="/img/google.png" alt="Login com Google" class="google-login-img" /> 
-        </div>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Login - Análise Postural</title>
+    <!-- Carregamento do Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#059669', // Cor verde esmeralda
+                        'secondary': '#10b981',
+                        'accent': '#3b82f6',
+                        'background': '#f8fafc',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilo para a fonte Inter */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         
-        <!-- Div invisível onde o Google renderiza o botão oficial -->
-        <div id="googleButton" style="display: none;"></div>
-      </div>
-      
-      <!-- Feedback de status -->
-      <div class="loading" id="loadingSpinner">
-        <div class="spinner"></div>
-        <p>Processando login...</p>
-      </div>
+        /* Estilo para o spinner (animação simples) */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
 
-      <div class="success-message" id="successMessage">
-        <h3>✅ Login realizado com sucesso!</h3>
-        <p>Redirecionando para a página principal...</p>
-      </div>
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
 
-      <div class="error-details" id="errorDetails">
-        <h3>❌ Erro no Login:</h3>
-        <pre id="errorMessage">Nenhum detalhe disponível</pre>
-        <button onclick="hideError()">Fechar</button>
-      </div>
-    </div>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Navbar -->
+    <header class="w-full bg-white shadow-md p-4 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <p class="text-2xl font-extrabold text-primary">
+                The Posture <span class="text-gray-700 font-medium">Lab</span>
+            </p>
+            <nav class="space-x-4">
+                <a href="/" class="text-gray-600 hover:text-primary transition duration-150">Home</a>
+                <a href="/login" class="text-primary font-semibold border-b-2 border-primary pb-1">Login</a>
+                <a href="/configuracoes" class="text-gray-600 hover:text-primary transition duration-150">Configurações</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Seção de Login Principal -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white p-8 md:p-10 rounded-xl shadow-2xl space-y-6">
+            <h1 class="text-3xl font-bold text-center text-gray-800">Acesso à Plataforma</h1>
+            <p class="text-center text-gray-500 mb-6">
+                Entre na plataforma e descubra um mundo de possibilidades!
+            </p>
+
+            <!-- 1. Botão de Login Personalizado -->
+            <div id="customGoogleButton" 
+                 class="w-full flex items-center justify-center space-x-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 cursor-pointer"
+                 title="Fazer login usando sua conta Google">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png" alt="Logo Google" class="w-6 h-6">
+                <span>Continuar com Google</span>
+            </div>
+
+            <!-- 2. Status de Carregamento (Spinner) -->
+            <div id="loadingSpinner" style="display: none;" 
+                 class="mt-4 p-3 bg-primary text-white rounded-lg flex items-center justify-center space-x-3 shadow-md">
+                <div class="spinner"></div>
+                <span class="font-medium">Processando login...</span>
+            </div>
+            
+            <!-- 3. Mensagem de Sucesso -->
+            <div id="successMessage" style="display: none;" 
+                 class="mt-4 p-3 bg-green-100 text-green-700 border border-green-400 rounded-lg shadow-md font-medium">
+                ✅ Login bem-sucedido! Redirecionando...
+            </div>
+
+            <!-- 4. Mensagem de Erro (Custom Modal) -->
+            <div id="errorDetails" style="display: none;" 
+                 class="mt-4 p-4 bg-red-100 border-2 border-red-400 rounded-lg text-red-700 shadow-md">
+                <h3 class="font-bold text-lg text-red-800 mb-2">❌ Erro no Login:</h3>
+                <p id="errorMessage" class="text-sm"></p>
+                <button onclick="hideError()" class="mt-3 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition duration-150">
+                    Entendi
+                </button>
+            </div>
+            
+            <!-- 5. Funções de Debug -->
+            <div class="pt-4 border-t border-gray-200 text-center space-y-2">
+                <p class="text-xs text-gray-400">Ferramentas de Suporte:</p>
+                <div class="flex justify-center space-x-3">
+                    <button onclick="window.testAPI()" class="text-xs text-accent hover:text-blue-700 font-medium">
+                        Testar Conexão da API
+                    </button>
+                    <button onclick="window.debugAuth()" class="text-xs text-gray-500 hover:text-gray-700 font-medium">
+                        Verificar Status Local
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
     
-    <img src="/img/Group%206.png" alt="Decoração" class="corner-image" />
-
-    <div class="footer">
-      <div class="footer-links">
-        <a href="#">Careers</a> | 
-        <a href="#">Privacy Policy</a> | 
-        <a href="#">Terms & Conditions</a>
-      </div>
-      <div class="copyright">
-        © 2025 Analíse Postural 
-      </div>
-    </div>
-  </div>
-
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  
-  <script>
-    // 🔥 CORREÇÃO PRINCIPAL: FORÇAR A URL DO RAILWAY
-    // A URL está correta: https://tccanalisepostural-production.up.railway.app
-    const RAILWAY_BACKEND_URL = "https://tccanalisepostural-production.up.railway.app";
+    <!-- Script do Google Sign-In -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
-    // Fallback: usar a URL do Vercel apenas para testes locais (mantido como fallback)
-    const API_BASE_URL = RAILWAY_BACKEND_URL || window.location.origin;
-    const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
+    <!-- Lógica de Login (Seu código JS) -->
+    <script>
+      // 🔥 CORREÇÃO PRINCIPAL: FORÇAR A URL DO RAILWAY
+      // A URL está correta: https://tccanalisepostural-production.up.railway.app
+      const RAILWAY_BACKEND_URL = "https://tccanalisepostural-production.up.railway.app";
+      
+      // Fallback: usar a URL do Vercel apenas para testes locais (mantido como fallback)
+      const API_BASE_URL = RAILWAY_BACKEND_URL || window.location.origin;
+      const API_AUTH_URL = `${API_BASE_URL}/api/auth/callback`;
 
-    // Configuração do Google Sign-In
-    window.onload = function () {
-      console.log('Página carregada, URL da API:', API_AUTH_URL);
-      
-      // 1. Verificar se já está logado primeiro
-      checkExistingLogin();
-      
-      // 2. Inicializar o Google Sign-In quando a biblioteca carregar
-      initializeGoogleSignIn();
-      
-      // 3. Ocultar todos os status ao iniciar
-      hideLoading();
-      hideSuccess();
-      hideError();
-    };
+      // Configuração do Google Sign-In
+      window.onload = function () {
+        console.log('Página carregada, URL da API:', API_AUTH_URL);
+        
+        // 1. Verificar se já está logado primeiro
+        checkExistingLogin();
+        
+        // 2. Inicializar o Google Sign-In quando a biblioteca carregar
+        initializeGoogleSignIn();
+        
+        // 3. Ocultar todos os status ao iniciar
+        hideLoading();
+        hideSuccess();
+        hideError();
+      };
 
-    // Função para inicializar o Google Sign-In
-    function initializeGoogleSignIn() {
-      if (typeof google === 'undefined' || typeof google.accounts === 'undefined') {
-        // Tenta novamente se a biblioteca ainda não carregou
-        setTimeout(initializeGoogleSignIn, 100);
-        return;
+      // Função para inicializar o Google Sign-In (CORRIGIDA - Remove o renderButton desnecessário para botões customizados)
+      function initializeGoogleSignIn() {
+        if (typeof google === 'undefined' || typeof google.accounts === 'undefined' || !google.accounts.id) {
+          // Tenta novamente se a biblioteca ainda não carregou
+          setTimeout(initializeGoogleSignIn, 100);
+          return;
+        }
+
+        google.accounts.id.initialize({
+          // Substitua pelo seu Client ID real
+          client_id: '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com', 
+          callback: handleGoogleSignIn,
+          auto_select: false,
+          context: 'signin',
+          ux_mode: 'popup',
+          itp_support: true
+        });
+        
+        // AQUI ESTÁ A CORREÇÃO: Usar google.accounts.id.prompt() no listener do botão
+        console.log('Google Sign-In inicializado com sucesso');
+        
+        // Adicionar evento de clique ao botão personalizado (CORRIGIDO)
+        const customButton = document.getElementById('customGoogleButton');
+        if (customButton) {
+          customButton.addEventListener('click', function() {
+            showLoading();
+            // Chamada direta para iniciar o fluxo de pop-up
+            google.accounts.id.prompt();
+            console.log('Disparando prompt de login do Google (pop-up)...');
+          });
+          console.log("✅ Listener de clique customizado anexado, usando google.accounts.id.prompt()");
+        }
       }
 
-      google.accounts.id.initialize({
-        // Substitua pelo seu Client ID real
-        client_id: '584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com', 
-        callback: handleGoogleSignIn,
-        auto_select: false,
-        context: 'signin',
-        ux_mode: 'popup',
-        itp_support: true
-      });
-      
-      // Renderizar o botão oficial do Google (mas mantê-lo escondido)
-      google.accounts.id.renderButton(
-        document.getElementById('googleButton'),
-        { 
-          theme: 'filled_blue', 
-          size: 'large',
-          text: 'signin_with',
-          width: 277
-        }
-      );
-      
-      console.log('Google Sign-In inicializado com sucesso');
-      
-      // Adicionar evento de clique ao botão personalizado
-      document.getElementById('customGoogleButton').addEventListener('click', function() {
-        showLoading();
-        // Disparar o clique no botão oficial do Google (que está escondido)
-        document.querySelector('#googleButton div[role=button]').click();
-      });
-    }
-
-    // Função para verificar se já existe login
-    function checkExistingLogin() {
-      const user = localStorage.getItem('user');
-      const loginTime = localStorage.getItem('loginTime');
-      
-      if (user && loginTime) {
-        // Verificar se o login foi feito há menos de 5 minutos (evita logins obsoletos)
-        const loginTimestamp = parseInt(loginTime);
-        const currentTime = new Date().getTime();
-        const fiveMinutes = 5 * 60 * 1000;
+      // Função para verificar se já existe login
+      function checkExistingLogin() {
+        const user = localStorage.getItem('user');
+        const loginTime = localStorage.getItem('loginTime');
         
-        if (currentTime - loginTimestamp < fiveMinutes) {
-          console.log('Usuário já logado recentemente, redirecionando...');
+        if (user && loginTime) {
+          // Verificar se o login foi feito há menos de 5 minutos (evita logins obsoletos)
+          const loginTimestamp = parseInt(loginTime);
+          const currentTime = new Date().getTime();
+          const fiveMinutes = 5 * 60 * 1000;
+          
+          if (currentTime - loginTimestamp < fiveMinutes) {
+            console.log('Usuário já logado recentemente, redirecionando...');
+            showSuccess();
+            setTimeout(() => {
+              window.location.href = '/poslogin';
+            }, 1500);
+          }
+        }
+      }
+
+      // Função para lidar com a resposta do Google
+      async function handleGoogleSignIn(response) {
+        console.log('Resposta do Google recebida:', response);
+        showLoading();
+        
+        try {
+          // 1. Extrair informações do payload do token JWT
+          const payload = JSON.parse(atob(response.credential.split('.')[1]));
+          console.log('Payload do token:', payload);
+          
+          const userData = {
+            id: payload.sub,
+            email: payload.email,
+            name: payload.name,
+            picture: payload.picture,
+            loginTimestamp: new Date().toISOString()
+          };
+          
+          // 2. Salvar dados locais
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('userId', userData.id);
+          localStorage.setItem('loginTime', new Date().getTime().toString());
+          
+          // 3. Enviar token para API do backend (Railway)
+          // O body precisa ser um objeto JSON, incluindo a credencial
+          const apiResponse = await sendToAPI(API_AUTH_URL, { credential: response.credential });
+          
+          // 4. Se chegou aqui, a API foi bem-sucedida e salva. Redirecionar.
+          console.log('✅ Resposta final da API:', apiResponse);
+          
+          // (Opcional) Guardar o token customizado se o backend retornar um:
+          // localStorage.setItem('customToken', apiResponse.custom_token); 
+          
           showSuccess();
+          
           setTimeout(() => {
             window.location.href = '/poslogin';
           }, 1500);
-        }
-      }
-    }
-
-    // Função para lidar com a resposta do Google
-    async function handleGoogleSignIn(response) {
-      console.log('Resposta do Google recebida:', response);
-      showLoading();
-      
-      try {
-        // 1. Extrair informações do payload do token JWT
-        const payload = JSON.parse(atob(response.credential.split('.')[1]));
-        console.log('Payload do token:', payload);
-        
-        const userData = {
-          id: payload.sub,
-          email: payload.email,
-          name: payload.name,
-          picture: payload.picture,
-          loginTimestamp: new Date().toISOString()
-        };
-        
-        // 2. Salvar dados locais
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('userId', userData.id);
-        localStorage.setItem('loginTime', new Date().getTime().toString());
-        
-        // 3. Enviar token para API do backend (Railway)
-        await sendToAPI(response.credential, userData);
-        
-        // 4. Se chegou aqui, a API foi bem-sucedida e salva. Redirecionar.
-        showSuccess();
-        
-        setTimeout(() => {
-          window.location.href = '/poslogin';
-        }, 1500);
-        
-      } catch (error) {
-        console.error('Erro no processamento do login:', error);
-        
-        // Limpar dados locais em caso de falha
-        localStorage.removeItem('user');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('loginTime');
-        
-        // Tratar erros de diferentes tipos
-        let displayMessage = 'Falha ao processar login. Tente novamente.';
-        if (error.message.includes('JSON')) {
-            displayMessage = 'Erro de comunicação com o servidor. A resposta não é válida.';
-        } else if (error.message.includes('Falha ao salvar dados')) {
-             displayMessage = 'O servidor Railway não conseguiu salvar seus dados de usuário.';
-        } else {
-            displayMessage = error.message;
-        }
-
-        showError('Erro: ' + displayMessage);
-      }
-    }
-
-    async function sendToAPI(url, data, retryCount = 0) {
-        const MAX_RETRIES = 3;
-        console.log(`Tentativa ${retryCount + 1}: Enviando para API ${url}`);
-    
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-    
-            // 1. LER O CORPO DA RESPOSTA UMA ÚNICA VEZ
-            // O corpo será lido como JSON, ou como texto se o JSON parsing falhar.
-            let responseBody = {};
-            try {
-                responseBody = await response.json();
-            } catch (e) {
-                // Se falhar ao ler JSON (ex: resposta vazia ou texto simples), tente ler como texto
-                responseBody.message = await response.text();
-            }
-    
-            if (!response.ok) {
-                console.log(`Resposta da API status: ${response.status}`);
-                
-                // Tenta obter a mensagem de erro do JSON do backend
-                const errorMessage = responseBody.error || responseBody.message || 'Erro desconhecido da API.';
-                
-                console.log(`Erro da API (Status ${response.status}): ${errorMessage}`);
-    
-                // Se for um erro do servidor e ainda houver tentativas, tenta novamente
-                if (retryCount < MAX_RETRIES - 1) {
-                    // Não precisa de novo response.text()/json() aqui!
-                    // Apenas chama o retry.
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Espera exponencial
-                    return sendToAPI(url, data, retryCount + 1);
-                } else {
-                    // Se esgotar as tentativas, lança o erro
-                    throw new Error(`API retornou status ${response.status}: ${errorMessage}`);
-                }
-            }
-    
-            // Sucesso
-            return responseBody;
-    
-        } catch (error) {
-            // Este catch pega erros de rede ou erros lançados acima após as retentativas
-            console.error(`❌ Erro na Tentativa ${retryCount + 1}: ${error.message}`);
-            throw error;
-        }
-    }
-
-
-    // Funções auxiliares para UI
-    function showLoading() {
-      document.getElementById('loadingSpinner').style.display = 'block';
-      hideError();
-      hideSuccess();
-    }
-
-    function showSuccess() {
-      document.getElementById('loadingSpinner').style.display = 'none';
-      document.getElementById('successMessage').style.display = 'block';
-      hideError();
-    }
-
-    function showError(message) {
-      document.getElementById('loadingSpinner').style.display = 'none';
-      document.getElementById('errorMessage').textContent = message;
-      document.getElementById('errorDetails').style.display = 'block';
-      hideSuccess();
-      console.error('Erro exibido para o usuário:', message);
-    }
-
-    function hideError() {
-      document.getElementById('errorDetails').style.display = 'none';
-    }
-
-    function hideSuccess() {
-      document.getElementById('successMessage').style.display = 'none';
-    }
-
-    function hideLoading() {
-      document.getElementById('loadingSpinner').style.display = 'none';
-    }
-    
-    /* ----------------------
-       Funções de Debug (expostas globalmente)
-       ---------------------- */
-
-    // Debug: Verificar se o usuário está logado
-    window.debugAuth = function() {
-      const user = localStorage.getItem('user');
-      console.log('--- Status de Autenticação (localStorage) ---');
-      
-      if (user) {
-        try {
-          const userData = JSON.parse(user);
-          const loginTime = parseInt(localStorage.getItem('loginTime'));
-          const timeElapsed = ((new Date().getTime() - loginTime) / 1000).toFixed(0);
-
-          console.log('✅ Usuário logado encontrado:');
-          console.log('  Nome:', userData.name);
-          console.log('  Email:', userData.email);
-          console.log('  UserID:', userData.id);
-          console.log('  Tempo desde o login:', timeElapsed + ' segundos');
           
-        } catch (e) {
-          console.error('❌ Erro ao parsear dados do usuário:', e);
-        }
-      } else {
-        console.log('🤷 Nenhum usuário logado encontrado.');
-      }
-      console.log('---------------------------------------------');
-    }
+        } catch (error) {
+          console.error('Erro no processamento do login:', error);
+          
+          // Limpar dados locais em caso de falha
+          localStorage.removeItem('user');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('loginTime');
+          
+          // Tratar erros de diferentes tipos
+          let displayMessage = 'Falha ao processar login. Tente novamente.';
+          if (error.message.includes('JSON')) {
+              displayMessage = 'Erro de comunicação com o servidor. A resposta não é válida.';
+          } else if (error.message.includes('Falha ao salvar dados')) {
+                displayMessage = 'O servidor Railway não conseguiu salvar seus dados de usuário.';
+          } else {
+                displayMessage = error.message;
+          }
 
-    // Função para testar conexão com API (Healthcheck)
-    window.testAPI = async function() {
-      showLoading();
-      try {
-        const healthCheckUrl = `${API_BASE_URL}/api/health`; 
-        console.log('Testando conexão com API:', healthCheckUrl);
-        const response = await fetch(healthCheckUrl, { method: 'GET' });
-        
-        if (!response.ok) {
-            throw new Error(`Status ${response.status}. Servidor pode estar inacessível.`);
+          showError('Erro: ' + displayMessage);
         }
-        
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Resposta não é JSON (Verifique o servidor).');
-        }
-        
-        const data = await response.json();
         hideLoading();
-        // Usamos um modal customizado para não usar alert()
-        showError(`✅ API Conectada: ${data.message} (Backend: ${data.backend_url})`);
-        document.getElementById('errorDetails').style.backgroundColor = '#e6f7ee'; 
-        document.getElementById('errorDetails').style.borderColor = '#27ae60';
-        document.getElementById('errorDetails').style.color = '#27ae60';
-        document.getElementById('errorDetails').querySelector('h3').textContent = '✅ Sucesso no Healthcheck';
-        document.getElementById('errorDetails').querySelector('h3').style.color = '#1e8449';
-        document.getElementById('errorDetails').querySelector('button').style.backgroundColor = '#27ae60';
-
-
-      } catch (error) {
-        hideLoading();
-        showError('❌ Erro ao testar API: ' + error.message);
       }
-    }
-  </script>
+
+      // Função sendToAPI corrigida para usar o endpoint correto e tratamento de resposta
+      async function sendToAPI(url, data, retryCount = 0) {
+          const MAX_RETRIES = 3;
+          // Log corrigido para mostrar o endpoint correto
+          console.log(`Tentativa ${retryCount + 1}: Enviando para API ${url}`);
+      
+          try {
+              const response = await fetch(url, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data)
+              });
+      
+              // 1. LER O CORPO DA RESPOSTA UMA ÚNICA VEZ
+              let responseBody = {};
+              let rawText = '';
+
+              try {
+                  rawText = await response.text();
+                  // Tenta ler como JSON, mas se falhar, assume que o texto lido é a mensagem (útil para erros sem JSON)
+                  responseBody = JSON.parse(rawText);
+              } catch (e) {
+                  // Se falhar (ex: resposta vazia ou texto simples), usa o texto lido
+                  responseBody.message = rawText || 'Resposta vazia ou não JSON';
+              }
+      
+              if (!response.ok || responseBody.success === false) {
+                  console.log(`Resposta da API status: ${response.status}`);
+                  
+                  // Tenta obter a mensagem de erro do JSON do backend
+                  const errorMessage = responseBody.error || responseBody.message || `Erro desconhecido da API (Status ${response.status}).`;
+                  
+                  console.log(`Erro da API (Status ${response.status}): ${errorMessage}`);
+      
+                  if (retryCount < MAX_RETRIES - 1) {
+                      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Espera exponencial
+                      return sendToAPI(url, data, retryCount + 1);
+                  } else {
+                      // Se esgotar as tentativas, lança o erro
+                      throw new Error(`API retornou status ${response.status}: ${errorMessage}`);
+                  }
+              }
+      
+              // Sucesso
+              return responseBody;
+      
+          } catch (error) {
+              // Este catch pega erros de rede ou erros lançados acima após as retentativas
+              console.error(`❌ Erro na Tentativa ${retryCount + 1}: ${error.message}`);
+              throw error;
+          }
+      }
+
+
+      // Funções auxiliares para UI
+      // ATUALIZADAS PARA TAILWIND
+      function showLoading() {
+        document.getElementById('loadingSpinner').style.display = 'flex';
+        hideError();
+        hideSuccess();
+      }
+
+      function showSuccess() {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+        hideError();
+      }
+
+      function showError(message) {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('errorMessage').textContent = message;
+        
+        const errorDetails = document.getElementById('errorDetails');
+        errorDetails.style.display = 'block';
+        
+        // Resetar estilos para erro padrão (vermelho)
+        errorDetails.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
+        errorDetails.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+        errorDetails.querySelector('h3').textContent = '❌ Erro no Login:';
+        errorDetails.querySelector('button').classList.remove('bg-green-600', 'hover:bg-green-700');
+        errorDetails.querySelector('button').classList.add('bg-red-600', 'hover:bg-red-700');
+
+        hideSuccess();
+        console.error('Erro exibido para o usuário:', message);
+      }
+
+      function hideError() {
+        document.getElementById('errorDetails').style.display = 'none';
+      }
+
+      function hideSuccess() {
+        document.getElementById('successMessage').style.display = 'none';
+      }
+
+      function hideLoading() {
+        document.getElementById('loadingSpinner').style.display = 'none';
+      }
+      
+      /* ----------------------
+          Funções de Debug (expostas globalmente)
+          ---------------------- */
+
+      // Debug: Verificar se o usuário está logado
+      window.debugAuth = function() {
+        const user = localStorage.getItem('user');
+        console.log('--- Status de Autenticação (localStorage) ---');
+        
+        // Temporariamente mostrar o container de erro para exibir o status
+        const debugMessage = document.getElementById('errorMessage');
+        const debugDetails = document.getElementById('errorDetails');
+        
+        // Estilo temporário para status (verde ou amarelo)
+        debugDetails.classList.remove('bg-red-100', 'border-red-400', 'text-red-700');
+        debugDetails.querySelector('button').classList.remove('bg-red-600', 'hover:bg-red-700');
+        
+        if (user) {
+          try {
+            const userData = JSON.parse(user);
+            const loginTime = parseInt(localStorage.getItem('loginTime'));
+            const timeElapsed = ((new Date().getTime() - loginTime) / 1000).toFixed(0);
+
+            console.log('✅ Usuário logado encontrado:');
+            console.log('  Nome:', userData.name);
+            console.log('  Email:', userData.email);
+            console.log('  UserID:', userData.id);
+            console.log('  Tempo desde o login:', timeElapsed + ' segundos');
+            
+            debugDetails.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            debugDetails.querySelector('h3').textContent = '✅ Status Local: Logado';
+            debugDetails.querySelector('button').classList.add('bg-green-600', 'hover:bg-green-700');
+            
+            debugMessage.innerHTML = `Usuário: ${userData.name}<br>Email: ${userData.email}<br>Logado há: ${timeElapsed} segundos.`;
+            
+          } catch (e) {
+            console.error('❌ Erro ao parsear dados do usuário:', e);
+            debugDetails.classList.add('bg-yellow-100', 'border-yellow-400', 'text-yellow-700');
+            debugDetails.querySelector('h3').textContent = '⚠️ Status Local: Erro';
+            debugMessage.textContent = 'Dados de login corrompidos no localStorage.';
+            debugDetails.querySelector('button').classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+          }
+        } else {
+          console.log('🤷 Nenhum usuário logado encontrado.');
+          debugDetails.classList.add('bg-yellow-100', 'border-yellow-400', 'text-yellow-700');
+          debugDetails.querySelector('h3').textContent = '⚠️ Status Local: Deslogado';
+          debugMessage.textContent = 'Nenhum usuário encontrado no localStorage.';
+          debugDetails.querySelector('button').classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+        }
+        hideLoading();
+        debugDetails.style.display = 'block';
+        console.log('---------------------------------------------');
+      }
+
+      // Função para testar conexão com API (Healthcheck)
+      window.testAPI = async function() {
+        showLoading();
+        const debugDetails = document.getElementById('errorDetails');
+        const debugMessage = document.getElementById('errorMessage');
+
+        try {
+          const healthCheckUrl = `${API_BASE_URL}/api/health`; 
+          console.log('Testando conexão com API:', healthCheckUrl);
+          const response = await fetch(healthCheckUrl, { method: 'GET' });
+          
+          if (!response.ok) {
+              throw new Error(`Status ${response.status}. Servidor pode estar inacessível.`);
+          }
+          
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+              throw new Error('Resposta não é JSON (Verifique o servidor).');
+          }
+          
+          const data = await response.json();
+          hideLoading();
+          
+          // Estilizar para sucesso no modal de erro (uso customizado)
+          debugDetails.classList.remove('bg-red-100', 'border-red-400', 'text-red-700');
+          debugDetails.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+          debugDetails.querySelector('h3').textContent = '✅ Sucesso no Healthcheck';
+          debugDetails.querySelector('button').classList.remove('bg-red-600', 'hover:bg-red-700');
+          debugDetails.querySelector('button').classList.add('bg-green-600', 'hover:bg-green-700');
+
+          debugMessage.innerHTML = `API Conectada!<br>Mensagem: ${data.message}<br>Backend: ${data.backend_url}`;
+          debugDetails.style.display = 'block';
+
+        } catch (error) {
+          hideLoading();
+          
+          // Estilizar para erro no modal
+          debugDetails.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
+          debugDetails.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+          debugDetails.querySelector('h3').textContent = '❌ Erro no Healthcheck:';
+          debugDetails.querySelector('button').classList.remove('bg-green-600', 'hover:bg-green-700');
+          debugDetails.querySelector('button').classList.add('bg-red-600', 'hover:bg-red-700');
+
+          debugMessage.textContent = '❌ Erro ao testar API: ' + error.message;
+          debugDetails.style.display = 'block';
+        }
+      }
+    </script>
 </body>
 </html>
