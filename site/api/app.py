@@ -10,7 +10,7 @@ import requests
 from flask import Flask, jsonify, request, abort, make_response
 from flask_cors import CORS
 
-# 🔥 URL DO SEU BACKEND DE ANÁLISE (O servidor que realmente processa o login/análise)
+# 🔥 URL DO SEU BACKEND DE ANÁLISE 
 # Aqui, a variável de ambiente é lida.
 BACKEND_URL = os.environ.get("BACKEND_URL", "https://seu-backend-de-analise.com")
 
@@ -18,11 +18,12 @@ BACKEND_URL = os.environ.get("BACKEND_URL", "https://seu-backend-de-analise.com"
 app = Flask(__name__)
 
 # 🔥 CONFIGURAÇÃO CRÍTICA DO CORS:
+# Define os domínios que podem fazer requisições para este Proxy.
 CORS(app, resources={r"/*": {"origins": [
-    "https://ttc-analise-postural.vercel.app",  # SEU DOMÍNIO VERCEL (Exato)
-    "http://localhost:8080",                   # Para desenvolvimento local do Frontend
-    "http://localhost:5000",                   # Para desenvolvimento local do Proxy/Backend
-    "http://127.0.0.1:5000"                    
+    "https://ttc-analise-postural.vercel.app",   # SEU DOMÍNIO VERCEL (Frontend)
+    "http://localhost:8080",                     # Para desenvolvimento local do Frontend
+    "http://localhost:5000",                     # Para desenvolvimento local do Proxy/Backend
+    "http://127.0.0.1:5000"                      
 ], 
 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
 "allow_headers": ["Content-Type", "Authorization"], 
@@ -30,10 +31,14 @@ CORS(app, resources={r"/*": {"origins": [
 }})
 
 # -----------------------------------------------------
-# ** TRATAMENTO MANUAL DO PREFLIGHT OPTIONS **
+# ** TRATAMENTO MANUAL DO PREFLIGHT OPTIONS (CRUCIAL!) **
+# Garante que requests OPTIONS feitos pelo navegador retornem 200 OK
+# com os headers CORS corretos antes de fazer o request POST real.
 @app.before_request
 def handle_options_request():
     if request.method == "OPTIONS":
+        # O Flask-CORS deve adicionar os cabeçalhos, mas esta função
+        # garante o retorno imediato e correto do status 200.
         return make_response('', 200)
 # -----------------------------------------------------
 
@@ -50,6 +55,7 @@ def proxy_to_backend(endpoint, method, data=None, headers=None):
         'User-Agent': 'Railway-Proxy/1.0',
     }
     
+    # Passar o header de autorização, se existir
     if 'Authorization' in request.headers:
         proxy_headers['Authorization'] = request.headers['Authorization']
 
@@ -63,12 +69,14 @@ def proxy_to_backend(endpoint, method, data=None, headers=None):
             method=method,
             url=url,
             headers=proxy_headers,
+            # Se for POST ou PUT, envia os dados brutos da requisição original
             data=request.data if method in ['POST', 'PUT'] else None,
-            timeout=30 
+            timeout=30  
         )
 
         flask_response = make_response(response.content, response.status_code)
         
+        # Copia todos os headers do backend (exceto os que o Flask ou o Gunicorn gerenciam)
         for key, value in response.headers.items():
             if key.lower() not in ['content-encoding', 'transfer-encoding', 'content-length']:
                 flask_response.headers[key] = value
@@ -91,7 +99,7 @@ def proxy_to_backend(endpoint, method, data=None, headers=None):
 # ROTAS DO PROXY
 # -----------------------------------------------------
 
-# 🔥 NOVA ROTA DE DIAGNÓSTICO
+# ROTA DE DIAGNÓSTICO
 @app.route('/api/debug/backend-url', methods=['GET'])
 def debug_backend_url():
     """Retorna a URL do backend configurada no ambiente."""
@@ -101,7 +109,6 @@ def debug_backend_url():
         "backend_url_lida": BACKEND_URL,
         "timestamp": datetime.now().isoformat()
     }), 200 
-
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -116,11 +123,12 @@ def health_check():
     return jsonify({
         "success": True,
         "message": "API Proxy Flask está funcionando",
-        "backend_url": BACKEND_URL, # Continua retornando para facilitar o debug
+        "backend_url": BACKEND_URL, 
         "backend_status": backend_status,
         "timestamp": datetime.now().isoformat()
     }), 200 
 
+# Rota de Login (Precisa do POST e OPTIONS/Preflight)
 @app.route('/api/auth/callback', methods=['POST'])
 def google_auth_callback_route():
     """Recebe o token do Google (via POST) e encaminha para o Backend."""
