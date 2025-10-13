@@ -119,26 +119,39 @@
     }
 
     // ==========================================================
-    // LÓGICA DE CLIQUE CUSTOMIZADO (COM DELAY DE SEGURANÇA)
+    // LÓGICA DE CLIQUE CUSTOMIZADO (AGORA USANDO POLLING)
     // ==========================================================
     function triggerGoogleSignIn() {
         showLoading();
         
-        // CRÍTICO: Delay de 100ms para garantir que o GSI terminou de injetar o iframe
-        // e o botão interno (gsi-button) está pronto, mitigando o erro de aba anônima.
-        setTimeout(() => {
-            // O GSI injeta um botão interno com ID "gsi-button" dentro do container 'g_id_onload'.
+        const MAX_ATTEMPTS = 40; // 40 * 50ms = 2000ms (2 segundos de espera máxima)
+        const INTERVAL_MS = 50;
+        let attempts = 0;
+        
+        console.log('Iniciando polling para botão GSI...');
+
+        const intervalId = setInterval(() => {
             const gsiButton = document.getElementById('gsi-button');
-            
+            attempts++;
+
             if (gsiButton) {
-                console.log('Botão GSI interno encontrado, simulando clique...');
+                // SUCESSO: Botão encontrado
+                clearInterval(intervalId);
+                console.log(`✅ Botão GSI encontrado em ${attempts} tentativas. Simulando clique.`);
                 gsiButton.click();
+                // O loading será gerido por handleCredentialResponse após este clique
+            } else if (attempts >= MAX_ATTEMPTS) {
+                // FALHA: Limite de tentativas atingido
+                clearInterval(intervalId);
+                console.error('❌ O serviço de login do Google não está pronto após 2 segundos. O botão interno não foi encontrado.');
+                showError('O serviço de login do Google não conseguiu carregar. Tente recarregar a página ou verifique sua conexão.');
             } else {
-                console.error('O serviço de login do Google não está pronto. O botão interno não foi encontrado.');
-                showError('O serviço de login do Google não está pronto. Tente recarregar a página ou verificar o console.');
+                // Em progresso: Continuar polling
+                // console.log(`Tentativa ${attempts}/${MAX_ATTEMPTS}: GSI ainda carregando...`); // Comentado para não poluir o console
             }
-        }, 100); 
+        }, INTERVAL_MS);
     }
+
 
     // ==========================================================
     // REDIRECIONAMENTO DE PRÉ-LOGIN
@@ -230,10 +243,8 @@
       try {
         // Rota de Healthcheck do seu backend Flask (app.py)
         const response = await fetch(`${RAILWAY_API_BASE_URL}/api/health`); 
-        // Retorna true se o status for 200-299
         return response.ok; 
       } catch (error) {
-        // Erro de rede/CORS
         console.error('Erro de rede ou CORS ao tentar conectar com a API Railway:', error);
         throw new Error('Falha de rede (CORS?) ao tentar acessar a API Railway. Verifique o console.');
       }
@@ -248,11 +259,9 @@
         if (available) {
           showSuccess('✅ API Railway disponível e a rota /api/health funciona!');
         } else {
-          // Se não estiver OK, mas sem erro de rede (ex: status 404, 500)
           showError('❌ Conexão estabelecida, mas a API não respondeu OK (Verifique 404/500 no console).');
         }
       } catch (error) {
-        // Captura o erro de rede/CORS lançado por testAPIConnection
         console.error('Erro de Conexão Geral:', error.message);
         showError(error.message);
       } finally {
