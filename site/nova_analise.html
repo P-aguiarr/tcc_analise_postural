@@ -6,477 +6,130 @@
   <link rel="stylesheet" href="/style.css" />
   <title>Nova Análise - The Posture Lab</title>
   <style>
-    /* Seus estilos originais foram mantidos aqui */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
-      color: #333;
-    }
-
-    .navbar {
-      background-color: #fff;
-      padding: 15px 30px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .frame-16 {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .the-posture-lab {
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .text-wrapper {
-      color: #333;
-    }
-
-    .span {
-      color: #4d77ff;
-    }
-
-    .frame-17 {
-      display: flex;
-      gap: 20px;
-    }
-
-    .text-wrapper-26 {
-      text-decoration: none;
-      color: #333;
-    }
-
-    .upload-container {
-      max-width: 1000px;
-      margin: 30px auto;
-      padding: 20px;
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    .upload-title {
-      text-align: center;
-      color: #333;
-      margin-bottom: 10px;
-    }
-
-    .upload-subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 30px;
-    }
-
-    .upload-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .upload-area {
-      border: 2px dashed #ccc;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      transition: all 0.3s;
-      background-color: #f9f9f9;
-    }
-
-    .upload-area.dragover {
-      border-color: #4d77ff;
-      background-color: #eaf2fc;
-    }
-
-    .upload-icon {
-      font-size: 40px;
-      margin-bottom: 15px;
-    }
-
-    .upload-text {
-      margin: 0 0 10px 0;
-      color: #333;
-    }
-
-    .upload-subtext, .upload-instruction {
-      color: #666;
-      font-size: 14px;
-    }
-
-    .upload-dimensions {
-      background-color: #eee;
-      display: inline-block;
-      padding: 5px 10px;
-      border-radius: 4px;
-      margin: 10px 0;
-      font-size: 12px;
-    }
-
-    .orientation-visual {
-      height: 100px;
-      width: 60px;
-      margin: 15px auto;
-      border: 2px solid #ccc;
-      border-radius: 5px;
-      position: relative;
-    }
-
-    .orientation-visual.horizontal {
-      width: 100px;
-      height: 60px;
-    }
-
-    .upload-button {
-      background-color: #4d77ff;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 15px;
-      transition: background-color 0.3s;
-    }
-
-    .upload-button:hover {
-      background-color: #3a5fcc;
-    }
-
-    .file-input {
-      display: none;
-    }
-
-    .uploaded-files {
-      margin-top: 30px;
-    }
-
-    .files-title {
-      margin-bottom: 15px;
-    }
-
-    .file-list {
-      border: 1px solid #eee;
-      border-radius: 5px;
-      overflow: hidden;
-    }
-
-    .file-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 15px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .file-item:last-child {
-      border-bottom: none;
-    }
-
-    .file-item.empty {
-      justify-content: center;
-      color: #999;
-    }
-
-    .file-info {
-      flex-grow: 1;
-    }
-
-    .file-name {
-      display: block;
-      font-weight: bold;
-    }
-
-    .file-type {
-      font-size: 12px;
-      color: #666;
-      background-color: #eee;
-      padding: 2px 6px;
-      border-radius: 3px;
-      margin-left: 8px;
-    }
-
-    .file-size {
-      font-size: 12px;
-      color: #666;
-      margin: 5px 0;
-    }
-    
-    .file-remove {
-      color: #999;
-      cursor: pointer;
-      padding: 5px;
-      margin-left: 10px;
-    }
-
-    .file-remove:hover {
-      color: #e74c3c;
-    }
-
-    .validation-container {
-      text-align: center;
-      margin: 30px 0;
-    }
-
-    .validate-button {
-      background-color: #4d77ff;
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s;
-    }
-    
-    .validation-error {
-      color: #e74c3c;
-      margin-top: 15px;
-      display: none;
-      background-color: #fdecea;
-      padding: 10px;
-      border-radius: 4px;
-    }
-
-    .processing-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .processing-content {
-      background: white;
-      padding: 40px;
-      border-radius: 10px;
-      text-align: center;
-      max-width: 500px;
-      width: 90%;
-    }
-
-    .spinner {
-      width: 60px;
-      height: 60px;
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #4d77ff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+    body { font-family: Arial, sans-serif; margin: 0; background-color: #f5f5f5; }
+    .navbar { background-color: #fff; padding: 15px 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .frame-16 { display: flex; justify-content: space-between; align-items: center; }
+    .the-posture-lab { font-size: 24px; font-weight: bold; }
+    .span { color: #4d77ff; }
+    .frame-17 { display: flex; gap: 20px; }
+    .text-wrapper-26 { text-decoration: none; color: #333; }
+    .upload-container { max-width: 1000px; margin: 30px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .upload-title { text-align: center; }
+    .upload-subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .upload-area { border: 2px dashed #ccc; border-radius: 8px; padding: 20px; text-align: center; }
+    .upload-button { background-color: #4d77ff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 15px; }
+    .file-input { display: none; }
+    .file-list { border-top: 1px solid #eee; margin-top: 20px; padding-top: 20px; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+    .file-item.empty { justify-content: center; color: #999; border: none; }
+    .file-remove { color: #999; cursor: pointer; }
+    .validation-container { text-align: center; margin-top: 30px; }
+    .validate-button { background-color: #4d77ff; color: white; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    .validation-error { color: #e74c3c; display: none; margin-top: 10px; }
+    .processing-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .processing-content { background: white; padding: 40px; border-radius: 10px; text-align: center; }
+    .spinner { width: 60px; height: 60px; border: 5px solid #f3f3f3; border-top: 5px solid #4d77ff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div class="landing-page">
-
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/nova-analise" class="text-wrapper-26">Nova Análise</a>
-          <a href="/consulta" class="text-wrapper-26">Resultados</a>
-        </div>
+  <div class="navbar"></div>
+  <div class="upload-container">
+    <h1 class="upload-title">Upload para Análise Postural</h1>
+    <p class="upload-subtitle">Selecione os vídeos para a análise</p>
+    <div class="upload-grid">
+      <div class="upload-area" id="frontalUploadArea">
+        <h2>Plano Coronal (Obrigatório)</h2>
+        <button class="upload-button">Selecionar Vídeo</button>
+        <input type="file" id="frontalFileInput" class="file-input" accept="video/*">
+      </div>
+      <div class="upload-area" id="transversalUploadArea">
+        <h2>Plano Transversal (Opcional)</h2>
+        <button class="upload-button">Selecionar Vídeo</button>
+        <input type="file" id="transversalFileInput" class="file-input" accept="video/*">
       </div>
     </div>
-
-    <div class="upload-container">
-      <h1 class="upload-title">Upload para Análise Postural</h1>
-      <p class="upload-subtitle">Selecione o tipo de vídeo de acordo com a orientação da câmera</p>
-      
-      <div class="upload-grid">
-        <div class="upload-area" id="frontalUploadArea">
-          <div class="upload-icon">📱</div>
-          <h2 class="upload-text">Plano Coronal (Frontal)</h2>
-          <p class="upload-subtext">Vista frontal ou posterior do corpo.</p>
-          <div class="upload-dimensions">720x1280 pixels</div>
-          <div class="orientation-visual"></div>
-          <p class="upload-instruction">Câmera na vertical</p>
-          <button class="upload-button" onclick="document.getElementById('frontalFileInput').click()">Selecionar Vídeo</button>
-          <input type="file" id="frontalFileInput" class="file-input" accept="video/*">
-        </div>
-
-        <div class="upload-area" id="transversalUploadArea">
-          <div class="upload-icon">🎥</div>
-          <h2 class="upload-text">Plano Transversal (Opcional)</h2>
-          <p class="upload-subtext">Vista lateral do corpo.</p>
-          <div class="upload-dimensions">1280x720 pixels</div>
-          <div class="orientation-visual horizontal"></div>
-          <p class="upload-instruction">Câmera na horizontal</p>
-          <button class="upload-button" onclick="document.getElementById('transversalFileInput').click()">Selecionar Vídeo</button>
-          <input type="file" id="transversalFileInput" class="file-input" accept="video/*">
-        </div>
-      </div>
-
-      <div class="uploaded-files">
-        <h2 class="files-title">Vídeos para Análise</h2>
-        <div class="file-list" id="fileList">
-          <div class="file-item empty">
-            <div class="file-info">
-              <span>Nenhum vídeo selecionado</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="validation-container">
-        <button class="validate-button" id="validateButton" onclick="processAnalysis()">Processar Análise</button>
-        <div id="validationError" class="validation-message validation-error">
-          ✗ É necessário adicionar pelo menos o vídeo do Plano Coronal (Frontal).
-        </div>
-      </div>
+    <div class="file-list" id="fileList">
+      <div class="file-item empty">Nenhum vídeo selecionado</div>
     </div>
-
-    <div class="processing-overlay" id="processingOverlay">
-      <div class="processing-content">
-        <div class="spinner"></div>
-        <h2>Processando Análise...</h2>
-        <p>Isso pode levar alguns minutos. Não feche esta página.</p>
-      </div>
+    <div class="validation-container">
+      <button class="validate-button" onclick="processAnalysis()">Processar Análise</button>
+      <div id="validationError" class="validation-error">É necessário adicionar o vídeo do Plano Coronal.</div>
     </div>
-    
+  </div>
+  <div class="processing-overlay" id="processingOverlay">
+    <div class="processing-content">
+      <div class="spinner"></div>
+      <h2>Processando Análise...</h2>
+      <p>Isso pode levar alguns minutos.</p>
+    </div>
   </div>
 
   <script>
-    const frontalUploadArea = document.getElementById('frontalUploadArea');
-    const transversalUploadArea = document.getElementById('transversalUploadArea');
-    const frontalFileInput = document.getElementById('frontalFileInput');
-    const transversalFileInput = document.getElementById('transversalFileInput');
-    const fileList = document.getElementById('fileList');
-    const validationError = document.getElementById('validationError');
-    const processingOverlay = document.getElementById('processingOverlay');
+    const files = new Map();
+    const fileInputs = {
+        frontal: document.getElementById('frontalFileInput'),
+        transversal: document.getElementById('transversalFileInput')
+    };
 
-    let files = [];
-    const currentRailwayUrl = "https://tccanalisepostural-production.up.railway.app";
+    document.getElementById('frontalUploadArea').addEventListener('click', () => fileInputs.frontal.click());
+    document.getElementById('transversalUploadArea').addEventListener('click', () => fileInputs.transversal.click());
 
-    function setupUploadArea(uploadArea, fileInput, type) {
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-        });
-        ['dragenter', 'dragover'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, () => uploadArea.classList.add('dragover'), false);
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover'), false);
-        });
-        uploadArea.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files, type), false);
-        fileInput.addEventListener('change', () => handleFiles(fileInput.files, type), false);
+    fileInputs.frontal.addEventListener('change', () => handleFile(fileInputs.frontal.files[0], 'frontal'));
+    fileInputs.transversal.addEventListener('change', () => handleFile(fileInputs.transversal.files[0], 'transversal'));
+
+    function handleFile(file, type) {
+        if (file) files.set(type, file);
+        updateFileListUI();
     }
 
-    setupUploadArea(frontalUploadArea, frontalFileInput, 'frontal');
-    setupUploadArea(transversalUploadArea, transversalFileInput, 'transversal');
-
-    function handleFiles(fileListInput, type) {
-        const file = fileListInput[0];
-        if (!file) return;
-
-        if (!validateFileSize(file)) return;
-        
-        // Remove arquivo antigo do mesmo tipo antes de adicionar o novo
-        files = files.filter(f => f.type !== type);
-        files.push({ file: file, type: type });
+    function removeFile(type) {
+        files.delete(type);
+        fileInputs[type].value = '';
         updateFileListUI();
     }
 
     function updateFileListUI() {
+        const fileList = document.getElementById('fileList');
         fileList.innerHTML = '';
-        if (files.length === 0) {
-            fileList.innerHTML = '<div class="file-item empty"><div class="file-info"><span>Nenhum vídeo selecionado</span></div></div>';
+        if (files.size === 0) {
+            fileList.innerHTML = '<div class="file-item empty">Nenhum vídeo selecionado</div>';
             return;
         }
-
-        files.forEach(f => {
-            const typeLabel = f.type === 'frontal' ? 'Plano Coronal (Frontal)' : 'Plano Transversal (Axial)';
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            
-            fileItem.innerHTML = `
-                <div class="file-info">
-                    <div><span class="file-name">${f.file.name}</span><span class="file-type">${typeLabel}</span></div>
-                    <div class="file-size">${formatFileSize(f.file.size)}</div>
-                </div>
-                <div class="file-remove" onclick="removeFile('${f.type}')">✕</div>
-            `;
-            fileList.appendChild(fileItem);
+        files.forEach((file, type) => {
+            const typeLabel = type === 'frontal' ? 'Plano Coronal' : 'Plano Transversal';
+            fileList.innerHTML += `<div class="file-item"><span>${file.name} (${typeLabel})</span><div class="file-remove" onclick="removeFile('${type}')">✕</div></div>`;
         });
     }
 
-    function removeFile(typeToRemove) {
-        files = files.filter(f => f.type !== typeToRemove);
-        if (typeToRemove === 'frontal') frontalFileInput.value = '';
-        if (typeToRemove === 'transversal') transversalFileInput.value = '';
-        updateFileListUI();
-    }
-
-    function validateFileSize(file) {
-        const maxSize = 100 * 1024 * 1024; // 100MB
-        if (file.size > maxSize) {
-            alert(`❌ Vídeo muito grande! O tamanho máximo permitido é de 100MB.`);
-            return false;
-        }
-        return true;
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
     async function processAnalysis() {
-        const hasFrontal = files.some(f => f.type === 'frontal');
-        if (!hasFrontal) {
-            validationError.style.display = 'block';
+        if (!files.has('frontal')) {
+            document.getElementById('validationError').style.display = 'block';
             return;
         }
-        validationError.style.display = 'none';
-        processingOverlay.style.display = 'flex';
+        document.getElementById('validationError').style.display = 'none';
+        document.getElementById('processingOverlay').style.display = 'flex';
 
         try {
             const formData = new FormData();
-            files.forEach(fileObj => {
-                const fieldName = fileObj.type === 'frontal' ? 'frontalImage' : 'transversalImage';
-                formData.append(fieldName, fileObj.file);
-            });
+            if(files.has('frontal')) formData.append('frontalImage', files.get('frontal'));
+            if(files.has('transversal')) formData.append('transversalImage', files.get('transversal'));
             
-            const endpoint = `${currentRailwayUrl}/api/process-analysis`;
-            console.log(`Enviando para: ${endpoint}`);
-            
+            const endpoint = "https://tccanalisepostural-production.up.railway.app/api/process-analysis";
             const response = await fetch(endpoint, { method: 'POST', body: formData });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Erro de rede ${response.status}: ${errorText}`);
-            }
 
+            if (!response.ok) throw new Error(`Erro de rede ${response.status}: ${await response.text()}`);
+            
             const result = await response.json();
             if (result.success && result.analysis_id) {
-                console.log(`Análise concluída com sucesso. Redirecionando para a página de consulta com o ID: ${result.analysis_id}`);
                 window.location.href = `/consulta?analysis_id=${result.analysis_id}`;
             } else {
-                throw new Error(`Análise falhou no backend: ${result.error || 'ID da análise não recebido.'}`);
+                throw new Error(`Análise falhou: ${result.error || 'ID não recebido.'}`);
             }
-
         } catch (error) {
-            console.error("Falha na análise:", error);
             alert("Falha na análise: " + error.message);
-            processingOverlay.style.display = 'none'; // Fecha o overlay em caso de erro
+            document.getElementById('processingOverlay').style.display = 'none';
         }
     }
   </script>
