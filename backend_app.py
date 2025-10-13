@@ -35,11 +35,12 @@ CORS(app)
 # CONFIGURAÇÕES DE AMBIENTE E VARIÁVEIS DO RAILWAY
 # ==========================================================
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
-RAILWAY_AUTH_AUDIENCE = os.environ.get('RAILWAY_AUTH_AUDIENCE')
+# GOOGLE_CLIENT_SECRET é necessário apenas se você estivesse usando o fluxo de autorização
+# completo (code exchange), mas o GSI (token) não o exige. Mantive a verificação de CLIENT_ID.
+# GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET') 
 
-if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-    print("❌ ERRO: As variáveis de ambiente GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET devem ser definidas no Railway.")
+if not GOOGLE_CLIENT_ID:
+    print("❌ ERRO: A variável de ambiente GOOGLE_CLIENT_ID deve ser definida no Railway.")
 else:
     print("✅ Configurações de Google Auth carregadas com sucesso.")
 
@@ -50,7 +51,6 @@ print("✅ Backend Railway - Análise Postural Avançado Iniciado!")
 
 # ==========================================================
 # ROTAS DE SERVIÇO DE ARQUIVOS HTML (Templates na pasta 'site')
-# Estas rotas continuam iguais.
 # ==========================================================
 
 @app.route('/')
@@ -62,7 +62,8 @@ def home_page():
 def login_page():
     """Rota explícita para o arquivo login.html."""
     try:
-        return render_template('login.html')
+        # Se você usar 'login (2).html', precisa renomear para 'login.html'
+        return render_template('login.html') 
     except Exception as e:
         return f"Erro ao renderizar 'login.html'. Verifique se ele está na pasta 'site'. Detalhe: {str(e)}", 500
 
@@ -83,7 +84,7 @@ def configuracoes_page():
         return f"Erro ao renderizar 'configuracoes.html'. Verifique se ele está na pasta 'site'.", 500
 
 # ==========================================================
-# ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO (ROTAS AGORA DIRETAS)
+# ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO (DIRETOS)
 # ==========================================================
 
 @app.route('/ping', methods=['GET'], strict_slashes=False)
@@ -98,6 +99,7 @@ def ping():
 def get_config():
     """
     Endpoint para fornecer o GOOGLE_CLIENT_ID ao frontend (agora em /config).
+    O frontend espera este JSON para carregar o botão de SSO.
     """
     if not GOOGLE_CLIENT_ID:
         return jsonify({
@@ -113,16 +115,22 @@ def get_config():
 @app.route('/auth/callback', methods=['POST'], strict_slashes=False)
 def auth_callback():
     """
-    Endpoint chamado pelo frontend após o login do Google (agora em /auth/callback).
+    Endpoint chamado pelo frontend após o login do Google (/auth/callback).
+    Recebe o 'id_token' e o valida.
     """
     data = request.get_json()
-    token = data.get('token')
+    # O GSI (Google Sign-in) envia o token no corpo como 'id_token'
+    token = data.get('id_token') 
     
     if not token:
-        return jsonify({"success": False, "error": "Token não fornecido."}), 400
+        # Caso o frontend envie a chave diferente ou nenhuma chave
+        token = data.get('token') 
     
-    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-        return jsonify({"success": False, "error": "Configuração de autenticação faltando no servidor."}), 500
+    if not token:
+        return jsonify({"success": False, "error": "Token não fornecido pelo cliente."}), 400
+    
+    if not GOOGLE_CLIENT_ID:
+        return jsonify({"success": False, "error": "Configuração de autenticação faltando no servidor (Client ID)."}), 500
 
     try:
         id_info = id_token.verify_oauth2_token(
@@ -156,6 +164,7 @@ def auth_callback():
 # ==========================================================
 # FUNÇÕES DE ANÁLISE POSTURAL (MANTIDAS)
 # ==========================================================
+# [ ... CÓDIGO DE analyze_posture, calcular_angulo, generate_analysis_data MANTIDO ... ]
 
 def calcular_angulo(a, b, c):
     """Calcula ângulo entre 3 pontos (em graus)."""
