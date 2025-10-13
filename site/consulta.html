@@ -3,969 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta - The Posture Lab</title>
+    <title>Dashboard de Análise Avançado - The Posture Lab</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js e plugin para Box Plot -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/chartjs-chart-box-and-violin-plot/build/Chart.BoxPlot.js"></script>
+    <!-- Ícones (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #4a90e2;
-            --secondary: #2c3e50;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-            --light: #ecf0f1;
-            --dark: #2c3e50;
+            --primary: #4f46e5;
+            --secondary: #1f2937;
+            --light: #f3f4f6;
+            --dark: #111827;
         }
-
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light);
         }
-
-        .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 15px 30px;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-        }
-
-        .frame-16 {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .the-posture-lab {
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .text-wrapper { color: #333; }
-        .span { color: var(--primary); }
-
-        .frame-17 {
-            display: flex;
-            gap: 20px;
-        }
-
-        .text-wrapper-26 {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        .text-wrapper-26:hover {
-            color: var(--primary);
-        }
-
-        .consultation-container {
-            max-width: 1400px;
-            margin: 30px auto;
-            padding: 20px;
-        }
-
-        .page-header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .page-title {
-            color: var(--dark);
-            margin-bottom: 10px;
-            font-size: 2.5em;
-        }
-
-        .page-subtitle {
-            color: #666;
-            font-size: 1.2em;
-        }
-
-        .analysis-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-        }
-
-        .card-title {
-            color: var(--dark);
-            margin-bottom: 20px;
-            font-size: 1.4em;
-            border-bottom: 2px solid var(--primary);
-            padding-bottom: 10px;
-        }
-
-        .video-section {
-            grid-column: 1 / -1;
-        }
-
-        .video-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .video-container {
+        .chart-container {
             position: relative;
-            background: #000;
-            border-radius: 15px;
-            overflow: hidden;
-        }
-
-        .video-title {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.9em;
-        }
-
-        video {
+            height: 350px;
             width: 100%;
-            height: 300px;
-            object-fit: cover;
         }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-
-        .metric-card {
-            background: linear-gradient(135deg, var(--primary), #667eea);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-        }
-
-        .metric-value {
-            font-size: 2em;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .metric-label {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .graphs-section {
-            grid-column: 1 / -1;
-        }
-
-        .graphs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .graph-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .graph-title {
-            font-size: 1.1em;
-            margin-bottom: 15px;
-            color: var(--dark);
-            text-align: center;
-        }
-
-        .graph-image {
-            width: 100%;
-            height: 250px;
-            object-fit: contain;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 30px 0;
-            flex-wrap: wrap;
-        }
-
-        .page-btn {
-            padding: 10px 20px;
-            border: none;
-            background: var(--light);
-            color: var(--dark);
-            border-radius: 10px;
-            cursor: pointer;
+        .tab-button {
             transition: all 0.3s;
-            font-weight: 500;
         }
-
-        .page-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        .page-btn:hover:not(.active) {
-            background: #dcdde1;
-        }
-
-        .analysis-details {
-            grid-column: 1 / -1;
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .detail-item {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 10px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .detail-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: var(--dark);
-        }
-
-        .detail-value {
-            color: #666;
-        }
-
-        .recommendations {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            padding: 25px;
-            border-radius: 15px;
-        }
-
-        .recommendation-item {
-            background: rgba(255,255,255,0.8);
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
-            border-left: 4px solid var(--warning);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .recommendation-icon {
-            font-size: 1.2em;
-            color: var(--warning);
-        }
-
-        .footer {
-            text-align: center;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.9);
-            margin-top: 50px;
-            border-radius: 20px 20px 0 0;
-        }
-
-        .footer-links {
-            margin-bottom: 10px;
-        }
-
-        .footer-links a {
-            color: #666;
-            text-decoration: none;
-            margin: 0 5px;
-        }
-
-        .copyright {
-            color: #999;
-            font-size: 14px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: white;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .analysis-summary {
-            line-height: 1.6;
-            color: #555;
-        }
-
-        .summary-item {
-            margin: 10px 0;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-
-        .error-message {
-            background: var(--danger);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .retry-button {
-            background: white;
-            color: var(--danger);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        .demo-notice {
-            background: var(--warning);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        @media (max-width: 768px) {
-            .analysis-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .video-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .graphs-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .page-title {
-                font-size: 2em;
-            }
-            
-            .pagination {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .page-btn {
-                width: 200px;
-            }
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
         }
     </style>
 </head>
-<body>
-    <!-- NAVBAR -->
-    <div class="navbar">
-        <div class="frame-16">
-            <p class="the-posture-lab">
-                <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-            </p>
-            <div class="frame-17">
-                <a href="/" class="text-wrapper-26">Home</a>
-                <a href="/nova-analise" class="text-wrapper-26">Nova Análise</a>
-                <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
+<body class="text-gray-800">
+
+    <!-- Container Principal -->
+    <div class="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Cabeçalho -->
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Dashboard de Análise Postural</h1>
+            <p class="text-gray-500 mt-1" id="analysisSubtitle">Análise de Demonstração - 13/10/2025</p>
+        </header>
+
+        <!-- Seção de Métricas Principais (sem alterações) -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-500 transition-all">
+                <div class="flex items-center justify-between"><h3 class="text-gray-500 font-medium">Pontuação Geral</h3><div class="p-2 bg-indigo-100 rounded-full"><i data-lucide="award" class="text-indigo-500"></i></div></div><p class="text-4xl font-bold mt-2" id="scoreGeral">82 <span class="text-2xl text-gray-400">/ 100</span></p>
             </div>
-        </div>
-    </div>
+            <div class="metric-card bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500 transition-all">
+                <div class="flex items-center justify-between"><h3 class="text-gray-500 font-medium">Nível de Simetria</h3><div class="p-2 bg-green-100 rounded-full"><i data-lucide="scale" class="text-green-500"></i></div></div><p class="text-4xl font-bold mt-2" id="scoreSimetria">88%</p>
+            </div>
+            <div class="metric-card bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 transition-all">
+                <div class="flex items-center justify-between"><h3 class="text-gray-500 font-medium">Qualidade da Marcha</h3><div class="p-2 bg-blue-100 rounded-full"><i data-lucide="footprints" class="text-blue-500"></i></div></div><p class="text-4xl font-bold mt-2" id="scoreMarcha">75%</p>
+            </div>
+            <div class="metric-card bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500 transition-all">
+                <div class="flex items-center justify-between"><h3 class="text-gray-500 font-medium">Estabilidade</h3><div class="p-2 bg-orange-100 rounded-full"><i data-lucide="anchor" class="text-orange-500"></i></div></div><p class="text-4xl font-bold mt-2" id="scoreEstabilidade">Médio</p>
+            </div>
+        </section>
 
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div class="consultation-container">
-        <div class="page-header">
-            <h1 class="page-title">Resultados da Análise Postural</h1>
-            <p class="page-subtitle" id="analysisSubtitle">Carregando análise...</p>
-        </div>
-
-        <!-- AVISO DE DEMONSTRAÇÃO -->
-        <div class="demo-notice" id="demoNotice" style="display: none;">
-            <h3>🔬 Modo de Demonstração</h3>
-            <p>Estes são dados simulados para demonstração do sistema.</p>
-        </div>
-
-        <div id="loadingSection" class="loading">
-            <div class="spinner"></div>
-            <p>Carregando resultados da análise...</p>
-        </div>
-
-        <div id="errorSection" class="error-message" style="display: none;">
-            <h3>❌ Erro ao Carregar Análise</h3>
-            <p id="errorText">Não foi possível carregar os resultados da análise.</p>
-            <button class="retry-button" onclick="retryLoadAnalysis()">Tentar Novamente</button>
-            <button class="retry-button" onclick="loadDemoData()" style="margin-left: 10px; background: var(--primary); color: white;">
-                Usar Dados de Demonstração
-            </button>
+        <!-- Abas de Navegação dos Gráficos -->
+        <div class="bg-white rounded-xl shadow-sm p-2 mb-8">
+            <nav id="tabs" class="flex flex-wrap items-center justify-center sm:justify-start space-x-2 sm:space-x-4">
+                <button data-tab="angulos" class="tab-button active text-sm sm:text-base font-semibold py-3 px-4 border-b-2 border-transparent">Ângulos Articulares</button>
+                <button data-tab="simetria" class="tab-button text-sm sm:text-base font-semibold py-3 px-4 border-b-2 border-transparent">Simetria Corporal</button>
+                <button data-tab="temporal" class="tab-button text-sm sm:text-base font-semibold py-3 px-4 border-b-2 border-transparent">Análise Temporal</button>
+                <button data-tab="distribuicoes" class="tab-button text-sm sm:text-base font-semibold py-3 px-4 border-b-2 border-transparent">Distribuições</button>
+            </nav>
         </div>
 
-        <div id="resultsSection" style="display: none;">
-            <!-- Seção de Vídeos -->
-            <div class="card video-section">
-                <h2 class="card-title">Vídeos Analisados</h2>
-                <div class="video-grid">
-                    <div class="video-container">
-                        <div class="video-title">Plano Coronal (Frontal) - Original</div>
-                        <video id="frontalOriginal" controls>
-                            <source src="" type="video/mp4">
-                            Seu navegador não suporta o elemento de vídeo.
-                        </video>
-                    </div>
-                    <div class="video-container">
-                        <div class="video-title">Plano Coronal (Frontal) - Processado</div>
-                        <video id="frontalProcessed" controls>
-                            <source src="" type="video/mp4">
-                            Seu navegador não suporta o elemento de vídeo.
-                        </video>
-                    </div>
-                    <div class="video-container">
-                        <div class="video-title">Plano Transversal (Axial) - Original</div>
-                        <video id="transversalOriginal" controls>
-                            <source src="" type="video/mp4">
-                            Seu navegador não suporta o elemento de vídeo.
-                        </video>
-                    </div>
-                    <div class="video-container">
-                        <div class="video-title">Plano Transversal (Axial) - Processado</div>
-                        <video id="transversalProcessed" controls>
-                            <source src="" type="video/mp4">
-                            Seu navegador não suporta o elemento de vídeo.
-                        </video>
-                    </div>
-                </div>
+        <!-- Conteúdo das Abas com Gráficos -->
+        <main id="tab-content">
+            <!-- Categoria: Ângulos Articulares -->
+            <div id="angulos-content" class="tab-pane active grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Gráficos desta categoria serão inseridos aqui via JS -->
             </div>
 
-            <!-- Métricas Principais -->
-            <div class="analysis-grid">
-                <div class="card">
-                    <h2 class="card-title">Pontuação da Postura</h2>
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <div class="metric-label">Postura Geral</div>
-                            <div class="metric-value" id="postureScore">0</div>
-                            <div class="metric-label">pontos</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Simetria</div>
-                            <div class="metric-value" id="symmetryScore">0</div>
-                            <div class="metric-label">pontos</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Qualidade da Marcha</div>
-                            <div class="metric-value" id="gaitQuality">0</div>
-                            <div class="metric-label">pontos</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Saúde Postural</div>
-                            <div class="metric-value" id="overallHealth">0</div>
-                            <div class="metric-label">pontos</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h2 class="card-title">Resumo da Análise</h2>
-                    <div class="analysis-summary" id="analysisSummary">
-                        <!-- Será preenchido via JavaScript -->
-                    </div>
-                </div>
+            <!-- Categoria: Simetria Corporal -->
+            <div id="simetria-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Gráficos desta categoria serão inseridos aqui via JS -->
             </div>
 
-            <!-- Gráficos com Paginação -->
-            <div class="card graphs-section">
-                <h2 class="card-title">Análise Detalhada</h2>
-                
-                <div class="pagination">
-                    <button class="page-btn active" onclick="showGraphsPage(1)">Ângulos Articulares</button>
-                    <button class="page-btn" onclick="showGraphsPage(2)">Simetria Corporal</button>
-                    <button class="page-btn" onclick="showGraphsPage(3)">Análise Temporal</button>
-                    <button class="page-btn" onclick="showGraphsPage(4)">Distribuições</button>
-                </div>
-
-                <div class="graphs-grid" id="graphsPage1">
-                    <!-- Página 1: Ângulos Articulares -->
-                </div>
-
-                <div class="graphs-grid" id="graphsPage2" style="display: none;">
-                    <!-- Página 2: Simetria Corporal -->
-                </div>
-
-                <div class="graphs-grid" id="graphsPage3" style="display: none;">
-                    <!-- Página 3: Análise Temporal -->
-                </div>
-
-                <div class="graphs-grid" id="graphsPage4" style="display: none;">
-                    <!-- Página 4: Distribuições -->
-                </div>
+            <!-- Categoria: Análise Temporal -->
+            <div id="temporal-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <!-- Gráficos desta categoria serão inseridos aqui via JS -->
             </div>
 
-            <!-- Detalhes e Recomendações -->
-            <div class="analysis-grid">
-                <div class="card analysis-details">
-                    <h2 class="card-title">Métricas Detalhadas</h2>
-                    <div class="details-grid" id="detailedMetrics">
-                        <!-- Será preenchido via JavaScript -->
-                    </div>
-                </div>
-
-                <div class="card recommendations">
-                    <h2 class="card-title">Recomendações</h2>
-                    <div id="recommendationsList">
-                        <!-- Será preenchido via JavaScript -->
-                    </div>
-                </div>
+            <!-- Categoria: Distribuições -->
+            <div id="distribuicoes-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <!-- Gráficos desta categoria serão inseridos aqui via JS -->
             </div>
-        </div>
-    </div>
+        </main>
 
-    <!-- FOOTER -->
-    <div class="footer">
-        <div class="footer-links">
-            <a href="#">Careers</a> | 
-            <a href="#">Privacy Policy</a> | 
-            <a href="#">Terms & Conditions</a>
-        </div>
-        <div class="copyright">
-            © 2025 The Posture Lab
-        </div>
     </div>
 
     <script>
-        // Variáveis globais
-        let currentAnalysisData = null;
-        let currentGraphsPage = 1;
-        let currentAnalysisId = null;
-        let isDemoMode = false;
+        let fullAnalysisData = null;
 
-        // Carregar dados da análise quando a página carregar
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Página consulta.html carregada');
-            
-            // Tentar obter dados do localStorage
-            currentAnalysisId = localStorage.getItem('currentAnalysisId');
-            const storedResults = localStorage.getItem('analysisResults');
-            
-            console.log('📋 Analysis ID:', currentAnalysisId);
-            console.log('💾 Stored Results:', storedResults ? 'Encontrados' : 'Não encontrados');
-            
-            if (storedResults) {
-                try {
-                    currentAnalysisData = JSON.parse(storedResults);
-                    displayAnalysisData(currentAnalysisData);
-                } catch (error) {
-                    console.error('❌ Erro ao parsear dados:', error);
-                    loadDemoData();
-                }
-            } else {
-                console.log('ℹ️ Nenhum dado encontrado, carregando demonstração');
-                setTimeout(() => {
-                    loadDemoData();
-                }, 1500);
+        // ===================================
+        // HELPERS E FUNÇÕES UTILITÁRIAS
+        // ===================================
+
+        function generateDemoData(numPoints = 150) {
+            const data = [];
+            const timestamps = [];
+            for (let i = 0; i < numPoints; i++) {
+                const time = (i * 0.1).toFixed(1);
+                timestamps.push(time);
+                
+                const sin = Math.sin(i / 10);
+                const cos = Math.cos(i / 8);
+
+                data.push({
+                    "frame": i + 1, "tempo_segundos": parseFloat(time),
+                    "angulo_ombro_esquerdo": 150 + sin * 10 + (Math.random() - 0.5) * 4,
+                    "angulo_ombro_direito": 148 + sin * 10 + (Math.random() - 0.5) * 4,
+                    "angulo_quadril_esquerdo": 160 + cos * 12 + (Math.random() - 0.5) * 5,
+                    "angulo_quadril_direito": 163 + cos * 12 + (Math.random() - 0.5) * 5,
+                    "angulo_joelho_esquerdo": 170 - cos * 15 + (Math.random() - 0.5) * 6,
+                    "angulo_joelho_direito": 172 - cos * 15 + (Math.random() - 0.5) * 6,
+                    "assimetria_ombros_metros": 0.015 + (Math.random() - 0.5) * 0.01,
+                    "assimetria_quadris_metros": 0.020 + (Math.random() - 0.5) * 0.008,
+                    "angulo_coluna_cervical": 170 + Math.sin(i / 15) * 5 + (Math.random() - 0.5) * 3,
+                    "angulo_coluna_toracica": 175 + Math.cos(i / 12) * 3 + (Math.random() - 0.5) * 2,
+                    "distancia_percorrida_metros": (i / numPoints) * 6,
+                    "centro_quadril_y": 1.2 + sin * 0.05 + (Math.random() - 0.5) * 0.02
+                });
             }
+            return { timestamps, data };
+        }
+
+        function exportToCSV(data, filename) {
+            if (!data || data.length === 0) { alert("Não há dados para exportar."); return; }
+            const headers = Object.keys(data[0]);
+            const csvRows = [headers.join(',')];
+            for (const row of data) {
+                const values = headers.map(header => `"${('' + row[header]).replace(/"/g, '\\"')}"`);
+                csvRows.push(values.join(','));
+            }
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' }));
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Função para criar a estrutura de um card de gráfico
+        function createChartCard(id, title, category) {
+            const container = document.getElementById(`${category}-content`);
+            const card = document.createElement('div');
+            card.className = 'bg-white p-6 rounded-xl shadow-sm';
+            card.innerHTML = `
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                    <h2 class="text-lg font-bold">${title}</h2>
+                    <button id="export-${id}" class="mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Exportar CSV
+                    </button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="${id}"></canvas>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        // ===================================
+        // FUNÇÕES DE CRIAÇÃO DE GRÁFICOS
+        // ===================================
+        
+        function setupAllCharts(timestamps, data) {
+            const chartOptions = (yBeginAtZero = false) => ({
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: { x: { grid: { display: false } }, y: { beginAtZero: yBeginAtZero, grid: { color: '#e5e7eb' } } },
+                plugins: { legend: { position: 'top' }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' } },
+                elements: { point: { radius: 0, hoverRadius: 5 }, line: { tension: 0.3, borderWidth: 2 } }
+            });
+
+            // --- Ângulos Articulares ---
+            createChartCard('chartOmbros', 'Ângulos dos Ombros', 'angulos');
+            new Chart('chartOmbros', { type: 'line', data: { labels: timestamps, datasets: [ { label: 'Ombro Esquerdo', data: data.map(d => d.angulo_ombro_esquerdo), borderColor: '#4f46e5' }, { label: 'Ombro Direito', data: data.map(d => d.angulo_ombro_direito), borderColor: '#3b82f6', borderDash: [5, 5] } ] }, options: chartOptions() });
+            document.getElementById('export-chartOmbros').onclick = () => exportToCSV(data.map(d => ({ tempo: d.tempo_segundos, ombro_esq: d.angulo_ombro_esquerdo, ombro_dir: d.angulo_ombro_direito })), 'angulos_ombros.csv');
+
+            createChartCard('chartQuadris', 'Ângulos dos Quadris', 'angulos');
+            new Chart('chartQuadris', { type: 'line', data: { labels: timestamps, datasets: [ { label: 'Quadril Esquerdo', data: data.map(d => d.angulo_quadril_esquerdo), borderColor: '#10b981' }, { label: 'Quadril Direito', data: data.map(d => d.angulo_quadril_direito), borderColor: '#65a30d', borderDash: [5, 5] } ] }, options: chartOptions() });
+            document.getElementById('export-chartQuadris').onclick = () => exportToCSV(data.map(d => ({ tempo: d.tempo_segundos, quadril_esq: d.angulo_quadril_esquerdo, quadril_dir: d.angulo_quadril_direito })), 'angulos_quadris.csv');
+
+            createChartCard('chartColuna', 'Ângulos da Coluna', 'angulos');
+            new Chart('chartColuna', { type: 'line', data: { labels: timestamps, datasets: [ { label: 'Coluna Cervical', data: data.map(d => d.angulo_coluna_cervical), borderColor: '#8b5cf6' }, { label: 'Coluna Torácica', data: data.map(d => d.angulo_coluna_toracica), borderColor: '#d946ef' } ] }, options: chartOptions() });
+            document.getElementById('export-chartColuna').onclick = () => exportToCSV(data.map(d => ({ tempo: d.tempo_segundos, cervical: d.angulo_coluna_cervical, toracica: d.angulo_coluna_toracica })), 'angulos_coluna.csv');
+            
+            createChartCard('chartJoelhos', 'Ângulos dos Joelhos', 'angulos');
+            new Chart('chartJoelhos', { type: 'line', data: { labels: timestamps, datasets: [ { label: 'Joelho Esquerdo', data: data.map(d => d.angulo_joelho_esquerdo), borderColor: '#f97316' }, { label: 'Joelho Direito', data: data.map(d => d.angulo_joelho_direito), borderColor: '#f59e0b', borderDash: [5, 5] } ] }, options: chartOptions() });
+            document.getElementById('export-chartJoelhos').onclick = () => exportToCSV(data.map(d => ({ tempo: d.tempo_segundos, joelho_esq: d.angulo_joelho_esquerdo, joelho_dir: d.angulo_joelho_direito })), 'angulos_joelhos.csv');
+
+            // --- Simetria Corporal ---
+            createChartCard('chartAssimetria', 'Assimetrias Corporais', 'simetria');
+            new Chart('chartAssimetria', { type: 'line', data: { labels: timestamps, datasets: [ { label: 'Assimetria Ombros (m)', data: data.map(d => d.assimetria_ombros_metros), borderColor: '#ef4444', fill: true, backgroundColor: '#ef444420' }, { label: 'Assimetria Quadris (m)', data: data.map(d => d.assimetria_quadris_metros), borderColor: '#f97316', fill: true, backgroundColor: '#f9731620' } ] }, options: chartOptions(true) });
+            document.getElementById('export-chartAssimetria').onclick = () => exportToCSV(data.map(d => ({ tempo: d.tempo_segundos, assimetria_ombros: d.assimetria_ombros_metros, assimetria_quadris: d.assimetria_quadris_metros })), 'assimetrias_corporais.csv');
+            
+            createChartCard('chartComparacaoLados', 'Comparação Lado Esquerdo vs. Direito', 'simetria');
+            new Chart('chartComparacaoLados', { type: 'line', data: { labels: timestamps, datasets: [ { label: 'Diferença Ombros (°)', data: data.map(d => Math.abs(d.angulo_ombro_esquerdo - d.angulo_ombro_direito)), borderColor: '#4f46e5' }, { label: 'Diferença Quadris (°)', data: data.map(d => Math.abs(d.angulo_quadril_esquerdo - d.angulo_quadril_direito)), borderColor: '#10b981' }, { label: 'Diferença Joelhos (°)', data: data.map(d => Math.abs(d.angulo_joelho_esquerdo - d.angulo_joelho_direito)), borderColor: '#f97316' } ] }, options: chartOptions(true) });
+            document.getElementById('export-chartComparacaoLados').onclick = () => exportToCSV(data.map(d => ({ tempo: d.tempo_segundos, diff_ombros: Math.abs(d.angulo_ombro_esquerdo - d.angulo_ombro_direito), diff_quadris: Math.abs(d.angulo_quadril_esquerdo - d.angulo_quadril_direito), diff_joelhos: Math.abs(d.angulo_joelho_esquerdo - d.angulo_joelho_direito) })), 'comparacao_lados.csv');
+
+            // --- Análise Temporal ---
+            createChartCard('chartCarga', 'Distribuição de Carga (Vertical)', 'temporal');
+            new Chart('chartCarga', { type: 'line', data: { labels: timestamps, datasets: [ { label: 'Oscilação Vertical do Quadril (m)', data: data.map(d => d.centro_quadril_y), borderColor: '#0ea5e9' } ] }, options: chartOptions() });
+            document.getElementById('export-chartCarga').onclick = () => exportToCSV(data.map(d => ({ tempo: d.tempo_segundos, oscilacao_vertical_quadril: d.centro_quadril_y })), 'distribuicao_carga.csv');
+
+            createChartCard('chartMarcha', 'Padrão de Marcha (Velocidade)', 'temporal');
+            const speeds = data.slice(1).map((d, i) => Math.abs(d.distancia_percorrida_metros - data[i].distancia_percorrida_metros) / 0.1);
+            new Chart('chartMarcha', { type: 'bar', data: { labels: timestamps.slice(1), datasets: [ { label: 'Velocidade (m/s)', data: speeds, backgroundColor: '#06b6d480' } ] }, options: chartOptions(true) });
+            document.getElementById('export-chartMarcha').onclick = () => exportToCSV(speeds.map((s, i) => ({ tempo: data[i+1].tempo_segundos, velocidade_ms: s })), 'padrao_marcha_velocidade.csv');
+
+            // --- Distribuições ---
+            const boxplotData = {
+                labels: ['Ombro Esq', 'Ombro Dir', 'Quadril Esq', 'Quadril Dir', 'Joelho Esq', 'Joelho Dir'],
+                datasets: [{
+                    label: 'Distribuição de Ângulos',
+                    backgroundColor: '#10b98140', borderColor: '#10b981', borderWidth: 1,
+                    padding: 10, itemRadius: 0,
+                    data: [
+                        data.map(d => d.angulo_ombro_esquerdo), data.map(d => d.angulo_ombro_direito),
+                        data.map(d => d.angulo_quadril_esquerdo), data.map(d => d.angulo_quadril_direito),
+                        data.map(d => d.angulo_joelho_esquerdo), data.map(d => d.angulo_joelho_direito)
+                    ]
+                }]
+            };
+            createChartCard('chartBoxplot', 'Box Plot Articular', 'distribuicoes');
+            new Chart('chartBoxplot', { type: 'boxplot', data: boxplotData, options: { responsive: true, maintainAspectRatio: false, legend: { display: false } } });
+            document.getElementById('export-chartBoxplot').onclick = () => {
+                const quartiles = (arr) => { arr.sort((a,b)=>a-b); const mid=Math.floor(arr.length/2); return [arr[0], arr[Math.floor(mid/2)], arr[mid], arr[Math.floor(mid+arr.length)/2], arr[arr.length-1]]; };
+                const exportData = boxplotData.labels.map((label, i) => { const [min, q1, median, q3, max] = quartiles(boxplotData.datasets[0].data[i]); return { articulacao: label, min, q1, median, q3, max }; });
+                exportToCSV(exportData, 'boxplot_articular.csv');
+            };
+        }
+
+        // ===================================
+        // LÓGICA PRINCIPAL DO DASHBOARD
+        // ===================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const { timestamps, data } = generateDemoData();
+            fullAnalysisData = data;
+            
+            setupAllCharts(timestamps, data);
+            lucide.createIcons();
+
+            // Lógica das abas
+            const tabs = document.querySelectorAll('.tab-button');
+            const panes = document.querySelectorAll('.tab-pane');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const target = tab.getAttribute('data-tab');
+                    panes.forEach(pane => {
+                        pane.classList.add('hidden');
+                        if (pane.id === `${target}-content`) {
+                            pane.classList.remove('hidden');
+                        }
+                    });
+                });
+            });
         });
 
-        function showError(message) {
-            document.getElementById('loadingSection').style.display = 'none';
-            document.getElementById('resultsSection').style.display = 'none';
-            document.getElementById('errorSection').style.display = 'block';
-            document.getElementById('errorText').textContent = message;
-        }
-
-        function hideError() {
-            document.getElementById('errorSection').style.display = 'none';
-        }
-
-        function showLoading(show) {
-            document.getElementById('loadingSection').style.display = show ? 'block' : 'none';
-        }
-
-        function retryLoadAnalysis() {
-            const storedResults = localStorage.getItem('analysisResults');
-            if (storedResults) {
-                try {
-                    currentAnalysisData = JSON.parse(storedResults);
-                    displayAnalysisData(currentAnalysisData);
-                } catch (error) {
-                    loadDemoData();
-                }
-            } else {
-                loadDemoData();
-            }
-        }
-
-        function loadDemoData() {
-            console.log('🔧 Carregando dados de demonstração...');
-            isDemoMode = true;
-            document.getElementById('demoNotice').style.display = 'block';
-            
-            // Dados de demonstração
-            currentAnalysisData = {
-                analysis_id: 'demo_analysis_' + Date.now(),
-                status: 'completed',
-                videos: {
-                    frontal_original: 'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
-                    frontal_processed: 'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
-                    transversal_original: 'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4',
-                    transversal_processed: 'https://assets.mixkit.co/videos/preview/mixkit-walking-in-a-park-4373-large.mp4'
-                },
-                metrics: {
-                    posture_score: 78,
-                    symmetry_score: 85,
-                    gait_quality: 72,
-                    overall_health: 80
-                },
-                graphs: {
-                    // Placeholders para gráficos
-                    ombros: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4=',
-                    quadris: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+',
-                    coluna: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg==',
-                    assimetrias: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+',
-                    joelhos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIEpvZWxob3M8L3RleHQ+PC9zdmc+',
-                    tornozelos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFRvcm5vemVsb3M8L3RleHQ+PC9zdmc+'
-                },
-                detailed_analysis: {
-                    angulos: {
-                        ombro_esquerdo: { media: 45, variacao: 15 },
-                        ombro_direito: { media: 43, variacao: 12 },
-                        quadril_esquerdo: { media: 25, variacao: 8 },
-                        quadril_direito: { media: 26, variacao: 7 },
-                        joelho_esquerdo: { media: 15, variacao: 5 },
-                        joelho_direito: { media: 16, variacao: 6 },
-                        tornozelo_esquerdo: { media: 85, variacao: 10 },
-                        tornozelo_direito: { media: 83, variacao: 9 }
-                    },
-                    assimetrias: {
-                        ombros: 0.02,
-                        quadris: 0.01,
-                        joelhos: 0.03,
-                        tornozelos: 0.02
-                    },
-                    recomendacoes: [
-                        'Fortalecimento do core abdominal',
-                        'Alongamento de isquiotibiais',
-                        'Exercícios de equilíbrio unilateral',
-                        'Correção da postura durante caminhada',
-                        'Fortalecimento de glúteos médio',
-                        'Alongamento de panturrilhas'
-                    ]
-                }
-            };
-            
-            displayAnalysisData(currentAnalysisData);
-        }
-
-        function displayAnalysisData(data) {
-            console.log('🎯 Exibindo dados da análise:', data);
-            
-            // Esconder loading e mostrar resultados
-            showLoading(false);
-            document.getElementById('resultsSection').style.display = 'block';
-            hideError();
-            
-            // Atualizar subtítulo
-            const subtitle = document.getElementById('analysisSubtitle');
-            if (isDemoMode) {
-                subtitle.textContent = `Demonstração - ${new Date().toLocaleDateString('pt-BR')}`;
-            } else if (data.analysis_id) {
-                subtitle.textContent = `Análise ${data.analysis_id} - ${new Date().toLocaleDateString('pt-BR')}`;
-            } else {
-                subtitle.textContent = `Análise - ${new Date().toLocaleDateString('pt-BR')}`;
-            }
-            
-            // Configurar vídeos
-            setupVideos(data.videos);
-            
-            // Atualizar métricas
-            updateMetrics(data.metrics);
-            
-            // Atualizar resumo
-            updateAnalysisSummary(data);
-            
-            // Gerar gráficos
-            generateGraphs(data.graphs);
-            
-            // Atualizar métricas detalhadas
-            updateDetailedMetrics(data.detailed_analysis);
-            
-            // Atualizar recomendações
-            updateRecommendations(data.detailed_analysis.recomendacoes);
-        }
-
-        function setupVideos(videos) {
-            console.log('🎬 Configurando vídeos:', videos);
-            
-            // Configurar sources dos vídeos
-            const videoElements = {
-                'frontalOriginal': videos.frontal_original,
-                'frontalProcessed': videos.frontal_processed,
-                'transversalOriginal': videos.transversal_original,
-                'transversalProcessed': videos.transversal_processed
-            };
-            
-            for (const [id, src] of Object.entries(videoElements)) {
-                const video = document.getElementById(id);
-                if (video && src) {
-                    const source = video.querySelector('source');
-                    source.src = src;
-                    video.load();
-                    console.log(`✅ Vídeo ${id} configurado: ${src}`);
-                } else {
-                    console.log(`⚠️ Vídeo ${id} não encontrado ou sem source`);
-                }
-            }
-        }
-
-        function updateMetrics(metrics) {
-            console.log('📊 Atualizando métricas:', metrics);
-            
-            document.getElementById('postureScore').textContent = metrics.posture_score || 0;
-            document.getElementById('symmetryScore').textContent = metrics.symmetry_score || 0;
-            document.getElementById('gaitQuality').textContent = metrics.gait_quality || 0;
-            document.getElementById('overallHealth').textContent = metrics.overall_health || 0;
-        }
-
-        function updateAnalysisSummary(data) {
-            const summaryElement = document.getElementById('analysisSummary');
-            const metrics = data.metrics;
-            
-            let summaryHTML = `
-                <div class="summary-item">
-                    <strong>Status da Análise:</strong> ${data.status === 'completed' ? '✅ Concluída' : '⏳ Em processamento'}
-                </div>
-                <div class="summary-item">
-                    <strong>Pontuação Geral:</strong> ${metrics.overall_health || 0}/100 pontos
-                </div>
-                <div class="summary-item">
-                    <strong>Simetria Corporal:</strong> ${(metrics.symmetry_score || 0) >= 80 ? '✅ Boa' : '⚠️ Necessita atenção'} (${metrics.symmetry_score || 0}%)
-                </div>
-                <div class="summary-item">
-                    <strong>Qualidade da Marcha:</strong> ${(metrics.gait_quality || 0) >= 75 ? '✅ Adequada' : '⚠️ Pode melhorar'} (${metrics.gait_quality || 0}%)
-                </div>
-                <div class="summary-item">
-                    <strong>Recomendações:</strong> ${data.detailed_analysis.recomendacoes.length} exercícios sugeridos
-                </div>
-            `;
-            
-            summaryElement.innerHTML = summaryHTML;
-        }
-
-        function generateGraphs(graphs) {
-            console.log('📈 Gerando gráficos:', graphs ? Object.keys(graphs) : 'graphs é undefined');
-            
-            // Se graphs for undefined, usa placeholders
-            if (!graphs) {
-                console.log('⚠️ Graphs é undefined, usando placeholders');
-                graphs = {
-                    ombros: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIE9tYnJvczwvdGV4dD48L3N2Zz4=',
-                    quadris: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFF1YWRyaXM8L3RleHQ+PC9zdmc+',
-                    coluna: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGEgQ29sdW5hPC90ZXh0Pjwvc3ZnPg==',
-                    assimetrias: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZGUgQXNzaW1ldHJpYXM8L3RleHQ+PC9zdmc+',
-                    joelhos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIEpvZWxob3M8L3RleHQ+PC9zdmc+',
-                    tornozelos: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R3LDoWZpY28gZG9zIFRvcm5vemVsb3M8L3RleHQ+PC9zdmc+'
-                };
-            }
-        
-            // Página 1: Ângulos Articulares
-            const page1 = document.getElementById('graphsPage1');
-            page1.innerHTML = `
-                <div class="graph-container">
-                    <h3 class="graph-title">Ângulos dos Ombros</h3>
-                    <img src="${graphs.ombros}" alt="Ângulos dos Ombros" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Ângulos dos Quadris</h3>
-                    <img src="${graphs.quadris}" alt="Ângulos dos Quadris" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Ângulos da Coluna</h3>
-                    <img src="${graphs.coluna}" alt="Ângulos da Coluna" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Ângulos dos Joelhos</h3>
-                    <img src="${graphs.joelhos}" alt="Ângulos dos Joelhos" class="graph-image">
-                </div>
-            `;
-            
-            // Página 2: Simetria Corporal
-            const page2 = document.getElementById('graphsPage2');
-            page2.innerHTML = `
-                <div class="graph-container">
-                    <h3 class="graph-title">Assimetrias Corporais</h3>
-                    <img src="${graphs.assimetrias}" alt="Assimetrias Corporais" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Comparação Lado Esquerdo vs Direito</h3>
-                    <img src="${graphs.ombros}" alt="Comparação Lados" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Distribuição de Carga</h3>
-                    <img src="${graphs.quadris}" alt="Distribuição de Carga" class="graph-image">
-                </div>
-            `;
-            
-            // Página 3: Análise Temporal
-            const page3 = document.getElementById('graphsPage3');
-            page3.innerHTML = `
-                <div class="graph-container">
-                    <h3 class="graph-title">Evolução Temporal - Ombros</h3>
-                    <img src="${graphs.ombros}" alt="Evolução Ombros" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Evolução Temporal - Quadris</h3>
-                    <img src="${graphs.quadris}" alt="Evolução Quadris" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Padrão de Marcha</h3>
-                    <img src="${graphs.tornozelos}" alt="Padrão de Marcha" class="graph-image">
-                </div>
-            `;
-            
-            // Página 4: Distribuições
-            const page4 = document.getElementById('graphsPage4');
-            page4.innerHTML = `
-                <div class="graph-container">
-                    <h3 class="graph-title">Distribuição de Ângulos</h3>
-                    <img src="${graphs.coluna}" alt="Distribuição Ângulos" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Histograma de Assimetrias</h3>
-                    <img src="${graphs.assimetrias}" alt="Histograma Assimetrias" class="graph-image">
-                </div>
-                <div class="graph-container">
-                    <h3 class="graph-title">Box Plot Articular</h3>
-                    <img src="${graphs.joelhos}" alt="Box Plot Articular" class="graph-image">
-                </div>
-            `;
-        }
-
-        function updateDetailedMetrics(detailedAnalysis) {
-            const metricsElement = document.getElementById('detailedMetrics');
-            let metricsHTML = '';
-            
-            // Verifica se detailedAnalysis existe
-            if (!detailedAnalysis) {
-                metricsHTML = '<div class="detail-item">Nenhuma métrica disponível</div>';
-                metricsElement.innerHTML = metricsHTML;
-                return;
-            }
-            
-            // Ângulos
-            if (detailedAnalysis.angulos) {
-                for (const [articulacao, dados] of Object.entries(detailedAnalysis.angulos)) {
-                    const nomeFormatado = articulacao.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    metricsHTML += `
-                        <div class="detail-item">
-                            <div class="detail-title">${nomeFormatado}</div>
-                            <div class="detail-value">Média: ${dados.media}° | Variação: ${dados.variacao}°</div>
-                        </div>
-                    `;
-                }
-            }
-            
-            // Assimetrias
-            if (detailedAnalysis.assimetrias) {
-                for (const [articulacao, valor] of Object.entries(detailedAnalysis.assimetrias)) {
-                    const nomeFormatado = articulacao.replace(/\b\w/g, l => l.toUpperCase());
-                    metricsHTML += `
-                        <div class="detail-item">
-                            <div class="detail-title">Assimetria ${nomeFormatado}</div>
-                            <div class="detail-value">${valor.toFixed(3)}</div>
-                        </div>
-                    `;
-                }
-            }
-            
-            // Se não houver métricas, mostra mensagem
-            if (metricsHTML === '') {
-                metricsHTML = '<div class="detail-item">Nenhuma métrica detalhada disponível</div>';
-            }
-            
-            metricsElement.innerHTML = metricsHTML;
-        }
-
-        function updateRecommendations(recomendacoes) {
-            const recommendationsElement = document.getElementById('recommendationsList');
-            let recommendationsHTML = '';
-            
-            recomendacoes.forEach((recomendacao, index) => {
-                recommendationsHTML += `
-                    <div class="recommendation-item">
-                        <span class="recommendation-icon">📌</span>
-                        <span>${recomendacao}</span>
-                    </div>
-                `;
-            });
-            
-            recommendationsElement.innerHTML = recommendationsHTML;
-        }
-
-        function showGraphsPage(pageNumber) {
-            // Esconder todas as páginas
-            document.querySelectorAll('.graphs-grid').forEach(page => {
-                page.style.display = 'none';
-            });
-            
-            // Mostrar a página selecionada
-            document.getElementById('graphsPage' + pageNumber).style.display = 'grid';
-            
-            // Atualizar botões ativos
-            document.querySelectorAll('.page-btn').forEach((btn, index) => {
-                btn.classList.toggle('active', index === pageNumber - 1);
-            });
-            
-            currentGraphsPage = pageNumber;
-        }
-
-        // Inicializar com a primeira página
-        showGraphsPage(1);
-
-        // Função para debug
-        window.debugAnalysis = function() {
-            console.log('🔍 Debug Analysis Data:', currentAnalysisData);
-            console.log('🔍 Current Analysis ID:', currentAnalysisId);
-            console.log('🔍 LocalStorage Analysis ID:', localStorage.getItem('currentAnalysisId'));
-            console.log('🔍 Demo Mode:', isDemoMode);
-        };
     </script>
 </body>
 </html>
+
