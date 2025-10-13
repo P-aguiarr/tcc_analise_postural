@@ -37,6 +37,7 @@
     </div>
     
     <div class="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8">
+        
         <header class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Dashboard de Análise Postural</h1>
             <p class="text-gray-500 mt-1" id="analysisSubtitle">Buscando dados da análise...</p>
@@ -59,7 +60,7 @@
         </div>
 
         <div id="loading-indicator" class="text-center p-10">
-            <h2 id="loading-title" class="text-xl font-semibold text-gray-700">Carregando gráficos...</h2>
+            <h2 id="loading-title" class="text-xl font-semibold text-gray-700">Carregando...</h2>
         </div>
 
         <main id="tab-content" style="display: none;">
@@ -75,9 +76,8 @@
 
         function populateUI(analysisId, apiResponse) {
             const videoContainer = document.getElementById("video-container");
-            videoContainer.innerHTML = ''; // Limpa o placeholder
+            videoContainer.innerHTML = ''; 
 
-            // REGRA DE VÍDEOS: Adiciona o vídeo frontal com landmarks
             const videoUrlFrontal = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`;
             videoContainer.innerHTML += `
                 <div class="bg-white p-4 rounded-xl shadow-sm">
@@ -85,7 +85,6 @@
                     <video controls muted class="w-full rounded-lg" src="${videoUrlFrontal}" type="video/mp4"></video>
                 </div>`;
             
-            // REGRA DE VÍDEOS: Adiciona o vídeo transversal com landmarks, SOMENTE se ele foi processado
             if (apiResponse.data.temporal_data_transversal) {
                 const videoUrlTransversal = `${backendBaseUrl}/api/video/${analysisId}_transversal.mp4`;
                 videoContainer.innerHTML += `
@@ -94,7 +93,6 @@
                         <video controls muted class="w-full rounded-lg" src="${videoUrlTransversal}" type="video/mp4"></video>
                     </div>`;
             }
-
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
         }
 
@@ -121,7 +119,7 @@
             const analysisId = params.get('analysis_id');
             
             if (!analysisId) {
-                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">Nenhum ID de análise fornecido.</h2>';
+                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado na URL.</h2>';
                 return;
             }
 
@@ -129,10 +127,7 @@
             
             if (apiResponse && apiResponse.data) {
                 populateUI(analysisId, apiResponse);
-                
-                // Usa os dados do vídeo frontal para os gráficos
                 const analysisData = apiResponse.data.temporal_data_frontal;
-
                 if (analysisData && analysisData.length > 0) {
                     loadingIndicator.style.display = 'none';
                     tabContent.style.display = 'block';
@@ -153,9 +148,6 @@
             });
         });
         
-        // ===================================
-        // FUNÇÕES DE GRÁFICOS E CSV (COMPLETAS)
-        // ===================================
         function exportToCSV(data, filename) {
             if (!data || data.length === 0) { alert("Não há dados para exportar."); return; }
             const headers = Object.keys(data[0]);
@@ -191,8 +183,7 @@
 
         function setupAllCharts(analysisData) {
             ['angulos', 'simetria', 'temporal', 'distribuicoes'].forEach(id => {
-                const el = document.getElementById(`${id}-content`);
-                if(el) el.innerHTML = '';
+                const el = document.getElementById(`${id}-content`); if(el) el.innerHTML = '';
             });
 
             const timestamps = analysisData.map(d => (d.tempo_segundos || 0).toFixed(1));
@@ -208,8 +199,8 @@
             document.getElementById('export-chartQuadris').onclick = () => exportToCSV(analysisData.map(d=>({tempo_s: d.tempo_segundos, esquerdo: d.angulo_quadril_esquerdo, direito: d.angulo_quadril_direito})), 'angulos_quadris.csv');
 
             createChartCard('chartColuna', 'Ângulos da Coluna', 'angulos');
-            new Chart('chartColuna', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Cervical', data: analysisData.map(d => d.angulo_coluna_cervical) }, { label: 'Torácica', data: analysisData.map(d => d.angulo_coluna_toracica) }] }, options: chartOptions('Ângulo (°)') });
-            document.getElementById('export-chartColuna').onclick = () => exportToCSV(analysisData.map(d=>({tempo_s: d.tempo_segundos, cervical: d.angulo_coluna_cervical, toracica: d.angulo_coluna_toracica})), 'angulos_coluna.csv');
+            new Chart('chartColuna', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Cervical', data: analysisData.map(d => d.angulo_coluna_cervical) }] }, options: chartOptions('Ângulo (°)') });
+            document.getElementById('export-chartColuna').onclick = () => exportToCSV(analysisData.map(d=>({tempo_s: d.tempo_segundos, cervical: d.angulo_coluna_cervical})), 'angulos_coluna.csv');
 
             createChartCard('chartJoelhos', 'Ângulos dos Joelhos', 'angulos');
             new Chart('chartJoelhos', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_joelho_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_joelho_direito) }] }, options: chartOptions('Ângulo (°)') });
@@ -217,24 +208,36 @@
 
             // Simetria
             createChartCard('chartAssimetria', 'Assimetrias Corporais', 'simetria');
-            new Chart('chartAssimetria', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Ombros (m)', data: analysisData.map(d => d.assimetria_ombros_metros) }, { label: 'Quadris (m)', data: analysisData.map(d => d.assimetria_quadris_metros) }] }, options: chartOptions('Diferença (m)', true) });
-            document.getElementById('export-chartAssimetria').onclick = () => exportToCSV(analysisData.map(d=>({tempo_s: d.tempo_segundos, ombros_m: d.assimetria_ombros_metros, quadris_m: d.assimetria_quadris_metros})), 'assimetrias.csv');
+            new Chart('chartAssimetria', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Ombros (m)', data: analysisData.map(d => d.assimetria_ombros_metros) }] }, options: chartOptions('Diferença (m)', true) });
+            document.getElementById('export-chartAssimetria').onclick = () => exportToCSV(analysisData.map(d=>({tempo_s: d.tempo_segundos, assimetria_ombros_m: d.assimetria_ombros_metros})), 'assimetrias.csv');
 
+            // GRÁFICO DE COMPARAÇÃO RESTAURADO E COMPLETO
             createChartCard('chartComparacaoLados', 'Comparação Lado Esquerdo vs. Direito', 'simetria');
+            const diffOmbros = analysisData.map(d => Math.abs((d.angulo_ombro_esquerdo || 0) - (d.angulo_ombro_direito || 0)));
+            const diffQuadris = analysisData.map(d => Math.abs((d.angulo_quadril_esquerdo || 0) - (d.angulo_quadril_direito || 0)));
             const diffJoelhos = analysisData.map(d => Math.abs((d.angulo_joelho_esquerdo || 0) - (d.angulo_joelho_direito || 0)));
-            new Chart('chartComparacaoLados', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Diferença Joelhos (°)', data: diffJoelhos }] }, options: chartOptions('Diferença Absoluta (°)', true) });
-            document.getElementById('export-chartComparacaoLados').onclick = () => exportToCSV(analysisData.map((d, i) => ({ tempo_s: d.tempo_segundos, joelho_esq: d.angulo_joelho_esquerdo, joelho_dir: d.angulo_joelho_direito, diferenca: diffJoelhos[i] })), 'comparacao_joelhos.csv');
+            new Chart('chartComparacaoLados', { type: 'line', data: { labels: timestamps, datasets: [
+                { label: 'Diferença Ombros (°)', data: diffOmbros, borderColor: '#4f46e5' },
+                { label: 'Diferença Quadris (°)', data: diffQuadris, borderColor: '#10b981' },
+                { label: 'Diferença Joelhos (°)', data: diffJoelhos, borderColor: '#f97316' }
+            ] }, options: chartOptions('Diferença Absoluta (°)', true) });
+            document.getElementById('export-chartComparacaoLados').onclick = () => exportToCSV(analysisData.map((d, i) => ({ 
+                tempo_s: d.tempo_segundos, 
+                ombro_esq: d.angulo_ombro_esquerdo, ombro_dir: d.angulo_ombro_direito, diff_ombros: diffOmbros[i],
+                quadril_esq: d.angulo_quadril_esquerdo, quadril_dir: d.angulo_quadril_direito, diff_quadris: diffQuadris[i],
+                joelho_esq: d.angulo_joelho_esquerdo, joelho_dir: d.angulo_joelho_direito, diff_joelhos: diffJoelhos[i]
+            })), 'comparacao_lados_completo.csv');
 
             // Temporal
             createChartCard('chartCarga', 'Oscilação Vertical do Quadril', 'temporal');
             const hipCenterY = analysisData.map(d => ((d.LEFT_HIP_y_metros || 0) + (d.RIGHT_HIP_y_metros || 0)) / 2).filter(v => v > 0);
             new Chart('chartCarga', { type: 'line', data: { labels: timestamps.slice(0, hipCenterY.length), datasets: [{ label: 'Centro do Quadril', data: hipCenterY }] }, options: chartOptions('Altura Normalizada') });
-            document.getElementById('export-chartCarga').onclick = () => exportToCSV(analysisData.map((d, i) => ({ tempo_s: d.tempo_segundos, oscilacao_quadril: hipCenterY[i] })), 'oscilacao_quadril.csv');
+            document.getElementById('export-chartCarga').onclick = () => exportToCSV(analysisData.map((d,i) => ({ tempo_s: d.tempo_segundos, oscilacao_quadril: hipCenterY[i] })), 'oscilacao_quadril.csv');
 
             createChartCard('chartMarcha', 'Velocidade da Marcha (Estimada)', 'temporal');
             const speeds = analysisData.slice(1).map((d, i) => { const dist = Math.abs((d.distancia_percorrida_metros||0) - (analysisData[i].distancia_percorrida_metros||0)); const time = d.tempo_segundos - analysisData[i].tempo_segundos; return time > 0 ? dist/time : 0; });
             new Chart('chartMarcha', { type: 'bar', data: { labels: timestamps.slice(1), datasets: [{ label: 'Velocidade (m/s)', data: speeds }] }, options: chartOptions('Velocidade (m/s)', true) });
-            document.getElementById('export-chartMarcha').onclick = () => exportToCSV(analysisData.slice(1).map((d, i) => ({ tempo_s: d.tempo_segundos, velocidade_ms: speeds[i] })), 'velocidade_marcha.csv');
+            document.getElementById('export-chartMarcha').onclick = () => exportToCSV(analysisData.slice(1).map((d, i) => ({ tempo_s: d.tempo_segundos, velocidade_estimada_ms: speeds[i] })), 'velocidade_marcha.csv');
             
             // Distribuições
             createChartCard('chartHistogramaAssimetria', 'Histograma de Assimetrias (Ombros)', 'distribuicoes');
