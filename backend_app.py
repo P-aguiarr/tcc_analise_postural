@@ -87,7 +87,15 @@ def configuracoes_page():
 # ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO (JSON APIs)
 # ==========================================================
 
-@app.route('/api/config', methods=['GET'])
+@app.route('/api/ping', methods=['GET'], strict_slashes=False)
+def ping():
+    """Endpoint de health check para verificar se o prefixo /api/ está funcionando."""
+    return jsonify({
+        "status": "ok",
+        "message": "API está no ar!"
+    })
+
+@app.route('/api/config', methods=['GET'], strict_slashes=False)
 def get_config():
     """
     Endpoint para fornecer o GOOGLE_CLIENT_ID ao frontend.
@@ -104,7 +112,7 @@ def get_config():
         "googleClientId": GOOGLE_CLIENT_ID
     })
 
-@app.route('/api/auth/callback', methods=['POST'])
+@app.route('/api/auth/callback', methods=['POST'], strict_slashes=False)
 def auth_callback():
     """
     Endpoint chamado pelo frontend após o login do Google.
@@ -286,7 +294,7 @@ def generate_analysis_data(angles, view):
 # ENDPOINTS PRINCIPAIS DA APLICAÇÃO
 # ==========================================================
 
-@app.route('/api/analyze', methods=['POST'])
+@app.route('/api/analyze', methods=['POST'], strict_slashes=False)
 def analyze_images():
     """Endpoint principal para análise postural."""
     try:
@@ -388,7 +396,7 @@ def analyze_images():
             "error": f"Erro no processamento: {str(e)}"
         }), 500
 
-@app.route('/api/analysis/<analysis_id>', methods=['GET'])
+@app.route('/api/analysis/<analysis_id>', methods=['GET'], strict_slashes=False)
 def get_analysis(analysis_id):
     """Endpoint para recuperar análise existente (simulado)."""
     return jsonify({
