@@ -1,4 +1,4 @@
-# site/api/app.py - VERSÃO FINAL (Sem alterações desde a última correção de rota 500/404)
+# site/api/app.py - CORREÇÃO DA ROTA /api/video PARA RETORNAR 404
 
 import os
 import uuid
@@ -55,6 +55,8 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     if not cap.isOpened():
         raise IOError(f"Não foi possível abrir o vídeo: {video_path}") 
 
+    # IMPORTANTE: Mude o codec se o mp4v causar problemas. 'XVID' ou 'MJPG'
+    # podem ser mais estáveis em alguns ambientes, mas 'mp4v' é o padrão correto.
     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
     fps = cap.get(cv2.CAP_PROP_FPS) or 30 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) 
@@ -157,6 +159,7 @@ def process_analysis_route():
         output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
         
         # Executa a análise que extrai os dados e gera o vídeo com landmarks
+        # Se houver falha no processamento aqui, o JSON pode ficar vazio.
         temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
         
         # Monta o JSON final com os resultados
@@ -181,7 +184,6 @@ def process_analysis_route():
         print(traceback.format_exc()) 
         return jsonify({"success": False, "error": f"Erro interno no servidor: {e}"}), 500 
     finally:
-        # A remoção do arquivo temporário foi removida, garantindo que o vídeo original persista para ser servido.
         pass 
 
 @app.route('/api/analysis/<analysis_id>', methods=['GET'])
@@ -210,14 +212,14 @@ def get_video_route(video_filename):
         # Tenta servir o arquivo
         return send_from_directory(VIDEO_DIR, video_filename)
     except FileNotFoundError:
-        # Retorna 404 em vez de 500 se o arquivo foi limpo pelo sistema
+        # Se o arquivo não existir (devido à limpeza do /tmp ou falha de processamento), retorna 404
         return "Vídeo não encontrado.", 404
     except Exception as e:
         return str(e), 500 
 
 @app.route('/api/delete-analysis/<analysis_id>', methods=['DELETE'])
 def delete_analysis_route(analysis_id):
-    """Rota para deletar o JSON da análise e os vídeos relacionados, solicitada pelo frontend."""
+    """Rota para deletar o JSON da análise e os vídeos relacionados."""
     try:
         if '..' in analysis_id or '/' in analysis_id:
             return jsonify({"success": False, "error": "ID inválido."}), 400 
@@ -250,8 +252,5 @@ def delete_analysis_route(analysis_id):
 # --- EXECUÇÃO ---
 
 if __name__ == '__main__': 
-    # Esta seção é usada apenas para testes locais (ex: `python app.py`).
-    # Na Railway, o Gunicorn (definido no Procfile) será usado.
-    # A porta é lida da variável de ambiente PORT, padrão da Railway.
     port = int(os.environ.get('PORT', 8080)) 
     app.run(host='0.0.0.0', port=port, debug=False)
