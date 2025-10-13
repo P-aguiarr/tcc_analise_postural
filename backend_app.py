@@ -1,4 +1,4 @@
-# backend_app.py - VERSÃO FINAL SEM O PREFIXO /api/ NAS ROTAS DE API
+# backend_app.py - VERSÃO FINAL COM CORS EXPLÍCITO
 
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
@@ -21,23 +21,24 @@ import tempfile
 # Imports necessários para a validação do token Google
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from functools import wraps
 
 # ==========================================================
 # CONFIGURAÇÃO DA APLICAÇÃO FLASK (CRUCIAL)
-# A pasta 'site' agora é usada como 'template_folder' e 'static_folder'.
 # ==========================================================
 # A opção strict_slashes=False garante que /ping e /ping/ funcionem
 app = Flask(__name__, template_folder='site', static_folder='site')
-CORS(app)
+
+# --- CONFIGURAÇÃO EXPLÍCITA DO CORS (CORREÇÃO DE BLOQUEIO) ---
+# Usamos a URL do seu frontend Vercel (ttc-analise-postural.vercel.app)
+VERCEL_ORIGIN = os.environ.get('VERCEL_ORIGIN', "https://ttc-analise-postural.vercel.app")
+CORS(app, resources={r"/*": {"origins": [VERCEL_ORIGIN, "http://localhost:3000"]}})
+print(f"✅ CORS configurado para permitir a origem: {VERCEL_ORIGIN}")
+
 
 # ==========================================================
 # CONFIGURAÇÕES DE AMBIENTE E VARIÁVEIS DO RAILWAY
 # ==========================================================
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
-# GOOGLE_CLIENT_SECRET é necessário apenas se você estivesse usando o fluxo de autorização
-# completo (code exchange), mas o GSI (token) não o exige. Mantive a verificação de CLIENT_ID.
-# GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET') 
 
 if not GOOGLE_CLIENT_ID:
     print("❌ ERRO: A variável de ambiente GOOGLE_CLIENT_ID deve ser definida no Railway.")
@@ -62,7 +63,7 @@ def home_page():
 def login_page():
     """Rota explícita para o arquivo login.html."""
     try:
-        # Se você usar 'login (2).html', precisa renomear para 'login.html'
+        # Assumindo que o arquivo correto está na pasta 'site'
         return render_template('login.html') 
     except Exception as e:
         return f"Erro ao renderizar 'login.html'. Verifique se ele está na pasta 'site'. Detalhe: {str(e)}", 500
@@ -84,7 +85,7 @@ def configuracoes_page():
         return f"Erro ao renderizar 'configuracoes.html'. Verifique se ele está na pasta 'site'.", 500
 
 # ==========================================================
-# ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO (DIRETOS)
+# ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO
 # ==========================================================
 
 @app.route('/ping', methods=['GET'], strict_slashes=False)
@@ -102,6 +103,7 @@ def get_config():
     O frontend espera este JSON para carregar o botão de SSO.
     """
     if not GOOGLE_CLIENT_ID:
+        # Se falhar aqui, o GOOGLE_CLIENT_ID NÃO está setado no Railway
         return jsonify({
             "success": False,
             "error": "GOOGLE_CLIENT_ID não encontrado nas variáveis de ambiente."
@@ -109,7 +111,7 @@ def get_config():
         
     return jsonify({
         "success": True,
-        "googleClientId": GOOGLE_CLIENT_ID
+        "client_id": GOOGLE_CLIENT_ID # O frontend espera esta chave exata
     })
 
 @app.route('/auth/callback', methods=['POST'], strict_slashes=False)
@@ -119,40 +121,39 @@ def auth_callback():
     Recebe o 'id_token' e o valida.
     """
     data = request.get_json()
-    # O GSI (Google Sign-in) envia o token no corpo como 'id_token'
-    token = data.get('id_token') 
-    
+    token = data.get('token') or data.get('id_token')
+        
     if not token:
-        # Caso o frontend envie a chave diferente ou nenhuma chave
-        token = data.get('token') 
-    
-    if not token:
-        return jsonify({"success": False, "error": "Token não fornecido pelo cliente."}), 400
-    
+        return jsonify({"success": False, "error": "Token de credencial do Google ausente."}), 400
+        
     if not GOOGLE_CLIENT_ID:
         return jsonify({"success": False, "error": "Configuração de autenticação faltando no servidor (Client ID)."}), 500
 
     try:
+        # 1. Validação do ID Token com o Google
         id_info = id_token.verify_oauth2_token(
             token, 
             google_requests.Request(), 
             GOOGLE_CLIENT_ID 
         )
-        
+            
         if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
             raise ValueError('Token inválido: Emissor incorreto.')
             
         user_id = id_info['sub']
         user_email = id_info['email']
         user_name = id_info.get('name', 'Usuário')
-        
+            
         print(f"✅ Usuário autenticado: {user_email} (ID: {user_id})")
-        
+            
+        # 2. Retorno ao Frontend
+        # Retornando a chave 'user_info' que o frontend espera.
         return jsonify({
             "success": True, 
             "message": "Autenticação e validação do token bem-sucedidas.", 
-            "user": {"id": user_id, "email": user_email, "name": user_name},
-        })
+            "user_info": {"id": user_id, "email": user_email, "name": user_name},
+            "token": "JWT_TOKEN_PARA_USO_FUTURO"
+        }), 200
 
     except ValueError as e:
         print(f"❌ Erro de validação do token: {str(e)}")
@@ -164,7 +165,6 @@ def auth_callback():
 # ==========================================================
 # FUNÇÕES DE ANÁLISE POSTURAL (MANTIDAS)
 # ==========================================================
-# [ ... CÓDIGO DE analyze_posture, calcular_angulo, generate_analysis_data MANTIDO ... ]
 
 def calcular_angulo(a, b, c):
     """Calcula ângulo entre 3 pontos (em graus)."""
@@ -297,7 +297,7 @@ def generate_analysis_data(angles, view):
     }
 
 # ==========================================================
-# ENDPOINTS PRINCIPAIS DA APLICAÇÃO (ROTAS AGORA DIRETAS)
+# ENDPOINTS PRINCIPAIS DA APLICAÇÃO
 # ==========================================================
 
 @app.route('/analyze', methods=['POST'], strict_slashes=False)
