@@ -119,37 +119,63 @@
     }
 
     // ==========================================================
-    // LÓGICA DE CLIQUE CUSTOMIZADO (AGORA USANDO POLLING)
+    // LÓGICA DE CLIQUE CUSTOMIZADO (AGORA USANDO MUTATIONOBSERVER)
     // ==========================================================
     function triggerGoogleSignIn() {
         showLoading();
         
-        const MAX_ATTEMPTS = 40; // 40 * 50ms = 2000ms (2 segundos de espera máxima)
-        const INTERVAL_MS = 50;
-        let attempts = 0;
+        const gsiButton = document.getElementById('gsi-button');
         
-        console.log('Iniciando polling para botão GSI...');
+        if (gsiButton) {
+            // Se o botão já estiver no DOM (carregamento rápido)
+            console.log('✅ Botão GSI encontrado imediatamente. Simulando clique.');
+            gsiButton.click();
+            return;
+        }
 
-        const intervalId = setInterval(() => {
-            const gsiButton = document.getElementById('gsi-button');
-            attempts++;
+        console.log('⏳ Botão GSI não encontrado. Observando o DOM para carregamento do Google...');
 
-            if (gsiButton) {
+        // O container que o GSI usa é o g_id_onload
+        const targetNode = document.getElementById('g_id_onload');
+        if (!targetNode) {
+            console.error('❌ Container g_id_onload não encontrado. Estrutura HTML incorreta.');
+            showError('Erro interno: Container de login do Google não encontrado.');
+            return;
+        }
+
+        // Configurações do observador: Observar todos os filhos e subárvores
+        const config = { childList: true, subtree: true };
+
+        // Função de callback a ser executada quando mudanças são detectadas
+        const callback = function(mutationsList, observer) {
+            // Procurar pelo botão que o GSI injeta (ID 'gsi-button')
+            const loadedButton = document.getElementById('gsi-button');
+            
+            if (loadedButton) {
                 // SUCESSO: Botão encontrado
-                clearInterval(intervalId);
-                console.log(`✅ Botão GSI encontrado em ${attempts} tentativas. Simulando clique.`);
-                gsiButton.click();
-                // O loading será gerido por handleCredentialResponse após este clique
-            } else if (attempts >= MAX_ATTEMPTS) {
-                // FALHA: Limite de tentativas atingido
-                clearInterval(intervalId);
-                console.error('❌ O serviço de login do Google não está pronto após 2 segundos. O botão interno não foi encontrado.');
-                showError('O serviço de login do Google não conseguiu carregar. Tente recarregar a página ou verifique sua conexão.');
-            } else {
-                // Em progresso: Continuar polling
-                // console.log(`Tentativa ${attempts}/${MAX_ATTEMPTS}: GSI ainda carregando...`); // Comentado para não poluir o console
+                observer.disconnect(); // Parar de observar
+                console.log('✅ MutationObserver: Botão GSI detectado e pronto. Simulando clique.');
+                loadedButton.click();
             }
-        }, INTERVAL_MS);
+        };
+
+        // Criar uma instância do observador com a função de callback
+        const observer = new MutationObserver(callback);
+
+        // Começar a observar o elemento alvo para mudanças configuradas
+        observer.observe(targetNode, config);
+        
+        // Configurar um timeout de fallback, caso algo trave ou o GSI falhe completamente
+        setTimeout(() => {
+            if (observer) {
+                observer.disconnect();
+                const finalCheck = document.getElementById('gsi-button');
+                if (!finalCheck) {
+                    console.error('❌ Observer: Falha ao carregar botão GSI após timeout de 5s.');
+                    showError('O serviço de login do Google falhou ao carregar. Tente recarregar.');
+                }
+            }
+        }, 5000); // 5 segundos de timeout para fallback
     }
 
 
