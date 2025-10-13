@@ -200,12 +200,13 @@ def analyze_posture(image_path, view):
     if not cap.isOpened():
         frame = cv2.imread(image_path)
         if frame is None:
-            raise IOError(f"Não foi possível abrir ou ler a imagem: {image_path}")
+            raise IOError(f"Não foi possível abrir ou ler a imagem/vídeo: {image_path}")
     else:
+        # Pega o primeiro frame do vídeo
         ret, frame = cap.read()
         cap.release()
         if not ret or frame is None:
-            raise IOError("Não foi possível ler o frame da imagem.")
+            raise IOError("Não foi possível ler o primeiro frame do vídeo.")
         
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
@@ -297,33 +298,41 @@ def generate_analysis_data(angles, view):
 
 @app.route('/analyze', methods=['POST'], strict_slashes=False)
 def analyze_images():
-    """Endpoint principal para análise postural."""
+    """Endpoint principal para análise postural, agora recebendo arquivos."""
     analysis_id = str(uuid.uuid4())
     frontal_path = None
     transversal_path = None
     
     try:
-        data = request.get_json()
+        # --- CORREÇÃO PRINCIPAL: MUDANÇA DE request.get_json() PARA request.files ---
         
-        frontal_base64 = data.get('frontalImage')
-        transversal_base64 = data.get('transversalImage')
+        # 1. Validação dos arquivos recebidos
+        if 'frontalImage' not in request.files:
+            print("❌ Erro: 'frontalImage' não encontrado em request.files.")
+            return jsonify({"success": False, "error": "Arquivo de imagem frontal (frontalImage) é obrigatório."}), 400
         
-        if not frontal_base64:
-            return jsonify({"success": False, "error": "Imagem frontal é obrigatória."}), 400
-        
-        def save_base64_to_temp_file(base64_string, prefix):
-            """Função utilitária para decodificar e salvar o Base64 temporariamente."""
-            if ',' in base64_string:
-                base64_string = base64_string.split(',')[1]
-            image_data = base64.b64decode(base64_string)
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png', prefix=prefix)
-            temp_file.write(image_data)
+        frontal_file = request.files['frontalImage']
+        transversal_file = request.files.get('transversalImage') # .get() para arquivo opcional
+
+        def save_file_to_temp(file_storage, prefix):
+            """Função utilitária para salvar um arquivo recebido pelo Flask em um local temporário."""
+            if not file_storage or not file_storage.filename:
+                return None
+            
+            # Garante uma extensão de arquivo para o OpenCV/MediaPipe
+            _, ext = os.path.splitext(file_storage.filename)
+            if not ext:
+                ext = '.mp4' # Define um padrão caso o nome do arquivo não tenha extensão
+                
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext, prefix=prefix)
+            file_storage.save(temp_file.name)
             temp_file.close()
+            print(f"✅ Arquivo salvo temporariamente em: {temp_file.name}")
             return temp_file.name
 
-        # 1. Salvar as imagens
-        frontal_path = save_base64_to_temp_file(frontal_base64, f"f_{analysis_id}")
-        transversal_path = save_base64_to_temp_file(transversal_base64, f"t_{analysis_id}") if transversal_base64 else None
+        # 2. Salvar os arquivos temporariamente
+        frontal_path = save_file_to_temp(frontal_file, f"f_{analysis_id}")
+        transversal_path = save_file_to_temp(transversal_file, f"t_{analysis_id}") if transversal_file else None
         
         resultados = {
             "id": analysis_id,
@@ -334,7 +343,7 @@ def analyze_images():
             "analise_geral": {}
         }
 
-        # 2. Análise da Vista Frontal
+        # 3. Análise da Vista Frontal
         try:
             angles_f, image_b64_f = analyze_posture(frontal_path, 'frontal')
             analise_f = generate_analysis_data(angles_f, 'frontal')
@@ -351,7 +360,7 @@ def analyze_images():
             print(f"❌ Erro na análise frontal: {str(e)}")
             resultados['frontal'] = {"error": str(e)}
 
-        # 3. Análise da Vista Lateral (se fornecida)
+        # 4. Análise da Vista Lateral (se fornecida)
         if transversal_path:
             try:
                 angles_l, image_b64_l = analyze_posture(transversal_path, 'lateral')
@@ -369,7 +378,7 @@ def analyze_images():
                 print(f"❌ Erro na análise lateral: {str(e)}")
                 resultados['lateral'] = {"error": str(e)}
         
-        # 4. Finalização e limpeza
+        # 5. Finalização e limpeza dos arquivos temporários
         resultados['recomendacoes'] = list(set(resultados['recomendacoes']))
         
         if not resultados['recomendacoes']:
@@ -378,11 +387,14 @@ def analyze_images():
             ]
         
         try:
-            os.unlink(frontal_path)
-            if transversal_path:
+            if frontal_path and os.path.exists(frontal_path):
+                os.unlink(frontal_path)
+                print(f"🗑️ Arquivo temporário removido: {frontal_path}")
+            if transversal_path and os.path.exists(transversal_path):
                 os.unlink(transversal_path)
+                print(f"🗑️ Arquivo temporário removido: {transversal_path}")
         except Exception as e:
-            print(f"❌ Aviso: Não foi possível deletar arquivos temporários: {str(e)}")
+            print(f"⚠️ Aviso: Não foi possível deletar arquivos temporários: {str(e)}")
             pass
         
         print(f"✅ Análise {analysis_id} concluída com sucesso!")
@@ -395,15 +407,16 @@ def analyze_images():
         })
         
     except Exception as e:
-        print(f"❌ Erro na análise: {str(e)}")
+        print(f"❌ Erro crítico na rota /analyze: {str(e)}")
         return jsonify({
             "success": False, 
-            "error": f"Erro no processamento: {str(e)}"
+            "error": f"Erro interno no processamento do servidor: {str(e)}"
         }), 500
 
 @app.route('/analysis/<analysis_id>', methods=['GET'], strict_slashes=False)
 def get_analysis(analysis_id):
     """Endpoint para recuperar análise existente (simulado)."""
+    # Em uma aplicação real, aqui você buscaria os dados de um banco de dados usando o analysis_id
     return jsonify({
         "analysis_id": analysis_id,
         "status": "completed",
