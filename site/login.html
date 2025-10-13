@@ -6,10 +6,10 @@
   <link rel="stylesheet" href="/style.css" />
   <title>Login - The Posture Lab</title>
 
-  <!-- Script da Google Identity Services para SSO -->
+  <!-- Script da Google Identity Services para SSO (Mantido no head, async defer) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<!-- Apenas a função de checagem de redirecionamento permanece no onload -->
+<!-- A função checkUserAndRedirect é mantida para verificar login existente -->
 <body onload="checkUserAndRedirect()"> 
   <div class="landing-page">
     <!-- NAVBAR -->
@@ -35,18 +35,18 @@
       <!-- Container para o botão do Google -->
       <div class="google-login-container">
         
-        <!-- CRÍTICO: O GSI renderiza o botão diretamente neste DIV. -->
+        <!-- CRÍTICO: GSI renderiza o botão oficial imediatamente para máxima confiabilidade. -->
         <div id="g_id_onload"
              data-client_id="584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com"
              data-context="signin"
              data-ux_mode="popup"
              data-callback="handleCredentialResponse"
              data-auto_prompt="false"
-             data-type="standard"       <!-- Usa o botão padrão (mais robusto) -->
-             data-size="large"          <!-- Tamanho do botão -->
-             data-theme="outline"       <!-- Tema -->
-             data-text="signin_with"    <!-- Texto -->
-             data-shape="rectangular"   <!-- Forma -->
+             data-type="standard"       
+             data-size="large"          
+             data-theme="outline"       
+             data-text="signin_with"    
+             data-shape="rectangular"   
              data-logo_alignment="left"
              >
         </div>
@@ -82,11 +82,15 @@
       hideSuccess();
     }
 
+    function hideLoading() {
+      document.getElementById('loadingSpinner').style.display = 'none';
+    }
+
     function showError(message) {
       const errorElement = document.getElementById('errorDetails');
       errorElement.innerText = '❌ Erro: ' + message;
       errorElement.style.display = 'block';
-      document.getElementById('loadingSpinner').style.display = 'none';
+      hideLoading();
       document.getElementById('successMessage').style.display = 'none';
     }
 
@@ -98,7 +102,7 @@
       const successElement = document.getElementById('successMessage');
       successElement.innerText = message;
       successElement.style.display = 'block';
-      document.getElementById('loadingSpinner').style.display = 'none';
+      hideLoading();
       document.getElementById('errorDetails').style.display = 'none';
     }
     
@@ -183,7 +187,8 @@
         console.error('❌ Erro ao comunicar com o servidor de callback:', error);
         showError('Não foi possível se conectar com o servidor para finalizar o login.');
       } finally {
-        document.getElementById('loadingSpinner').style.display = 'none';
+        // Garantir que o spinner desapareça, independentemente do sucesso ou falha
+        hideLoading();
       }
     }
 
@@ -192,26 +197,37 @@
     // FUNÇÕES DE DEBUG (CHAMA RAILWAY API)
     // ==========================================================
     async function testAPIConnection() {
-      // Usa a URL do Railway para testar a conexão no endpoint /ping
       try {
         const response = await fetch(`${RAILWAY_API_BASE_URL}/ping`); 
-        // Verifica se a resposta foi 200-299.
+        // Retorna true se o status for 200-299
         return response.ok; 
       } catch (error) {
-        console.error('Erro ao tentar conectar com a API Railway. Isso PODE ser um erro de CORS/404.', error);
-        return false; 
+        // Erro de rede/CORS
+        console.error('Erro de rede ou CORS ao tentar conectar com a API Railway:', error);
+        // Lançamos o erro para ser capturado no .catch() de testAPI()
+        throw new Error('Falha de rede (CORS?) ao tentar acessar a API Railway. Verifique o console.');
       }
     }
 
-    function testAPI() {
+    async function testAPI() {
       showLoading();
-      testAPIConnection().then(available => {
+      
+      try {
+        const available = await testAPIConnection();
+        
         if (available) {
           showSuccess('✅ API Railway disponível e a rota /ping funciona!');
         } else {
-          showError('❌ Falha ao conectar à API Railway. Verifique no console se é erro de CORS ou 404. Certifique-se de que o backend_app.py está atualizado!');
+          // Se não estiver OK, mas sem erro de rede (ex: status 404, 500)
+          showError('❌ Conexão estabelecida, mas a API não respondeu OK (Verifique 404/500 no console).');
         }
-      });
+      } catch (error) {
+        // Captura o erro de rede/CORS lançado por testAPIConnection
+        console.error('Erro de Conexão Geral:', error.message);
+        showError(error.message);
+      } finally {
+        hideLoading();
+      }
     }
 
     // Expor funções para console
