@@ -1,4 +1,4 @@
-# backend_app.py - VERSÃO FINAL COMPLETA COM CORREÇÕES DE CORS E LÓGICA DE ANÁLISE
+# backend_app.py 
 
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
