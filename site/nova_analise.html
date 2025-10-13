@@ -705,9 +705,12 @@
           logDebug('✅ Análise real concluída no Railway!');
           
           if (result.success) {
-            // Salva o ID da análise para o redirecionamento
-            localStorage.setItem('currentAnalysisId', result.analysis_id);
-            localStorage.setItem('isRealAnalysis', 'true');
+            // Salva o resultado COMPLETO no localStorage para a próxima página usar
+            localStorage.setItem('lastAnalysisResult', JSON.stringify(result));
+        
+            // O redirecionamento agora será feito pela página de consulta
+            // para garantir que os dados sejam salvos primeiro.
+            window.location.href = `/consulta?analysis_id=${result.analysis_id}`;
             
             document.getElementById('step3').classList.remove('active');
             document.getElementById('step3').classList.add('completed');
