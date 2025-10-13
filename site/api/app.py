@@ -165,7 +165,6 @@ def process_analysis_route():
             "analysis_id": analysis_id,
             "data": {
                 "temporal_data_frontal": temporal_data
-                # Futuramente, dados do plano transversal podem ser adicionados aqui
             }
         }
         
@@ -204,19 +203,21 @@ def get_analysis_route(analysis_id):
 
 @app.route('/api/video/<video_filename>', methods=['GET'])
 def get_video_route(video_filename):
-    """Serve os arquivos de vídeo processados."""
+    """Serve os arquivos de vídeo processados. Corrigido para retornar 404 se não for encontrado."""
     try:
         if '..' in video_filename or '/' in video_filename:
             return "Nome de arquivo inválido", 400
+        # Tenta servir o arquivo
         return send_from_directory(VIDEO_DIR, video_filename)
     except FileNotFoundError:
-        return "Vídeo não encontrado.", 404
+        # Retorna 404 em vez de 500 se o arquivo foi limpo pelo sistema
+        return "Vídeo não encontrado. O contêiner pode ter sido reiniciado.", 404
     except Exception as e:
         return str(e), 500
 
 @app.route('/api/delete-analysis/<analysis_id>', methods=['DELETE'])
 def delete_analysis_route(analysis_id):
-    """NOVA ROTA: Deleta o JSON da análise e os vídeos relacionados."""
+    """Rota para deletar o JSON da análise e os vídeos relacionados, solicitada pelo frontend."""
     try:
         if '..' in analysis_id or '/' in analysis_id:
             return jsonify({"success": False, "error": "ID inválido."}), 400
