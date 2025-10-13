@@ -1,4 +1,4 @@
 # nixpacks.toml
 
 [phases.setup]
-nixPkgs = ["pkgs.opencv", "pkgs.mesa.lib", "pkgs.stdenv.cc.cc.lib"]
+nixPkgs = ["pkgs.opencv", "pkgs.mesa.lib", "pkgs.stdenv.cc.cc.lib", "pkgs.ffmpeg"]
