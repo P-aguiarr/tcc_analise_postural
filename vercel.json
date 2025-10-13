@@ -19,12 +19,7 @@
     }
   ],
   "routes": [
-    
-    <!-- ============================================== -->
-    <!-- REWRITES PARA O BACKEND NO RAILWAY (APIs)      -->
-    <!-- SUBSTITUA 'YOUR_RAILWAY_URL' PELA SUA URL REAL -->
-    <!-- Ex: https://tccanalisepostural-production.up.railway.app -->
-    <!-- ============================================== -->
+
     {
       "src": "/config",
       "dest": "https://YOUR_RAILWAY_URL/config"
@@ -45,10 +40,6 @@
       "src": "/analysis/(.*)",
       "dest": "https://YOUR_RAILWAY_URL/analysis/$1"
     },
-    
-    <!-- ============================================== -->
-    <!-- ROTAS ESTÁTICAS (MANTIDAS) -->
-    <!-- ============================================== -->
     {
       "src": "/",
       "dest": "/site/login.html"
@@ -86,7 +77,6 @@
       "dest": "/site/$1"
     },
     
-    <!-- Rota de fallback para SPA (Single Page Application) ou erros -->
     {
       "src": "/(.*)",
       "dest": "/site/login.html"
