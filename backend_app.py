@@ -1,4 +1,4 @@
-# backend_app.py - VERSÃO COMPLETA E CORRIGIDA COM AUTENTICAÇÃO
+# backend_app.py - VERSÃO CORRIGIDA E COMPLETA
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import uuid
@@ -16,6 +16,12 @@ import pandas as pd
 import math
 from scipy.signal import savgol_filter
 import tempfile
+
+# Importa as variáveis de ambiente (Railway)
+from dotenv import load_dotenv
+load_dotenv()
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+# GOOGLE_CLIENT_SECRET é usado internamente, mas não exposto aqui
 
 app = Flask(__name__)
 CORS(app)
@@ -47,8 +53,8 @@ def processar_video_e_gerar_graficos(video_path):
     try:
         # Inicializar MediaPipe
         pose = mp_pose.Pose(static_image_mode=False, 
-                            min_detection_confidence=0.5,
-                            min_tracking_confidence=0.5)
+                           min_detection_confidence=0.5,
+                           min_tracking_confidence=0.5)
         
         # Abrir vídeo
         cap = cv2.VideoCapture(video_path)
@@ -83,7 +89,7 @@ def processar_video_e_gerar_graficos(video_path):
                 
                 dados.append(frame_data)
             
-            if frame_count >= 100: # Limitar para 100 frames para performance
+            if frame_count >= 100:  # Limitar para 100 frames para performance
                 break
         
         cap.release()
@@ -150,9 +156,9 @@ def processar_video_e_gerar_graficos(video_path):
             buf.seek(0)
             graficos_base64['assimetria'] = base64.b64encode(buf.read()).decode('utf-8')
             plt.close()
-            
+        
         return graficos_base64
-            
+        
     except Exception as e:
         print(f"❌ Erro no processamento: {str(e)}")
         return None
@@ -167,7 +173,17 @@ def gerar_metricas_posturais(graficos):
     }
 
 # ======================================
-# ROTAS DO FLASK
+# ENDPOINT DE CONFIGURAÇÃO (NOVO)
+# ======================================
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    """Retorna o Client ID do Google para o frontend."""
+    if not GOOGLE_CLIENT_ID:
+        print("⚠️ GOOGLE_CLIENT_ID não encontrado nas variáveis de ambiente.")
+    return jsonify({
+        "success": True,
+        "googleClientId": GOOGLE_CLIENT_ID
+    })
 # ======================================
 
 @app.route('/')
@@ -302,51 +318,6 @@ def get_analysis(analysis_id):
         "status": "completed",
         "message": "Análise recuperada com sucesso"
     })
-
-# ======================================
-# ROTA CORRIGIDA DE AUTENTICAÇÃO
-# ======================================
-@app.route('/api/auth/callback', methods=['POST'])
-def auth_callback():
-    """
-    Processa a credencial JWT do Google enviada pelo frontend.
-    Esta rota foi adicionada para corrigir o erro 400 no login.
-    """
-    try:
-        # Tenta carregar o body da requisição como JSON
-        data = request.get_json()
-
-        # 1. VERIFICAR SE O JSON FOI PARSEADO CORRETAMENTE
-        if not data:
-            return jsonify({"success": False, "error": "Requisição inválida: Body não é JSON."}), 400
-
-        # 2. VERIFICAR O CAMPO 'credential' (que o frontend envia)
-        google_credential = data.get('credential')
-
-        if not google_credential:
-            # Esta é a linha que estava gerando o 400 no seu log!
-            return jsonify({"success": False, "error": "Credencial do Google não encontrada no body."}), 400
-
-        # --- LÓGICA DE VERIFICAÇÃO E AUTENTICAÇÃO DO TOKEN ---
-        
-        # Nota: Para produção, aqui você DEVE usar o Firebase Admin SDK
-        # para verificar se o token é válido e extrair o UID do usuário.
-        
-        # MOCK/SIMULAÇÃO: Gerando um UID de exemplo
-        uid = f"google-user-{google_credential[:10]}"
-        
-        return jsonify({
-            "success": True,
-            "message": "Autenticação bem-sucedida",
-            "user_id": uid,
-            # Em um cenário real, você retornaria um token de sessão/autenticação aqui.
-            "custom_token": "SEU_TOKEN_DE_SESSAO_OU_UID_AQUI" 
-        }), 200
-
-    except Exception as e:
-        print(f"Erro ao processar callback de autenticação: {str(e)}")
-        return jsonify({"success": False, "error": f"Erro interno do servidor: {str(e)}"}), 500
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
