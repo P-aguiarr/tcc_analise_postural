@@ -30,7 +30,7 @@ app = Flask(__name__, template_folder='site', static_folder='site')
 
 # --- CONFIGURAÇÃO EXPLÍCITA DO CORS (CORREÇÃO DE BLOQUEIO) ---
 # Usamos a URL do seu frontend Vercel (ttc-analise-postural.vercel.app)
-VERCEL_ORIGIN = os.environ.get('VERCEL_ORIGIN', "https://ttc-analise-postural.vercel.app")
+VERCEL_ORIGIN = os.environ.get('VERCEL_ORIGIN', "tccanalisepostural-production.up.railway.app")
 CORS(app, resources={r"/*": {"origins": [VERCEL_ORIGIN, "http://localhost:3000"]}})
 print(f"✅ CORS configurado para permitir a origem: {VERCEL_ORIGIN}")
 
