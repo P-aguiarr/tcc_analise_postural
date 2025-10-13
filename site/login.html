@@ -331,68 +331,59 @@
       }
     }
 
-    // Função para enviar dados para API do Railway
-    async function sendToAPI(token, userData) {
-      const MAX_RETRIES = 3;
-      let delay = 1000; // 1 second
-      
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    async function sendToAPI(url, data, retryCount = 0) {
+        const MAX_RETRIES = 3;
+        console.log(`Tentativa ${retryCount + 1}: Enviando para API ${url}`);
+    
         try {
-          console.log(`Tentativa ${attempt}: Enviando para API ${API_AUTH_URL}`);
-          const response = await fetch(API_AUTH_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ token: token })
-          });
-          
-          console.log('Resposta da API status:', response.status);
-          
-          if (!response.ok) {
-            // Se o status for de erro (4xx ou 5xx), tentamos ler o erro do JSON se possível
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+    
+            // 1. LER O CORPO DA RESPOSTA UMA ÚNICA VEZ
+            // O corpo será lido como JSON, ou como texto se o JSON parsing falhar.
+            let responseBody = {};
             try {
-                const errorData = await response.json();
-                console.error(`Erro da API (Status ${response.status}):`, errorData.error);
-                throw new Error(errorData.error || `Erro HTTP ${response.status}`);
+                responseBody = await response.json();
             } catch (e) {
-                // Se falhar a leitura do JSON, retornamos o status e o texto
-                const text = await response.text();
-                throw new Error(`Erro HTTP ${response.status}. Resposta: ${text.substring(0, 100)}`);
+                // Se falhar ao ler JSON (ex: resposta vazia ou texto simples), tente ler como texto
+                responseBody.message = await response.text();
             }
-          }
-          
-          const contentType = response.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            console.error('Resposta não é JSON:', text.substring(0, 200));
-            throw new Error('Resposta inválida do servidor: não é JSON.');
-          }
-          
-          const data = await response.json();
-          console.log('Resposta da API:', data);
-          
-          if (data.success && data.saved) {
-            console.log('✅ Dados salvos com sucesso na API');
-            return true;
-          } else {
-            console.error('❌ Erro na API (sucesso=false):', data.error || 'Erro desconhecido');
-            throw new Error(data.error || 'Falha ao salvar dados (servidor retornou sucesso=false)');
-          }
-          
+    
+            if (!response.ok) {
+                console.log(`Resposta da API status: ${response.status}`);
+                
+                // Tenta obter a mensagem de erro do JSON do backend
+                const errorMessage = responseBody.error || responseBody.message || 'Erro desconhecido da API.';
+                
+                console.log(`Erro da API (Status ${response.status}): ${errorMessage}`);
+    
+                // Se for um erro do servidor e ainda houver tentativas, tenta novamente
+                if (retryCount < MAX_RETRIES - 1) {
+                    // Não precisa de novo response.text()/json() aqui!
+                    // Apenas chama o retry.
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Espera exponencial
+                    return sendToAPI(url, data, retryCount + 1);
+                } else {
+                    // Se esgotar as tentativas, lança o erro
+                    throw new Error(`API retornou status ${response.status}: ${errorMessage}`);
+                }
+            }
+    
+            // Sucesso
+            return responseBody;
+    
         } catch (error) {
-          console.error(`❌ Erro na Tentativa ${attempt}:`, error.message);
-          
-          if (attempt === MAX_RETRIES) {
-            throw error; // Lançar o erro após a última tentativa
-          }
-          
-          // Espera exponencial antes de tentar novamente
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2; 
+            // Este catch pega erros de rede ou erros lançados acima após as retentativas
+            console.error(`❌ Erro na Tentativa ${retryCount + 1}: ${error.message}`);
+            throw error;
         }
-      }
     }
+
 
     // Funções auxiliares para UI
     function showLoading() {
