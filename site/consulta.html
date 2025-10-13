@@ -80,11 +80,11 @@
             videoContainer.innerHTML = '';
             
             if (apiResponse.data.temporal_data_frontal) {
-                // URLs para buscar o vídeo original e o processado
+                // URL do vídeo original (MP4)
                 const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
-                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`;
+                // MUDANÇA: URL do vídeo processado agora é .avi
+                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.avi`; 
                 
-                // MENSAGEM DE ERRO REMOVIDA: Usamos a tag <video> sem onerror.
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
