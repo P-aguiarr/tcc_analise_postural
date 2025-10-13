@@ -70,40 +70,25 @@
     </div>
 
     <script>
-        // ATENÇÃO: Verifique se esta URL está correta para o seu ambiente
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
+        // --- MUDANÇA 1: Armazenar os dados em uma variável global para acesso fácil ---
+        let currentAnalysisData = null;
 
         function populateVideosUI(analysisId, apiResponse) {
             const videoContainer = document.getElementById("video-container");
-            videoContainer.innerHTML = ''; 
-
-            // Plano Coronal / Frontal
+            videoContainer.innerHTML = '';
+            
             if (apiResponse.data.temporal_data_frontal) {
                 const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
                 const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`;
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
-                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlOriginal}"></video>
+                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlOriginal}" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo original.</p>';"></video>
                     </div>
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (com Landmarks)</h3>
-                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlLandmarks}"></video>
-                    </div>`;
-            }
-            
-            // Plano Transversal / Axial (Opcional)
-            if (apiResponse.data.temporal_data_transversal) {
-                const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_transversal_original.mp4`;
-                const videoUrlLandmarks = `${backendBasebaseUrl}/api/video/${analysisId}_transversal.mp4`;
-                videoContainer.innerHTML += `
-                     <div class="bg-white p-4 rounded-xl shadow-sm">
-                        <h3 class="font-bold mb-2">Plano Transversal (Original)</h3>
-                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlOriginal}"></video>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm">
-                        <h3 class="font-bold mb-2">Plano Transversal (com Landmarks)</h3>
-                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlLandmarks}"></video>
+                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlLandmarks}" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo com landmarks.</p>';"></video>
                     </div>`;
             }
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
@@ -113,30 +98,25 @@
             try {
                 if (!analysisId) throw new Error("ID da análise não foi encontrado na URL.");
                 const apiUrl = `${backendBaseUrl}/api/analysis/${analysisId}`;
-                console.log("Buscando dados de:", apiUrl);
                 const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error(`Erro na rede ao buscar dados: ${response.status} ${response.statusText}`);
+                if (!response.ok) throw new Error(`Erro na rede: ${response.status}`);
                 const apiResponse = await response.json();
-                if (!apiResponse.success) throw new Error(`Erro retornado pelo backend: ${apiResponse.error}`);
-                console.log("Dados recebidos:", apiResponse);
+                if (!apiResponse.success) throw new Error(`Erro no backend: ${apiResponse.error}`);
                 return apiResponse;
             } catch (error) {
-                console.error("Erro em fetchAnalysisData:", error);
-                document.getElementById('loading-indicator').innerHTML = `<h2 class="text-red-500 font-bold">Falha ao buscar dados da análise: ${error.message}</h2>`;
+                document.getElementById('loading-indicator').innerHTML = `<h2 class="text-red-500 font-bold">${error.message}</h2>`;
                 return null;
             }
         }
 
         window.addEventListener('load', async () => {
-            lucide.createIcons(); // Inicia os ícones
             const loadingIndicator = document.getElementById('loading-indicator');
             const tabContent = document.getElementById('tab-content');
-            
             const params = new URLSearchParams(window.location.search);
             const analysisId = params.get('analysis_id');
             
             if (!analysisId) {
-                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado na URL. Verifique o link.</h2>';
+                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado na URL.</h2>';
                 return;
             }
 
@@ -145,43 +125,94 @@
             if (apiResponse && apiResponse.data) {
                 populateVideosUI(analysisId, apiResponse);
                 
-                const analysisData = apiResponse.data.temporal_data_frontal;
-                const validFrames = analysisData ? analysisData.filter(d => d.angulo_ombro_esquerdo != null).length : 0;
+                // Armazena os dados globalmente
+                currentAnalysisData = apiResponse.data.temporal_data_frontal;
+                const validFrames = currentAnalysisData ? currentAnalysisData.filter(d => d.angulo_ombro_esquerdo != null).length : 0;
 
-                if (analysisData && validFrames > 10) { // Um limiar mínimo de frames detectados
+                if (currentAnalysisData && validFrames > 5) {
                     loadingIndicator.style.display = 'none';
                     tabContent.classList.remove('hidden');
-                    setupAllCharts(analysisData);
-                    lucide.createIcons(); // Recria os ícones após adicionar os botões
+                    setupAllCharts(currentAnalysisData);
+                    lucide.createIcons();
                 } else {
                      loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
-                        <h2 class="font-bold text-xl">Análise Concluída com Baixa Detecção</h2>
-                        <p>O sistema não conseguiu detectar os pontos corporais na maior parte do vídeo.</p>
-                        <p class="mt-2"><b>Dicas:</b> Tente um vídeo com melhor iluminação, onde o corpo esteja totalmente visível e sem obstruções.</p>
-                        </div>`;
+                        <h2 class="font-bold text-xl">Análise com Baixa Detecção</h2>
+                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo.</p></div>`;
                 }
             }
             
-            // Lógica para alternar as abas
             document.querySelectorAll('.tab-button').forEach(tab => {
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
                     document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-                    document.getElementById(`${tab.dataset.tab}-content`)?.classList.remove('hidden');
+                    document.getElementById(`${tab.dataset.tab}-content`).classList.remove('hidden');
                 });
             });
         });
         
+        function exportToCSV(data, filename) {
+            if (!data || data.length === 0) { alert("Não há dados para exportar."); return; }
+            const headers = Object.keys(data[0]);
+            const csvRows = [headers.join(',')];
+            for (const row of data) {
+                const values = headers.map(header => `"${String(row[header] ?? '').replace(/"/g, '""')}"`);
+                csvRows.push(values.join(','));
+            }
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // --- MUDANÇA 2: Adicionar um "vigia" de cliques para os botões de exportar ---
+        document.getElementById('tab-content').addEventListener('click', function(event) {
+            const exportButton = event.target.closest('.export-button');
+            if (!exportButton || !currentAnalysisData) return;
+
+            const chartId = exportButton.dataset.exportTarget;
+            let dataToExport;
+            let fileName;
+
+            switch (chartId) {
+                case 'chartOmbros':
+                    fileName = 'angulos_ombros.csv';
+                    dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, esquerdo_deg: d.angulo_ombro_esquerdo, direito_deg: d.angulo_ombro_direito }));
+                    break;
+                case 'chartQuadris':
+                    fileName = 'angulos_quadris.csv';
+                    dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, esquerdo_deg: d.angulo_quadril_esquerdo, direito_deg: d.angulo_quadril_direito }));
+                    break;
+                case 'chartColuna':
+                    fileName = 'angulo_coluna.csv';
+                    dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, cervical_deg: d.angulo_coluna_cervical }));
+                    break;
+                case 'chartJoelhos':
+                    fileName = 'angulos_joelhos.csv';
+                    dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, esquerdo_deg: d.angulo_joelho_esquerdo, direito_deg: d.angulo_joelho_direito }));
+                    break;
+                // Adicione mais casos para outros gráficos aqui se necessário
+            }
+
+            if (dataToExport) {
+                exportToCSV(dataToExport, fileName);
+            }
+        });
+
+        // --- MUDANÇA 3: Simplificar a criação dos cards e botões ---
         function createChartCard(id, title, category) {
             const container = document.getElementById(`${category}-content`);
             if (!container) return;
+            // O botão agora tem uma classe `export-button` e um `data-export-target`
             const cardHTML = `
                 <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                         <h2 class="text-lg font-bold text-gray-800">${title}</h2>
-                        <button id="export-${id}" class="text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
-                            <i data-lucide="download" class="w-4 h-4"></i> CSV
+                        <button data-export-target="${id}" class="export-button mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
+                            <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
                         </button>
                     </div>
                     <div class="chart-container"><canvas id="${id}"></canvas></div>
@@ -194,56 +225,23 @@
                 const el = document.getElementById(`${id}-content`); if(el) el.innerHTML = '';
             });
 
-            const timestamps = analysisData.map(d => (d.tempo_segundos || 0).toFixed(2));
+            const timestamps = analysisData.map(d => (d.tempo_segundos || 0).toFixed(1));
             const chartOptions = (yTitle, beginAtZero = false) => ({ responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: yTitle }, beginAtZero: beginAtZero } } });
 
-            // --- ABA: ÂNGULOS ARTICULARES ---
+            // Ângulos
             createChartCard('chartOmbros', 'Ângulos dos Ombros', 'angulos');
-            new Chart('chartOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_ombro_esquerdo), borderColor: '#3b82f6' }, { label: 'Direito', data: analysisData.map(d => d.angulo_ombro_direito), borderColor: '#ef4444' }] }, options: chartOptions('Ângulo (°)') });
+            new Chart('chartOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_ombro_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_ombro_direito) }] }, options: chartOptions('Ângulo (°)') });
             
             createChartCard('chartQuadris', 'Ângulos dos Quadris', 'angulos');
-            new Chart('chartQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_quadril_esquerdo), borderColor: '#3b82f6' }, { label: 'Direito', data: analysisData.map(d => d.angulo_quadril_direito), borderColor: '#ef4444' }] }, options: chartOptions('Ângulo (°)') });
+            new Chart('chartQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_quadril_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_quadril_direito) }] }, options: chartOptions('Ângulo (°)') });
 
-            createChartCard('chartColuna', 'Ângulo da Coluna Cervical', 'angulos');
-            new Chart('chartColuna', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Cervical', data: analysisData.map(d => d.angulo_coluna_cervical), borderColor: '#10b981' }] }, options: chartOptions('Ângulo (°)') });
+            createChartCard('chartColuna', 'Ângulos da Coluna', 'angulos');
+            new Chart('chartColuna', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Cervical', data: analysisData.map(d => d.angulo_coluna_cervical) }] }, options: chartOptions('Ângulo (°)') });
 
             createChartCard('chartJoelhos', 'Ângulos dos Joelhos', 'angulos');
-            new Chart('chartJoelhos', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_joelho_esquerdo), borderColor: '#3b82f6' }, { label: 'Direito', data: analysisData.map(d => d.angulo_joelho_direito), borderColor: '#ef4444' }] }, options: chartOptions('Ângulo (°)') });
+            new Chart('chartJoelhos', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_joelho_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_joelho_direito) }] }, options: chartOptions('Ângulo (°)') });
 
-            // --- ABA: SIMETRIA CORPORAL ---
-            createChartCard('chartAssimetriaOmbros', 'Assimetria Vertical dos Ombros', 'simetria');
-            new Chart('chartAssimetriaOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Diferença (normalizada)', data: analysisData.map(d => d.assimetria_ombros_vertical), borderColor: '#f97316' }] }, options: chartOptions('Diferença Vertical', true) });
-
-            const diffJoelhos = analysisData.map(d => Math.abs((d.angulo_joelho_esquerdo || 0) - (d.angulo_joelho_direito || 0)));
-            createChartCard('chartComparacaoLados', 'Comparação Lado Esquerdo vs. Direito (Joelhos)', 'simetria');
-            new Chart('chartComparacaoLados', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Diferença Absoluta (°)', data: diffJoelhos, borderColor: '#8b5cf6' }] }, options: chartOptions('Diferença Absoluta (°)', true) });
-
-            // --- ABA: ANÁLISE TEMPORAL ---
-            createChartCard('chartCarga', 'Oscilação Vertical do Quadril', 'temporal');
-            const hipCenterY = analysisData.map(d => d.oscilacao_vertical_quadril).filter(v => v > 0);
-            new Chart('chartCarga', { type: 'line', data: { labels: timestamps.slice(0, hipCenterY.length), datasets: [{ label: 'Posição Y (normalizada)', data: hipCenterY, borderColor: '#14b8a6' }] }, options: chartOptions('Altura Normalizada (Menor é mais alto)') });
-            
-            createChartCard('chartMarcha', 'Velocidade da Marcha (Estimada)', 'temporal');
-            const speeds = analysisData.slice(1).map((d, i) => { 
-                const dist = Math.abs((d.posicao_horizontal_quadril || 0) - (analysisData[i].posicao_horizontal_quadril || 0)); 
-                const time = d.tempo_segundos - analysisData[i].tempo_segundos; 
-                return time > 0 ? (dist / time) : 0; // Retorna velocidade em 'unidades'/segundo
-            });
-            new Chart('chartMarcha', { type: 'bar', data: { labels: timestamps.slice(1), datasets: [{ label: 'Velocidade (unidades/s)', data: speeds, backgroundColor: '#6366f1' }] }, options: chartOptions('Velocidade Estimada', true) });
-            
-            // --- ABA: DISTRIBUIÇÕES ---
-            createChartCard('chartHistogramaAssimetria', 'Histograma de Assimetrias (Ombros)', 'distribuicoes');
-            const assimetriaOmbros = analysisData.map(d => d.assimetria_ombros_vertical * 100).filter(v => v != null); // Multiplicar por 100 para melhor escala
-            const maxAsym = Math.max(...assimetriaOmbros);
-            const bins = Array.from({length: 6}, (_, i) => (i * maxAsym) / 5);
-            const histData = bins.slice(1).map((bin, i) => assimetriaOmbros.filter(v => v >= bins[i] && v < bin).length);
-            new Chart('chartHistogramaAssimetria', { type: 'bar', data: { labels: bins.slice(1).map(b => `< ${b.toFixed(2)}`), datasets: [{ label: 'Nº de Frames', data: histData, backgroundColor: '#f59e0b' }] }, options: chartOptions('Nº de Frames', true)});
-
-            createChartCard('chartDistAngulos', 'Distribuição dos Ângulos (Joelho Esq.)', 'distribuicoes');
-            const angulosJoelhoEsq = analysisData.map(d => d.angulo_joelho_esquerdo).filter(v => v != null);
-            const angleBins = [140, 150, 160, 170, 180];
-            const angleHistData = angleBins.map((bin, i) => angulosJoelhoEsq.filter(v => v >= bin && v < (angleBins[i+1] || 181)).length);
-            new Chart('chartDistAngulos', { type: 'bar', data: { labels: angleBins.map(b => `${b}°-${b+9}°`), datasets: [{ label: 'Nº de Frames', data: angleHistData, backgroundColor: '#0ea5e9' }] }, options: chartOptions('Nº de Frames', true) });
+            // --- MUDANÇA 4: As linhas que anexavam o 'onclick' foram removidas pois não são mais necessárias ---
         }
     </script>
 </body>
