@@ -509,8 +509,7 @@
 
     let files = [];
     let debugLog = [];
-    let currentRailwayUrl = "https://tccanalisepostural-production.up.railway.app"; // URL fixa do backend
-    let isRealAnalysis = false;
+    const currentRailwayUrl = "https://tccanalisepostural-production.up.railway.app";
 
     function logDebug(message) {
       const timestamp = new Date().toLocaleTimeString();
@@ -527,141 +526,76 @@
     setupUploadArea(transversalUploadArea, transversalFileInput, 'transversal');
 
     function setupUploadArea(uploadArea, fileInput, type) {
-      ['dragenter','dragover','dragleave','drop'].forEach(e => uploadArea.addEventListener(e, preventDefaults, false));
-      ['dragenter','dragover'].forEach(e => uploadArea.addEventListener(e, () => uploadArea.classList.add('dragover')));
-      ['dragleave','drop'].forEach(e => uploadArea.addEventListener(e, () => uploadArea.classList.remove('dragover')));
-      uploadArea.addEventListener('drop', e => handleDrop(e, type));
+      ['dragenter','dragover','dragleave','drop'].forEach(e => uploadArea.addEventListener(e, (ev) => { ev.preventDefault(); ev.stopPropagation(); }, false));
+      uploadArea.addEventListener('drop', e => handleFiles(e.dataTransfer.files, type));
       fileInput.addEventListener('change', function() { handleFiles(this.files, type); });
     }
 
-    function preventDefaults(e){ e.preventDefault(); e.stopPropagation(); }
+    function handleFiles(fileListInput, type) {
+      const file = fileListInput[0];
+      if (!file) return;
 
-    function handleDrop(e, type){
-      const dt = e.dataTransfer;
-      handleFiles(dt.files, type);
+      if (!validateFileSize(file)) return;
+      
+      // Remove o arquivo antigo do mesmo tipo antes de adicionar o novo
+      files = files.filter(f => f.type !== type);
+      files.push({file: file, type: type});
+      updateFileListUI();
+      logDebug(`Arquivo ${type} adicionado: ${file.name}`);
+    }
+    
+    function updateFileListUI() {
+        fileList.innerHTML = '';
+        if (files.length === 0) {
+            fileList.innerHTML = '<div class="file-item empty"><div class="file-info"><span>Nenhum vídeo selecionado</span></div></div>';
+            return;
+        }
+        files.forEach(f => {
+            const typeLabel = f.type === 'frontal' ? 'Plano Coronal (Frontal)' : 'Plano Transversal (Axial)';
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-info">
+                  <div><span class="file-name">${f.file.name}</span><span class="file-type">${typeLabel}</span></div>
+                  <div class="file-size">${formatFileSize(f.file.size)}</div>
+                </div>
+                <div class="file-remove" onclick="removeFile('${f.type}')">✕</div>`;
+            fileList.appendChild(fileItem);
+        });
+    }
+
+    function removeFile(typeToRemove){
+      files = files.filter(f => f.type !== typeToRemove);
+      updateFileListUI();
     }
 
     function validateFileSize(file) {
       const maxSize = 100 * 1024 * 1024; // 100MB
       if (file.size > maxSize) {
-        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-        const maxMB = (maxSize / 1024 / 1024).toFixed(0);
-        alert(`❌ Vídeo muito grande!\n\nTamanho: ${sizeMB}MB\nMáximo permitido: ${maxMB}MB\n\nDica: Use vídeos mais curtos (10-30 segundos).`);
+        alert(`❌ Vídeo muito grande! Máximo permitido: 100MB`);
         return false;
       }
       return true;
     }
 
-    function handleFiles(fileListInput, type) {
-      for (let i=0; i<fileListInput.length; i++){
-        const file = fileListInput[i];
-        
-        if (!validateFileSize(file)) {
-          continue;
-        }
-        
-        if(!files.some(f=>f.name===file.name && f.size===file.size)){
-          files.push({file: file, type: type});
-          addFileToUI(file, type);
-          logDebug(`Arquivo ${type} adicionado: ${file.name} (${formatFileSize(file.size)})`);
-        }
-      }
-      updateFileList();
-    }
-
-    function addFileToUI(file, type){
-      if(fileList.querySelector('.empty')) fileList.innerHTML='';
-      const fileItem = document.createElement('div');
-      fileItem.className='file-item';
-      
-      let typeLabel = '';
-      if(type === 'frontal') {
-        typeLabel = 'Plano Coronal (Frontal)';
-      } else if(type === 'transversal') {
-        typeLabel = 'Plano Transversal (Axial)';
-      }
-      
-      fileItem.innerHTML=`
-        <div class="file-info">
-          <div><span class="file-name">${file.name}</span>
-          <span class="file-type">${typeLabel}</span></div>
-          <div class="file-size">${formatFileSize(file.size)}</div>
-          <div class="progress-bar"><div class="progress" style="width:0%"></div></div>
-        </div>
-        <div class="file-remove" onclick="removeFile('${file.name}',${file.size})">✕</div>`;
-      fileList.appendChild(fileItem);
-      simulateUpload(fileItem);
-    }
-
-    function simulateUpload(fileItem){
-      const progressBar = fileItem.querySelector('.progress');
-      let width=0;
-      const interval=setInterval(()=>{
-        if(width>=100){ clearInterval(interval); progressBar.classList.add('complete'); }
-        else{ width+=Math.random()*15; progressBar.style.width=Math.min(width,100)+'%'; }
-      },200);
-    }
-
-    function removeFile(name,size){
-      files = files.filter(f=>!(f.file.name===name && f.file.size===size));
-      updateFileList();
-      validationSuccess.style.display='none';
-      validationError.style.display='none';
-      logDebug(`Arquivo removido: ${name}`);
-    }
-
-    function updateFileList(){
-      if(files.length===0){
-        fileList.innerHTML='<div class="file-item empty"><div class="file-info"><span>Nenhum vídeo selecionado</span></div></div>';
-      }
-    }
-
     function formatFileSize(bytes){
-      if(bytes===0) return '0 Bytes';
-      const k=1024;
-      const sizes=['Bytes','KB','MB','GB'];
-      const i=Math.floor(Math.log(bytes)/Math.log(k));
-      return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
+      if(bytes === 0) return '0 Bytes';
+      const k=1024, sizes=['Bytes','KB','MB','GB'], i=Math.floor(Math.log(bytes)/Math.log(k));
+      return parseFloat((bytes/Math.pow(k,i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     async function processAnalysis() {
-      const hasFrontal = files.some(f=>f.type==='frontal');
-      
-      if(!hasFrontal){
-        validationSuccess.style.display='none';
-        validationError.style.display='block';
-        logDebug('❌ Validação falhou: vídeo frontal obrigatório');
+      const hasFrontal = files.some(f => f.type === 'frontal');
+      if (!hasFrontal) {
+        validationError.style.display = 'block';
         return;
       }
-
-      validationSuccess.style.display='block';
-      validationError.style.display='none';
+      validationError.style.display = 'none';
       processingOverlay.style.display = 'flex';
       processingResults.style.display = 'none';
       
       try {
-        let usedRailway = false;
-        
-        if (currentRailwayUrl) {
-          logDebug(`🚂 Tentando análise real no Railway: ${currentRailwayUrl}`);
-          usedRailway = await tryRailwayAnalysis(currentRailwayUrl);
-        }
-        
-        if (!usedRailway) {
-          logDebug('🔧 Usando simulação (Railway não disponível ou falhou)');
-          await simulateProcessing();
-          await generateDemoResults();
-          resultsTitle.textContent = '✓ Análise Simulada Concluída!';
-          resultsSubtitle.innerHTML = '<small>🔧 Modo Demonstração - Dados simulados</small>';
-          isRealAnalysis = false;
-        } else {
-          resultsTitle.textContent = '✓ Análise Real Concluída!';
-          resultsSubtitle.innerHTML = '<small>🚂 Processado no Railway</small>';
-          isRealAnalysis = true;
-        }
-        
-        processingResults.style.display = 'block';
-        
+        await tryRailwayAnalysis(currentRailwayUrl);
       } catch (error) {
         logDebug(`💥 Erro no processamento: ${error.message}`);
         alert('Erro ao processar análise: ' + error.message);
@@ -670,117 +604,54 @@
     }
 
     async function tryRailwayAnalysis(railwayUrl) {
+      const step1 = document.getElementById('step1');
+      const step2 = document.getElementById('step2');
+      const step3 = document.getElementById('step3');
+      const step4 = document.getElementById('step4');
+
       try {
         logDebug(`📤 Preparando upload para: ${railwayUrl}`);
-        
         const formData = new FormData();
-        
-        files.forEach((fileObj) => {
-          // O backend espera 'frontalImage' e 'transversalImage'
+        files.forEach(fileObj => {
           const fieldName = fileObj.type === 'frontal' ? 'frontalImage' : 'transversalImage';
           formData.append(fieldName, fileObj.file);
-          logDebug(`➕ Adicionando: ${fileObj.file.name} como ${fieldName}`);
         });
 
-        // CORREÇÃO: Endpoint ajustado de /api/analyze para /analyze
         const endpoint = `${railwayUrl}/api/process-analysis`;
         logDebug(`🚀 Enviando para Railway: ${endpoint}`);
+        step1.classList.add('completed');
         
-        document.getElementById('step1').classList.add('completed');
-        document.getElementById('step2').classList.add('active');
-        
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          body: formData,
-        });
+        const response = await fetch(endpoint, { method: 'POST', body: formData });
+        step2.classList.add('completed');
 
         logDebug(`📨 Resposta recebida: ${response.status}`);
-        
-        document.getElementById('step2').classList.remove('active');
-        document.getElementById('step2').classList.add('completed');
-        document.getElementById('step3').classList.add('active');
+        step3.classList.add('completed');
         
         if (response.ok) {
           const result = await response.json();
-          logDebug('✅ Análise real concluída no Railway!');
+          logDebug('✅ Análise concluída no Railway!');
           
           if (result.success) {
-            // Salva o resultado COMPLETO no localStorage para a próxima página usar
-            localStorage.setItem('lastAnalysisResult', JSON.stringify(result));
-        
-            // O redirecionamento agora será feito pela página de consulta
-            // para garantir que os dados sejam salvos primeiro.
+            step4.classList.add('completed');
+            // ÚNICA AÇÃO: Redirecionar com o ID. NENHUM localStorage é usado.
             window.location.href = `/consulta?analysis_id=${result.analysis_id}`;
-            
-            document.getElementById('step3').classList.remove('active');
-            document.getElementById('step3').classList.add('completed');
-            document.getElementById('step4').classList.add('completed');
-            
-            return true;
           } else {
-            logDebug(`❌ Análise falhou no backend: ${result.error}`);
+            throw new Error(`Análise falhou no backend: ${result.error}`);
           }
         } else {
-          const errorText = await response.text();
-          logDebug(`❌ Erro HTTP ${response.status}: ${errorText}`);
+            const errorText = await response.text();
+            throw new Error(`Erro de rede ${response.status}: ${errorText}`);
         }
       } catch (error) {
-        logDebug(`🌐 Erro de conexão: ${error.message}`);
-      }
-      
-      return false;
-    }
-
-    async function generateDemoResults() {
-      const mockResults = {
-        analysis_id: 'demo_' + Date.now()
-      };
-      
-      localStorage.setItem('currentAnalysisId', mockResults.analysis_id);
-      localStorage.setItem('isRealAnalysis', 'false');
-      // A lógica completa dos resultados demo fica na página de consulta
-    }
-
-    async function simulateProcessing() {
-      const steps = document.querySelectorAll('.processing-step');
-      
-      await updateStep(steps[0], 1000);
-      logDebug('📹 Vídeos carregados');
-      
-      await updateStep(steps[1], 1500);
-      logDebug('🔗 Verificando conexão...');
-      
-      await updateStep(steps[2], 2000);
-      logDebug('🔧 Processando análise...');
-      
-      await updateStep(steps[3], 1500);
-      logDebug('📊 Resultados gerados');
-    }
-
-    function updateStep(stepElement, delay) {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          stepElement.classList.add('active');
-          setTimeout(() => {
-            stepElement.classList.remove('active');
-            stepElement.classList.add('completed');
-            resolve();
-          }, 500);
-        }, delay);
-      });
-    }
-
-    function redirectToConsulta() {
-      // CORREÇÃO: Pega o ID salvo e passa como parâmetro na URL
-      const analysisId = localStorage.getItem('currentAnalysisId');
-      if (analysisId) {
-          logDebug(`🔀 Redirecionando para /consulta?analysis_id=${analysisId}`);
-          window.location.href = `/consulta?analysis_id=${analysisId}`;
-      } else {
-          logDebug('❌ ID da análise não encontrado. Redirecionando para a página de consulta geral.');
-          window.location.href = '/consulta'; // Fallback
+        logDebug(`🌐 Erro de conexão ou análise: ${error.message}`);
+        // Se der erro, não mostre a tela de sucesso, apenas feche o overlay
+        alert("Falha na análise: " + error.message);
+        processingOverlay.style.display = 'none';
       }
     }
+
+    // A função redirectToConsulta não é mais necessária, pois o redirecionamento
+    // é feito diretamente após o sucesso da análise.
 
     document.addEventListener('DOMContentLoaded', async function() {
       logDebug('🔄 Página nova_analise.html carregada');
