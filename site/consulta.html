@@ -86,11 +86,11 @@
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
-                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlOriginal}" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo original.</p>';"></video>
+                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlOriginal}"></video>
                     </div>
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (com Landmarks)</h3>
-                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlLandmarks}" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo com landmarks.</p>';"></video>
+                        <video controls muted preload="metadata" class="w-full rounded-lg" src="${videoUrlLandmarks}"></video>
                     </div>`;
             }
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
@@ -113,8 +113,6 @@
         
         /**
          * Envia uma requisição DELETE para a API para limpar os arquivos da análise.
-         * Usa navigator.sendBeacon para garantir que a requisição seja enviada 
-         * mesmo que o usuário feche a página imediatamente.
          */
         function cleanupAnalysis(id) {
             if (!id) return;
