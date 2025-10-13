@@ -9,7 +9,8 @@
   <!-- Script da Google Identity Services para SSO -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body onload="initGoogleSignIn(); checkUserAndRedirect()">
+<!-- Apenas a função de checagem de redirecionamento permanece no onload -->
+<body onload="checkUserAndRedirect()"> 
   <div class="landing-page">
     <!-- NAVBAR -->
     <div class="navbar">
@@ -33,20 +34,23 @@
 
       <!-- Container para o botão do Google -->
       <div class="google-login-container">
-        <!-- Botão personalizado que o usuário vê -->
-        <div id="customGoogleButton" style="cursor: pointer; display: inline-block;">
-          <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
-        </div>
-
-        <!-- Div onde o botão oficial do Google é renderizado (CORRIGIDO: Removido data-login_uri) -->
+        
+        <!-- CRÍTICO: O GSI renderiza o botão diretamente neste DIV. -->
         <div id="g_id_onload"
              data-client_id="584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com"
              data-context="signin"
              data-ux_mode="popup"
              data-callback="handleCredentialResponse"
              data-auto_prompt="false"
-             style="display: none;">
+             data-type="standard"       <!-- Usa o botão padrão (mais robusto) -->
+             data-size="large"          <!-- Tamanho do botão -->
+             data-theme="outline"       <!-- Tema -->
+             data-text="signin_with"    <!-- Texto -->
+             data-shape="rectangular"   <!-- Forma -->
+             data-logo_alignment="left"
+             >
         </div>
+        
       </div>
 
       <!-- Área de Feedback -->
@@ -64,11 +68,9 @@
 
   <script>
     // **CRÍTICO: URL BASE DA API DE ANÁLISE (RAILWAY)**
-    // Use esta URL para /ping, /config e /analyze
     const RAILWAY_API_BASE_URL = 'https://tccanalisepostural-production.up.railway.app';
     
     // **Vercel Serverless Function URL (Local)**
-    // Usada para o /api/callback, pois está no mesmo domínio do frontend Vercel
     const VERCEL_CALLBACK_URL = window.location.origin; 
 
     // ==========================================================
@@ -102,21 +104,6 @@
     
     function hideSuccess() {
       document.getElementById('successMessage').style.display = 'none';
-    }
-
-    // ==========================================================
-    // INICIALIZAÇÃO DO GOOGLE SIGN-IN
-    // ==========================================================
-    function initGoogleSignIn() {
-      if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-          google.accounts.id.renderButton(
-              document.getElementById('customGoogleButton'),
-              { type: 'icon', size: 'large', width: '250', click_listener: function() {
-                  const officialButton = document.querySelector('#g_id_onload div[role="button"]');
-                  if (officialButton) officialButton.click();
-              }}
-          );
-      }
     }
 
     // ==========================================================
@@ -208,12 +195,10 @@
       // Usa a URL do Railway para testar a conexão no endpoint /ping
       try {
         const response = await fetch(`${RAILWAY_API_BASE_URL}/ping`); 
-        // Verifica se a resposta foi 200-299. Mesmo que não tenha CORS, o console vai mostrar o erro, 
-        // mas o status deve ser 200 se a rota existir.
+        // Verifica se a resposta foi 200-299.
         return response.ok; 
       } catch (error) {
         console.error('Erro ao tentar conectar com a API Railway. Isso PODE ser um erro de CORS/404.', error);
-        // O `fetch` falha com TypeError em caso de bloqueio CORS no pré-voo (OPTIONS).
         return false; 
       }
     }
@@ -224,7 +209,6 @@
         if (available) {
           showSuccess('✅ API Railway disponível e a rota /ping funciona!');
         } else {
-          // Se falhou, é provavelmente CORS ou a rota /ping não está no Railway.
           showError('❌ Falha ao conectar à API Railway. Verifique no console se é erro de CORS ou 404. Certifique-se de que o backend_app.py está atualizado!');
         }
       });
