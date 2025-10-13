@@ -34,7 +34,16 @@
   </style>
 </head>
 <body>
-  <div class="navbar"></div>
+  <div class="navbar">
+    <div class="frame-16">
+      <p class="the-posture-lab">The Posture <span class="span">Lab</span></p>
+      <div class="frame-17">
+        <a href="/" class="text-wrapper-26">Home</a>
+        <a href="/nova-analise" class="text-wrapper-26">Nova Análise</a>
+        <a href="/consulta" class="text-wrapper-26">Resultados</a>
+      </div>
+    </div>
+  </div>
   <div class="upload-container">
     <h1 class="upload-title">Upload para Análise Postural</h1>
     <p class="upload-subtitle">Selecione os vídeos para a análise</p>
@@ -72,6 +81,8 @@
         frontal: document.getElementById('frontalFileInput'),
         transversal: document.getElementById('transversalFileInput')
     };
+    const validationError = document.getElementById('validationError');
+    const processingOverlay = document.getElementById('processingOverlay');
 
     document.getElementById('frontalUploadArea').addEventListener('click', () => fileInputs.frontal.click());
     document.getElementById('transversalUploadArea').addEventListener('click', () => fileInputs.transversal.click());
@@ -105,16 +116,16 @@
 
     async function processAnalysis() {
         if (!files.has('frontal')) {
-            document.getElementById('validationError').style.display = 'block';
+            validationError.style.display = 'block';
             return;
         }
-        document.getElementById('validationError').style.display = 'none';
-        document.getElementById('processingOverlay').style.display = 'flex';
+        validationError.style.display = 'none';
+        processingOverlay.style.display = 'flex';
 
         try {
             const formData = new FormData();
-            if(files.has('frontal')) formData.append('frontalImage', files.get('frontal'));
-            if(files.has('transversal')) formData.append('transversalImage', files.get('transversal'));
+            if (files.has('frontal')) formData.append('frontalImage', files.get('frontal'));
+            if (files.has('transversal')) formData.append('transversalImage', files.get('transversal'));
             
             const endpoint = "https://tccanalisepostural-production.up.railway.app/api/process-analysis";
             const response = await fetch(endpoint, { method: 'POST', body: formData });
@@ -129,7 +140,7 @@
             }
         } catch (error) {
             alert("Falha na análise: " + error.message);
-            document.getElementById('processingOverlay').style.display = 'none';
+            processingOverlay.style.display = 'none';
         }
     }
   </script>
