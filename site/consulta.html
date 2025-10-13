@@ -11,28 +11,11 @@
     <script src="https://unpkg.com/lucide@latest" defer></script>
 
     <style>
-        :root {
-            --primary: #4f46e5;
-            --light: #f3f4f6;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--light);
-        }
-        .chart-container {
-            position: relative;
-            height: 350px;
-            width: 100%;
-        }
-        .tab-button.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        .navbar {
-            background-color: white;
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+        :root { --primary: #4f46e5; --light: #f3f4f6; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--light); }
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .navbar { background-color: white; padding: 1rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .the-posture-lab { font-size: 1.5rem; font-weight: bold; }
         .span { color: var(--primary); }
         .frame-16 { display: flex; justify-content: space-between; align-items: center; }
@@ -41,12 +24,9 @@
     </style>
 </head>
 <body>
-    
     <div class="navbar">
       <div class="frame-16">
-        <p class="the-posture-lab">
-          <span>The Posture </span> <span class="span">Lab</span>
-        </p>
+        <p class="the-posture-lab">The Posture <span class="span">Lab</span></p>
         <div class="frame-17">
           <a href="/" class="text-wrapper-26">Home</a>
           <a href="/nova-analise" class="text-wrapper-26">Nova Análise</a>
@@ -56,7 +36,6 @@
     </div>
     
     <div class="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8">
-        
         <header class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Dashboard de Análise Postural</h1>
             <p class="text-gray-500 mt-1" id="analysisSubtitle">Buscando dados da análise...</p>
@@ -65,22 +44,27 @@
         <section id="video-section" class="mb-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Vídeo da Análise</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="video-container">
-                 <div class="bg-white p-4 rounded-xl shadow-sm"><h3 class="font-bold mb-2">Vídeo Processado</h3><div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center"><p class="text-gray-500">Carregando...</p></div></div>
+                 <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <h3 class="font-bold mb-2">Vídeo Processado</h3>
+                    <div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <p class="text-gray-500">Carregando...</p>
+                    </div>
+                </div>
             </div>
         </section>
 
         <div class="bg-white rounded-xl shadow-sm p-2 mb-8">
-            <nav id="tabs" class="flex flex-wrap items-center justify-center sm:justify-start space-x-2 sm:space-x-4">
-                <button data-tab="angulos" class="tab-button active text-sm sm:text-base font-semibold py-3 px-4 border-b-2 border-transparent">Ângulos Articulares</button>
-                <button data-tab="simetria" class="tab-button text-sm sm:text-base font-semibold py-3 px-4 border-b-2 border-transparent">Simetria Corporal</button>
-                <button data-tab="temporal" class="tab-button text-sm sm:text-base font-semibold py-3 px-4 border-b-2 border-transparent">Análise Temporal</button>
-                <button data-tab="distribuicoes" class="tab-button text-sm sm:text-base font-semibold py-3 px-4 border-b-2 border-transparent">Distribuições</button>
+            <nav id="tabs" class="flex flex-wrap items-center justify-start space-x-4">
+                <button data-tab="angulos" class="tab-button active font-semibold py-3 px-4 border-b-2 border-transparent">Ângulos Articulares</button>
+                <button data-tab="simetria" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Simetria Corporal</button>
+                <button data-tab="temporal" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Análise Temporal</button>
+                <button data-tab="distribuicoes" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Distribuições</button>
             </nav>
         </div>
 
         <div id="loading-indicator" class="text-center p-10">
-            <h2 class="text-xl font-semibold text-gray-700">Carregando gráficos da análise...</h2>
-            <p class="text-gray-500">Por favor, aguarde.</p>
+            <h2 id="loading-title" class="text-xl font-semibold text-gray-700">Buscando dados da análise...</h2>
+            <p id="loading-message" class="text-gray-500 mt-2">Conectando ao servidor...</p>
         </div>
 
         <main id="tab-content" style="display: none;">
@@ -93,19 +77,27 @@
 
     <script>
         function populateUI(apiResponse) {
+            console.log("Iniciando populateUI para renderizar vídeo e título...");
             const data = apiResponse.data;
             const videoContainer = document.getElementById("video-container");
-            videoContainer.innerHTML = '';
-            if (data.video_processed_b64) {
+            videoContainer.innerHTML = ''; 
+
+            if (data && data.video_processed_b64) {
+                console.log("Vídeo processado encontrado. Criando player de vídeo.");
                 videoContainer.innerHTML = `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
-                        <h3 class="font-bold mb-2">Vídeo Processado</h3>
+                        <h3 class="font-bold mb-2">Vídeo Processado com Landmarks</h3>
                         <video controls muted class="w-full rounded-lg">
                             <source src="data:video/mp4;base64,${data.video_processed_b64}" type="video/mp4">
+                            Seu navegador não suporta vídeos.
                         </video>
                     </div>`;
+            } else {
+                console.warn("Nenhum vídeo processado (video_processed_b64) foi encontrado nos dados da API.");
+                videoContainer.innerHTML = `<div class="bg-white p-4 rounded-xl shadow-sm"><p class="text-red-500">O vídeo processado não pôde ser carregado.</p></div>`;
             }
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${apiResponse.analysis_id}`;
+            console.log("populateUI concluído.");
         }
 
         async function fetchAnalysisData() {
@@ -113,6 +105,7 @@
             const tabContent = document.getElementById('tab-content');
             loadingIndicator.style.display = 'block';
             tabContent.style.display = 'none';
+
             try {
                 const params = new URLSearchParams(window.location.search);
                 const analysisId = params.get('analysis_id');
@@ -123,6 +116,7 @@
                 
                 console.log(`Buscando dados de: ${apiUrl}`);
                 const response = await fetch(apiUrl);
+                
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`Erro na rede: ${response.status} - ${errorText}`);
@@ -131,32 +125,38 @@
                 const apiResponse = await response.json();
                 if (!apiResponse.success) throw new Error(`O backend retornou um erro: ${apiResponse.error}`);
                 
-                console.log("Dados da análise carregados com sucesso.");
+                console.log("Dados da análise carregados com sucesso do backend.");
                 return apiResponse;
             } catch (error) {
-                console.error("Falha ao carregar dados da análise:", error);
+                console.error("Falha CRÍTICA ao carregar dados da análise:", error);
                 document.getElementById('analysisSubtitle').innerHTML = `<span class="text-red-500 font-bold">Falha ao carregar dados: ${error.message}</span>`;
-                return null;
-            } finally {
                 loadingIndicator.style.display = 'none';
-                tabContent.style.display = 'block';
+                return null;
             }
         }
 
         window.addEventListener('load', async () => {
-            console.log("Página e scripts carregados. Iniciando a lógica do dashboard.");
+            console.log("Página completamente carregada. Iniciando scripts.");
             if (window.lucide) lucide.createIcons();
 
             const apiResponse = await fetchAnalysisData();
             
             if (apiResponse && apiResponse.data) {
                 populateUI(apiResponse);
-                if (apiResponse.data.temporal_data) {
+                
+                if (apiResponse.data.temporal_data && apiResponse.data.temporal_data.length > 0) {
                     console.log("Dados temporais encontrados. Desenhando gráficos...");
                     setupAllCharts(apiResponse.data.temporal_data);
+                    document.getElementById('loading-indicator').style.display = 'none';
+                    document.getElementById('tab-content').style.display = 'block';
+                } else {
+                    console.warn("Dados temporais (temporal_data) não encontrados ou vazios na resposta da API.");
+                    document.getElementById('loading-indicator').style.display = 'none';
+                    document.getElementById('tab-content').innerHTML = '<p class="text-center text-orange-500 font-bold">A análise foi concluída, mas não foram gerados dados suficientes para os gráficos.</p>';
                 }
             }
             
+            // Lógica das abas
             document.querySelectorAll('.tab-button').forEach(tab => {
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
@@ -176,47 +176,42 @@
         }
 
         function setupAllCharts(analysisData) {
-            ['angulos', 'simetria', 'temporal', 'distribuicoes'].forEach(id => {
-                const el = document.getElementById(`${id}-content`);
-                if(el) el.innerHTML = '';
-            });
+            try {
+                console.log("Iniciando a criação dos gráficos...");
+                ['angulos', 'simetria', 'temporal', 'distribuicoes'].forEach(id => {
+                    const el = document.getElementById(`${id}-content`);
+                    if(el) el.innerHTML = '';
+                });
 
-            if (!analysisData || analysisData.length === 0) return;
-            
-            const timestamps = analysisData.map(d => (d.tempo_segundos || 0).toFixed(1));
-            const chartOptions = (yTitle, beginAtZero = false) => ({ responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: yTitle }, beginAtZero: beginAtZero } } });
-            
-            // Ângulos
-            createChartCard('chartOmbros', 'Ângulos dos Ombros', 'angulos');
-            new Chart('chartOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_ombro_esquerdo), borderColor: '#4f46e5' }, { label: 'Direito', data: analysisData.map(d => d.angulo_ombro_direito), borderColor: '#3b82f6' }] }, options: chartOptions('Ângulo (°)') });
-            createChartCard('chartQuadris', 'Ângulos dos Quadris', 'angulos');
-            new Chart('chartQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_quadril_esquerdo), borderColor: '#10b981' }, { label: 'Direito', data: analysisData.map(d => d.angulo_quadril_direito), borderColor: '#65a30d' }] }, options: chartOptions('Ângulo (°)') });
-            createChartCard('chartColuna', 'Ângulos da Coluna', 'angulos');
-            new Chart('chartColuna', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Cervical', data: analysisData.map(d => d.angulo_coluna_cervical), borderColor: '#8b5cf6' }, { label: 'Torácica', data: analysisData.map(d => d.angulo_coluna_toracica), borderColor: '#d946ef' }] }, options: chartOptions('Ângulo (°)') });
-            createChartCard('chartJoelhos', 'Ângulos dos Joelhos', 'angulos');
-            new Chart('chartJoelhos', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_joelho_esquerdo), borderColor: '#f97316' }, { label: 'Direito', data: analysisData.map(d => d.angulo_joelho_direito), borderColor: '#f59e0b' }] }, options: chartOptions('Ângulo (°)') });
+                const timestamps = analysisData.map(d => (d.tempo_segundos || 0).toFixed(1));
+                const chartOptions = (yTitle, beginAtZero = false) => ({ responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: yTitle }, beginAtZero: beginAtZero } } });
 
-            // Simetria
-            createChartCard('chartAssimetria', 'Assimetrias Corporais', 'simetria');
-            new Chart('chartAssimetria', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Ombros (m)', data: analysisData.map(d => d.assimetria_ombros_metros), borderColor: '#ef4444' }, { label: 'Quadris (m)', data: analysisData.map(d => d.assimetria_quadris_metros), borderColor: '#f97316' }] }, options: chartOptions('Diferença (m)', true) });
-            createChartCard('chartComparacaoLados', 'Comparação Lado Esquerdo vs. Direito', 'simetria');
-            new Chart('chartComparacaoLados', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Joelhos (°)', data: analysisData.map(d => Math.abs((d.angulo_joelho_esquerdo || 0) - (d.angulo_joelho_direito || 0))), borderColor: '#f97316' }] }, options: chartOptions('Diferença Absoluta (°)', true) });
+                console.log("Criando gráficos de Ângulos Articulares...");
+                createChartCard('chartOmbros', 'Ângulos dos Ombros', 'angulos'); new Chart('chartOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_ombro_esquerdo), borderColor: '#4f46e5' }, { label: 'Direito', data: analysisData.map(d => d.angulo_ombro_direito), borderColor: '#3b82f6' }] }, options: chartOptions('Ângulo (°)') });
+                createChartCard('chartQuadris', 'Ângulos dos Quadris', 'angulos'); new Chart('chartQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_quadril_esquerdo), borderColor: '#10b981' }, { label: 'Direito', data: analysisData.map(d => d.angulo_quadril_direito), borderColor: '#65a30d' }] }, options: chartOptions('Ângulo (°)') });
+                createChartCard('chartColuna', 'Ângulos da Coluna', 'angulos'); new Chart('chartColuna', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Cervical', data: analysisData.map(d => d.angulo_coluna_cervical), borderColor: '#8b5cf6' }, { label: 'Torácica', data: analysisData.map(d => d.angulo_coluna_toracica), borderColor: '#d946ef' }] }, options: chartOptions('Ângulo (°)') });
+                createChartCard('chartJoelhos', 'Ângulos dos Joelhos', 'angulos'); new Chart('chartJoelhos', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_joelho_esquerdo), borderColor: '#f97316' }, { label: 'Direito', data: analysisData.map(d => d.angulo_joelho_direito), borderColor: '#f59e0b' }] }, options: chartOptions('Ângulo (°)') });
 
-            // Temporal
-            createChartCard('chartCarga', 'Oscilação Vertical do Quadril', 'temporal');
-            const hipCenterY = analysisData.map(d => ((d.LEFT_HIP_y_metros || 0) + (d.RIGHT_HIP_y_metros || 0)) / 2).filter(v => v > 0);
-            new Chart('chartCarga', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Centro do Quadril', data: hipCenterY, borderColor: '#0ea5e9' }] }, options: chartOptions('Altura Normalizada') });
-            createChartCard('chartMarcha', 'Velocidade da Marcha (Estimada)', 'temporal');
-            const speeds = analysisData.slice(1).map((d, i) => { const dist = Math.abs((d.distancia_percorrida_metros||0) - (analysisData[i].distancia_percorrida_metros||0)); const time = d.tempo_segundos - analysisData[i].tempo_segundos; return time > 0 ? dist/time : 0; });
-            new Chart('chartMarcha', { type: 'bar', data: { labels: timestamps.slice(1), datasets: [{ label: 'Velocidade (m/s)', data: speeds, backgroundColor: '#06b6d480' }] }, options: chartOptions('Velocidade (m/s)', true) });
-            
-            // Distribuições
-            // GRÁFICO DE BOX PLOT REMOVIDO
-            createChartCard('chartHistogramaAssimetria', 'Histograma de Assimetrias (Ombros)', 'distribuicoes');
-            const assimetriaOmbros = analysisData.map(d => d.assimetria_ombros_metros).filter(v => v != null);
-            const bins = [0, 0.01, 0.02, 0.03, 0.04, 0.05];
-            const histData = bins.slice(1).map((bin, i) => assimetriaOmbros.filter(v => v >= bins[i] && v < bin).length);
-            new Chart('chartHistogramaAssimetria', { type: 'bar', data: { labels: bins.slice(1).map(b => `< ${b.toFixed(2)}m`), datasets: [{ label: 'Nº de Frames', data: histData, backgroundColor: '#ef444480'}] }, options: chartOptions('Nº de Frames', true)});
+                console.log("Criando gráficos de Simetria Corporal...");
+                createChartCard('chartAssimetria', 'Assimetrias Corporais', 'simetria'); new Chart('chartAssimetria', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Ombros (m)', data: analysisData.map(d => d.assimetria_ombros_metros), borderColor: '#ef4444' }, { label: 'Quadris (m)', data: analysisData.map(d => d.assimetria_quadris_metros), borderColor: '#f97316' }] }, options: chartOptions('Diferença (m)', true) });
+                createChartCard('chartComparacaoLados', 'Comparação Lado Esquerdo vs. Direito', 'simetria'); new Chart('chartComparacaoLados', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Diferença Joelhos (°)', data: analysisData.map(d => Math.abs((d.angulo_joelho_esquerdo || 0) - (d.angulo_joelho_direito || 0))), borderColor: '#f97316' }] }, options: chartOptions('Diferença Absoluta (°)', true) });
+
+                console.log("Criando gráficos de Análise Temporal...");
+                createChartCard('chartCarga', 'Oscilação Vertical do Quadril', 'temporal'); const hipCenterY = analysisData.map(d => ((d.LEFT_HIP_y_metros || 0) + (d.RIGHT_HIP_y_metros || 0)) / 2).filter(v => v > 0); new Chart('chartCarga', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Centro do Quadril', data: hipCenterY, borderColor: '#0ea5e9' }] }, options: chartOptions('Altura Normalizada') });
+                createChartCard('chartMarcha', 'Velocidade da Marcha (Estimada)', 'temporal'); const speeds = analysisData.slice(1).map((d, i) => { const dist = Math.abs((d.distancia_percorrida_metros||0) - (analysisData[i].distancia_percorrida_metros||0)); const time = d.tempo_segundos - analysisData[i].tempo_segundos; return time > 0 ? dist/time : 0; }); new Chart('chartMarcha', { type: 'bar', data: { labels: timestamps.slice(1), datasets: [{ label: 'Velocidade (m/s)', data: speeds, backgroundColor: '#06b6d480' }] }, options: chartOptions('Velocidade (m/s)', true) });
+                
+                console.log("Criando gráficos de Distribuições...");
+                createChartCard('chartHistogramaAssimetria', 'Histograma de Assimetrias (Ombros)', 'distribuicoes');
+                const assimetriaOmbros = analysisData.map(d => d.assimetria_ombros_metros).filter(v => v != null);
+                const bins = [0, 0.01, 0.02, 0.03, 0.04, 0.05];
+                const histData = bins.slice(1).map((bin, i) => assimetriaOmbros.filter(v => v >= bins[i] && v < bin).length);
+                new Chart('chartHistogramaAssimetria', { type: 'bar', data: { labels: bins.slice(1).map(b => `< ${b.toFixed(2)}m`), datasets: [{ label: 'Nº de Frames', data: histData, backgroundColor: '#ef444480'}] }, options: chartOptions('Nº de Frames', true)});
+
+                console.log("Todos os gráficos foram criados com sucesso.");
+            } catch (error) {
+                console.error("ERRO AO CRIAR GRÁFICOS:", error);
+                document.getElementById('tab-content').innerHTML = `<p class="text-center text-red-500 font-bold">Ocorreu um erro ao tentar desenhar os gráficos: ${error.message}</p>`;
+            }
         }
     </script>
 </body>
