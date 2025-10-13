@@ -1,4 +1,4 @@
-# site/api/app.py - CORREÇÃO DA ROTA /api/video PARA RETORNAR 404
+# site/api/app.py - CORREÇÃO DO CODEC DE SAÍDA PARA MJPG
 
 import os
 import uuid
@@ -55,9 +55,11 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     if not cap.isOpened():
         raise IOError(f"Não foi possível abrir o vídeo: {video_path}") 
 
-    # IMPORTANTE: Mude o codec se o mp4v causar problemas. 'XVID' ou 'MJPG'
-    # podem ser mais estáveis em alguns ambientes, mas 'mp4v' é o padrão correto.
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+    # MUDANÇA CRÍTICA: Trocando 'mp4v' por 'MJPG' para melhor compatibilidade em contêineres.
+    # A extensão do arquivo deve ser .avi, mas o frontend espera .mp4, o que pode causar
+    # problemas no player, então manteremos .mp4 para o front, mas o codec será MJPG.
+    # Se o front falhar, mude a extensão de output_video_path para .avi.
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG') 
     fps = cap.get(cv2.CAP_PROP_FPS) or 30 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) 
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) 
@@ -159,7 +161,6 @@ def process_analysis_route():
         output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
         
         # Executa a análise que extrai os dados e gera o vídeo com landmarks
-        # Se houver falha no processamento aqui, o JSON pode ficar vazio.
         temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
         
         # Monta o JSON final com os resultados
