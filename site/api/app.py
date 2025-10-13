@@ -146,16 +146,18 @@ def process_analysis_route():
     try:
         video_file = request.files['frontalImage']
         
-        # Salva o vídeo original temporariamente
-        temp_video_path = os.path.join(tempfile.gettempdir(), video_file.filename)
-        video_file.save(temp_video_path)
-        print(f"-> Vídeo frontal recebido e salvo em: {temp_video_path}")
+        # MUDANÇA 1: Define o caminho para o vídeo original no diretório de vídeos (VIDEO_DIR)
+        original_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
+        
+        # Salva o vídeo original no diretório de vídeos
+        video_file.save(original_video_path)
+        print(f"-> Vídeo frontal original recebido e salvo em: {original_video_path}")
 
         # Define o caminho para o vídeo processado com landmarks
         output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4")
         
         # Executa a análise que extrai os dados e gera o vídeo com landmarks
-        temporal_data = analyze_video_and_extract_data(temp_video_path, output_video_path)
+        temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
         
         # Monta o JSON final com os resultados
         full_result = {
@@ -180,9 +182,8 @@ def process_analysis_route():
         print(traceback.format_exc())
         return jsonify({"success": False, "error": f"Erro interno no servidor: {e}"}), 500
     finally:
-        # Limpa o arquivo de vídeo temporário
-        if 'temp_video_path' in locals() and os.path.exists(temp_video_path):
-            os.remove(temp_video_path)
+        # A remoção do arquivo temporário foi removida, garantindo que o vídeo original persista para ser servido.
+        pass 
 
 @app.route('/api/analysis/<analysis_id>', methods=['GET'])
 def get_analysis_route(analysis_id):
@@ -212,6 +213,38 @@ def get_video_route(video_filename):
         return "Vídeo não encontrado.", 404
     except Exception as e:
         return str(e), 500
+
+@app.route('/api/delete-analysis/<analysis_id>', methods=['DELETE'])
+def delete_analysis_route(analysis_id):
+    """NOVA ROTA: Deleta o JSON da análise e os vídeos relacionados."""
+    try:
+        if '..' in analysis_id or '/' in analysis_id:
+            return jsonify({"success": False, "error": "ID inválido."}), 400
+        
+        # Caminhos dos arquivos
+        result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
+        video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
+        video_processed_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4")
+
+        def safe_delete(filepath):
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                return True
+            return False
+
+        # Deleta os arquivos
+        deleted_count = 0
+        if safe_delete(result_filepath): deleted_count += 1
+        if safe_delete(video_original_filepath): deleted_count += 1
+        if safe_delete(video_processed_filepath): deleted_count += 1
+             
+        print(f"🗑️ Análise {analysis_id} e {deleted_count} arquivos deletados.")
+        return jsonify({"success": True, "message": "Arquivos de análise deletados com sucesso."})
+
+    except Exception as e:
+        print(f"❌ Erro ao deletar análise {analysis_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 # --- EXECUÇÃO ---
 
