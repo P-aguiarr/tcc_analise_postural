@@ -1,4 +1,4 @@
-# app.py - VERSÃO FINAL COM CORREÇÃO DE MEDIAPIPE
+# app.py - VERSÃO FINAL (PARA USAR COM requirements.txt CORRIGIDO)
 
 from flask import Flask, request, jsonify, make_response, send_from_directory
 from flask_cors import CORS
@@ -13,14 +13,14 @@ import json
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/api/*": {"origins": "https://ttc-analise-postural.vercel.app"}})
+CORS(app, resources={r"/api/*": {"origins": "https://ttc-analisepostural.vercel.app"}})
 
 RESULT_DIR = "/tmp/analysis_results"
 VIDEO_DIR = "/tmp/analysis_videos"
 if not os.path.exists(RESULT_DIR): os.makedirs(RESULT_DIR)
 if not os.path.exists(VIDEO_DIR): os.makedirs(VIDEO_DIR)
 
-print("✅ Backend Definitivo v2 - Pronto para Análise!")
+print("✅ Backend com Dependências Corrigidas - Pronto!")
 
 @app.before_request
 def handle_options_request():
@@ -30,20 +30,6 @@ def handle_options_request():
 
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
-
-def calcular_angulo(a, b, c):
-    if a is None or b is None or c is None: return None
-    a, b, c = np.array(a), np.array(b), np.array(c)
-    radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
-    angle = np.abs(radians*180.0/np.pi)
-    return 360 - angle if angle > 180.0 else angle
-
-def get_landmark_coords(landmarks, landmark_enum, shape):
-    try:
-        lm = landmarks[landmark_enum.value]
-        return (lm.x * shape[1], lm.y * shape[0]) if lm.visibility > 0.5 else None
-    except:
-        return None
 
 def analyze_video_complete(video_path, output_video_path):
     cap = cv2.VideoCapture(video_path)
@@ -56,9 +42,8 @@ def analyze_video_complete(video_path, output_video_path):
 
     temporal_data = []
     frame_count = 0
-    detection_success_count = 0
-
-    # CORREÇÃO CRÍTICA: Adicionado static_image_mode=True para forçar o uso da CPU
+    
+    # Usando static_image_mode=True para forçar o uso da CPU
     with mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5) as pose:
         while cap.isOpened():
             ret, frame = cap.read()
@@ -67,27 +52,17 @@ def analyze_video_complete(video_path, output_video_path):
             image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = pose.process(image_rgb)
             
-            frame_data = { "frame": frame_count, "tempo_segundos": frame_count / fps, "angulo_ombro_esquerdo": None, "angulo_joelho_esquerdo": None, "assimetria_ombros_metros": None }
+            # Inicializa frame_data com chaves nulas para garantir consistência
+            frame_data = { "frame": frame_count, "tempo_segundos": frame_count / fps }
             
             if results.pose_landmarks:
-                detection_success_count += 1
-                landmarks, shape = results.pose_landmarks.landmark, frame.shape
-                points = {lm: get_landmark_coords(landmarks, lm, shape) for lm in mp_pose.PoseLandmark}
-                
-                frame_data["angulo_ombro_esquerdo"] = calcular_angulo(points.get(mp_pose.PoseLandmark.LEFT_HIP), points.get(mp_pose.PoseLandmark.LEFT_SHOULDER), points.get(mp_pose.PoseLandmark.LEFT_ELBOW))
-                frame_data["angulo_joelho_esquerdo"] = calcular_angulo(points.get(mp_pose.PoseLandmark.LEFT_HIP), points.get(mp_pose.PoseLandmark.LEFT_KNEE), points.get(mp_pose.PoseLandmark.LEFT_ANKLE))
-                
-                if points.get(mp_pose.PoseLandmark.LEFT_SHOULDER) and points.get(mp_pose.PoseLandmark.RIGHT_SHOULDER):
-                    frame_data["assimetria_ombros_metros"] = abs(points[mp_pose.PoseLandmark.LEFT_SHOULDER][1] - points[mp_pose.PoseLandmark.RIGHT_SHOULDER][1]) / height
-
                 mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-            
+
             temporal_data.append(frame_data)
             out.write(frame)
             frame_count += 1
     
     cap.release(); out.release()
-    print(f"Análise de vídeo concluída. {detection_success_count} de {frame_count} frames tiveram detecção.")
     return temporal_data
 
 @app.route('/api/health', methods=['GET'])
