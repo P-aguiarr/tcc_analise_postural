@@ -47,6 +47,8 @@ def calcular_angulo(a, b, c):
     return 360 - angle if angle > 180.0 else angle
 
 def get_landmark_coords(landmarks, landmark_enum, shape):
+    if not landmarks or landmark_enum.value >= len(landmarks):
+        return None
     lm = landmarks[landmark_enum.value]
     return (lm.x * shape[1], lm.y * shape[0]) if lm.visibility > 0.5 else None
 
@@ -56,7 +58,10 @@ def analyze_video_complete(video_path):
 
     temp_output_path = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False).name
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    fps, width, height = cap.get(cv2.CAP_PROP_FPS), int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    if fps == 0: fps = 30 # Fallback para vídeos sem metadados de FPS
+    
+    width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     out = cv2.VideoWriter(temp_output_path, fourcc, fps, (width, height))
 
     temporal_data = []
@@ -77,7 +82,16 @@ def analyze_video_complete(video_path):
                 landmarks, shape = results.pose_landmarks.landmark, frame.shape
                 points = {lm: get_landmark_coords(landmarks, lm, shape) for lm in mp_pose.PoseLandmark}
                 
-                if all(points.values()):
+                required_points = [
+                    mp_pose.PoseLandmark.LEFT_SHOULDER, mp_pose.PoseLandmark.RIGHT_SHOULDER,
+                    mp_pose.PoseLandmark.LEFT_HIP, mp_pose.PoseLandmark.RIGHT_HIP,
+                    mp_pose.PoseLandmark.LEFT_KNEE, mp_pose.PoseLandmark.RIGHT_KNEE,
+                    mp_pose.PoseLandmark.LEFT_ANKLE, mp_pose.PoseLandmark.RIGHT_ANKLE,
+                    mp_pose.PoseLandmark.LEFT_ELBOW, mp_pose.PoseLandmark.RIGHT_ELBOW,
+                    mp_pose.PoseLandmark.NOSE
+                ]
+                
+                if all(points[p] is not None for p in required_points):
                     frame_data["angulo_ombro_esquerdo"] = calcular_angulo(points[mp_pose.PoseLandmark.LEFT_HIP], points[mp_pose.PoseLandmark.LEFT_SHOULDER], points[mp_pose.PoseLandmark.LEFT_ELBOW])
                     frame_data["angulo_ombro_direito"] = calcular_angulo(points[mp_pose.PoseLandmark.RIGHT_HIP], points[mp_pose.PoseLandmark.RIGHT_SHOULDER], points[mp_pose.PoseLandmark.RIGHT_ELBOW])
                     frame_data["angulo_quadril_esquerdo"] = calcular_angulo(points[mp_pose.PoseLandmark.LEFT_SHOULDER], points[mp_pose.PoseLandmark.LEFT_HIP], points[mp_pose.PoseLandmark.LEFT_KNEE])
@@ -99,7 +113,7 @@ def analyze_video_complete(video_path):
                     current_hip_center_x = mid_hip[0]
                     if last_hip_center_x is not None: total_distance += abs(current_hip_center_x - last_hip_center_x)
                     last_hip_center_x = current_hip_center_x
-                    frame_data["distancia_percorrida_metros"] = total_distance / width # Normalizado pela largura
+                    frame_data["distancia_percorrida_metros"] = total_distance / width 
 
                 mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
             
@@ -116,6 +130,11 @@ def analyze_video_complete(video_path):
 # =================================================================
 # ROTAS DA API
 # =================================================================
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Endpoint de health check para o Railway."""
+    return jsonify({"status": "ok", "message": "Serviço está funcionando"}), 200
 
 @app.route('/api/process-analysis', methods=['POST'])
 def process_analysis_route():
@@ -148,6 +167,10 @@ def process_analysis_route():
 @app.route('/api/analysis/<analysis_id>', methods=['GET'])
 def get_analysis_route(analysis_id):
     try:
+        # Validação simples para evitar travessia de diretório
+        if '..' in analysis_id or '/' in analysis_id:
+            return jsonify({"success": False, "error": "ID de análise inválido."}), 400
+
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         if not os.path.exists(result_filepath): return jsonify({"success": False, "error": "Análise não encontrada."}), 404
         
