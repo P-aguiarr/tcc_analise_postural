@@ -11,11 +11,28 @@
     <script src="https://unpkg.com/lucide@latest" defer></script>
 
     <style>
-        :root { --primary: #4f46e5; --light: #f3f4f6; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--light); }
-        .chart-container { position: relative; height: 350px; width: 100%; }
-        .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
-        .navbar { background-color: white; padding: 1rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        :root {
+            --primary: #4f46e5;
+            --light: #f3f4f6;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light);
+        }
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .navbar {
+            background-color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
         .the-posture-lab { font-size: 1.5rem; font-weight: bold; }
         .span { color: var(--primary); }
         .frame-16 { display: flex; justify-content: space-between; align-items: center; }
@@ -46,7 +63,11 @@
         <section id="video-section" class="mb-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Vídeos da Análise</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="video-container">
-                 <div class="bg-white p-4 rounded-xl shadow-sm"><div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center"><p class="text-gray-500">Carregando vídeo...</p></div></div>
+                 <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <p class="text-gray-500">Carregando vídeo...</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -60,7 +81,7 @@
         </div>
 
         <div id="loading-indicator" class="text-center p-10">
-            <h2 id="loading-title" class="text-xl font-semibold text-gray-700">Carregando...</h2>
+            <h2 id="loading-title" class="text-xl font-semibold text-gray-700">Carregando gráficos...</h2>
         </div>
 
         <main id="tab-content" style="display: none;">
@@ -82,7 +103,7 @@
             videoContainer.innerHTML += `
                 <div class="bg-white p-4 rounded-xl shadow-sm">
                     <h3 class="font-bold mb-2">Plano Coronal (Frontal) com Landmarks</h3>
-                    <video controls muted class="w-full rounded-lg" src="${videoUrlFrontal}" type="video/mp4"></video>
+                    <video controls muted class="w-full rounded-lg" src="${videoUrlFrontal}" type="video/mp4" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo.</p>';"></video>
                 </div>`;
             
             if (apiResponse.data.temporal_data_transversal) {
@@ -90,7 +111,7 @@
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Transversal (Axial) com Landmarks</h3>
-                        <video controls muted class="w-full rounded-lg" src="${videoUrlTransversal}" type="video/mp4"></video>
+                        <video controls muted class="w-full rounded-lg" src="${videoUrlTransversal}" type="video/mp4" onerror="this.parentElement.innerHTML += '<p class=\\'text-red-500 mt-2\\'>Falha ao carregar o vídeo.</p>';"></video>
                     </div>`;
             }
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
@@ -106,7 +127,7 @@
                 if (!apiResponse.success) throw new Error(`Erro no backend: ${apiResponse.error}`);
                 return apiResponse;
             } catch (error) {
-                document.getElementById('loading-indicator').innerHTML = `<h2 class="text-red-500">${error.message}</h2>`;
+                document.getElementById('loading-indicator').innerHTML = `<h2 class="text-red-500 font-bold">${error.message}</h2>`;
                 return null;
             }
         }
@@ -127,14 +148,21 @@
             
             if (apiResponse && apiResponse.data) {
                 populateUI(analysisId, apiResponse);
+                
                 const analysisData = apiResponse.data.temporal_data_frontal;
-                if (analysisData && analysisData.length > 0) {
+                const validFrames = analysisData ? analysisData.filter(d => d.angulo_ombro_esquerdo != null).length : 0;
+
+                if (analysisData && validFrames > 10) { // Exige um mínimo de frames com dados
                     loadingIndicator.style.display = 'none';
                     tabContent.style.display = 'block';
                     setupAllCharts(analysisData);
                     if (window.lucide) lucide.createIcons();
                 } else {
-                     loadingIndicator.textContent = "Não foram gerados dados para os gráficos.";
+                    loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+                        <h2 class="font-bold text-xl">Análise Concluída com Baixa Detecção</h2>
+                        <p>O sistema processou o vídeo, mas não conseguiu detectar os pontos corporais na maior parte do tempo.</p>
+                        <p class="mt-2">Dicas: Tente um vídeo com melhor iluminação, onde o corpo esteja mais visível e centralizado.</p>
+                        </div>`;
                 }
             }
             
@@ -211,22 +239,10 @@
             new Chart('chartAssimetria', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Ombros (m)', data: analysisData.map(d => d.assimetria_ombros_metros) }] }, options: chartOptions('Diferença (m)', true) });
             document.getElementById('export-chartAssimetria').onclick = () => exportToCSV(analysisData.map(d=>({tempo_s: d.tempo_segundos, assimetria_ombros_m: d.assimetria_ombros_metros})), 'assimetrias.csv');
 
-            // GRÁFICO DE COMPARAÇÃO RESTAURADO E COMPLETO
-            createChartCard('chartComparacaoLados', 'Comparação Lado Esquerdo vs. Direito', 'simetria');
-            const diffOmbros = analysisData.map(d => Math.abs((d.angulo_ombro_esquerdo || 0) - (d.angulo_ombro_direito || 0)));
-            const diffQuadris = analysisData.map(d => Math.abs((d.angulo_quadril_esquerdo || 0) - (d.angulo_quadril_direito || 0)));
             const diffJoelhos = analysisData.map(d => Math.abs((d.angulo_joelho_esquerdo || 0) - (d.angulo_joelho_direito || 0)));
-            new Chart('chartComparacaoLados', { type: 'line', data: { labels: timestamps, datasets: [
-                { label: 'Diferença Ombros (°)', data: diffOmbros, borderColor: '#4f46e5' },
-                { label: 'Diferença Quadris (°)', data: diffQuadris, borderColor: '#10b981' },
-                { label: 'Diferença Joelhos (°)', data: diffJoelhos, borderColor: '#f97316' }
-            ] }, options: chartOptions('Diferença Absoluta (°)', true) });
-            document.getElementById('export-chartComparacaoLados').onclick = () => exportToCSV(analysisData.map((d, i) => ({ 
-                tempo_s: d.tempo_segundos, 
-                ombro_esq: d.angulo_ombro_esquerdo, ombro_dir: d.angulo_ombro_direito, diff_ombros: diffOmbros[i],
-                quadril_esq: d.angulo_quadril_esquerdo, quadril_dir: d.angulo_quadril_direito, diff_quadris: diffQuadris[i],
-                joelho_esq: d.angulo_joelho_esquerdo, joelho_dir: d.angulo_joelho_direito, diff_joelhos: diffJoelhos[i]
-            })), 'comparacao_lados_completo.csv');
+            createChartCard('chartComparacaoLados', 'Comparação Lado Esquerdo vs. Direito (Joelhos)', 'simetria');
+            new Chart('chartComparacaoLados', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Diferença (°)', data: diffJoelhos }] }, options: chartOptions('Diferença Absoluta (°)', true) });
+            document.getElementById('export-chartComparacaoLados').onclick = () => exportToCSV(analysisData.map((d, i) => ({ tempo_s: d.tempo_segundos, joelho_esq: d.angulo_joelho_esquerdo, joelho_dir: d.angulo_joelho_direito, diferenca: diffJoelhos[i] })), 'comparacao_joelhos.csv');
 
             // Temporal
             createChartCard('chartCarga', 'Oscilação Vertical do Quadril', 'temporal');
