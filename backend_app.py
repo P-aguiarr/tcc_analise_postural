@@ -23,18 +23,18 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from functools import wraps
 
-# Configuração da aplicação Flask
-# ATENÇÃO: As pastas 'templates' (para login.html) e 'static' são o padrão do Flask.
-app = Flask(__name__, template_folder='templates', static_folder='static')
+# ==========================================================
+# CONFIGURAÇÃO DA APLICAÇÃO FLASK (CRUCIAL)
+# A pasta 'site' agora é usada como 'template_folder' e 'static_folder'.
+# ==========================================================
+app = Flask(__name__, template_folder='site', static_folder='site')
 CORS(app)
 
 # ==========================================================
 # CONFIGURAÇÕES DE AMBIENTE E VARIÁVEIS DO RAILWAY
 # ==========================================================
-# Carrega as variáveis de ambiente que devem estar configuradas no Railway
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
-# RAILWAY_AUTH_AUDIENCE não é estritamente necessário se usarmos GOOGLE_CLIENT_ID
 RAILWAY_AUTH_AUDIENCE = os.environ.get('RAILWAY_AUTH_AUDIENCE')
 
 if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
@@ -42,14 +42,13 @@ if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
 else:
     print("✅ Configurações de Google Auth carregadas com sucesso.")
 
-# Configurações do MediaPipe
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 
 print("✅ Backend Railway - Análise Postural Avançado Iniciado!")
 
 # ==========================================================
-# ROTAS DE SERVIÇO DE ARQUIVOS HTML (Templates)
+# ROTAS DE SERVIÇO DE ARQUIVOS HTML (Templates na pasta 'site')
 # ==========================================================
 
 @app.route('/')
@@ -60,14 +59,13 @@ def home_page():
 @app.route('/login')
 def login_page():
     """
-    Rota explícita para o arquivo login.html.
-    Isso garante que a requisição da API (/api/config) não caia aqui.
+    Rota explícita para o arquivo login.html (procurado em 'site/login.html').
     """
     try:
         return render_template('login.html')
     except Exception as e:
         # Mensagem de erro se o template não for encontrado
-        return f"Erro ao renderizar 'login.html'. Verifique se ele está na pasta 'templates'. Detalhe: {str(e)}", 500
+        return f"Erro ao renderizar 'login.html'. Verifique se ele está na pasta 'site'. Detalhe: {str(e)}", 500
 
 @app.route('/poslogin')
 def poslogin_page():
@@ -75,7 +73,7 @@ def poslogin_page():
     try:
         return render_template('poslogin.html')
     except Exception as e:
-        return f"Erro ao renderizar 'poslogin.html'. Verifique se ele está na pasta 'templates'.", 500
+        return f"Erro ao renderizar 'poslogin.html'. Verifique se ele está na pasta 'site'.", 500
 
 @app.route('/configuracoes')
 def configuracoes_page():
@@ -83,7 +81,7 @@ def configuracoes_page():
     try:
         return render_template('configuracoes.html')
     except Exception as e:
-        return f"Erro ao renderizar 'configuracoes.html'. Verifique se ele está na pasta 'templates'.", 500
+        return f"Erro ao renderizar 'configuracoes.html'. Verifique se ele está na pasta 'site'.", 500
 
 # ==========================================================
 # ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO (JSON APIs)
@@ -110,7 +108,7 @@ def get_config():
 def auth_callback():
     """
     Endpoint chamado pelo frontend após o login do Google.
-    Valida o token JWT no servidor usando o GOOGLE_CLIENT_SECRET.
+    Valida o token JWT no servidor.
     """
     data = request.get_json()
     token = data.get('token')
@@ -122,25 +120,20 @@ def auth_callback():
         return jsonify({"success": False, "error": "Configuração de autenticação faltando no servidor."}), 500
 
     try:
-        # 1. Tenta validar o token JWT do Google
         id_info = id_token.verify_oauth2_token(
             token, 
             google_requests.Request(), 
-            GOOGLE_CLIENT_ID # Audience deve ser o Client ID
+            GOOGLE_CLIENT_ID 
         )
         
-        # 2. Verifica se o emissor é válido
         if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
             raise ValueError('Token inválido: Emissor incorreto.')
             
-        # 3. Extrai dados do usuário
         user_id = id_info['sub']
         user_email = id_info['email']
         user_name = id_info.get('name', 'Usuário')
         
         print(f"✅ Usuário autenticado: {user_email} (ID: {user_id})")
-        
-        # 4. Lógica de Negócio (ex: criar sessão ou salvar usuário no DB)
         
         return jsonify({
             "success": True, 
@@ -156,7 +149,7 @@ def auth_callback():
         return jsonify({"success": False, "error": "Erro interno do servidor durante a autenticação."}), 500
 
 # ==========================================================
-# FUNÇÕES DE ANÁLISE POSTURAL (TODO O SEU CÓDIGO RESTAURADO)
+# FUNÇÕES DE ANÁLISE POSTURAL (MANTIDAS)
 # ==========================================================
 
 def calcular_angulo(a, b, c):
@@ -169,7 +162,6 @@ def calcular_angulo(a, b, c):
     if mag_ba * mag_bc == 0:
         return 0
     cos_angle = produto_escalar / (mag_ba * mag_bc)
-    # Garante que cos_angle esteja entre -1 e 1
     cos_angle = max(min(cos_angle, 1), -1) 
     angle = math.acos(cos_angle)
     return math.degrees(angle)
@@ -206,68 +198,41 @@ def analyze_posture(image_path, view):
 
         landmarks = results.pose_landmarks.landmark
         
-        # Extrair coordenadas em pixels (multiplicadas pela largura e altura da imagem)
         H, W, _ = frame.shape
         coords = {}
         for i, lm in enumerate(landmarks):
             coords[i] = (lm.x * W, lm.y * H)
 
-        # Mapeamento de Landmarks do MediaPipe (índices importantes)
-        # 0: Nariz, 11: Ombro Esquerdo, 12: Ombro Direito
-        # 13: Cotovelo Esquerdo, 14: Cotovelo Direito
-        # 15: Punho Esquerdo, 16: Punho Direito
-        # 23: Quadril Esquerdo, 24: Quadril Direito
-        # 25: Joelho Esquerdo, 26: Joelho Direito
-        # 27: Tornozelo Esquerdo, 28: Tornozelo Direito
-        # 29: Calcanhar Esquerdo, 30: Calcanhar Direito
-        
         angles = {}
         
         if view == 'frontal':
-            # Linha Ombro-Quadril (Verticalidade)
-            angles['shoulder_hip_L'] = calcular_angulo(coords[11], coords[23], (coords[23][0], 0)) # Ângulo com a vertical
+            angles['shoulder_hip_L'] = calcular_angulo(coords[11], coords[23], (coords[23][0], 0)) 
             angles['shoulder_hip_R'] = calcular_angulo(coords[12], coords[24], (coords[24][0], 0))
             
-            # Alinhamento da cabeça (Nariz - Ponto médio dos ombros)
             mid_shoulder_x = (coords[11][0] + coords[12][0]) / 2
             mid_shoulder_y = (coords[11][1] + coords[12][1]) / 2
             angles['head_alignment'] = calcular_angulo(coords[0], (mid_shoulder_x, mid_shoulder_y), (mid_shoulder_x, 0))
 
-            # Nivelamento (simetria)
-            angles['shoulder_level'] = abs(coords[11][1] - coords[12][1]) # Diferença em Y
+            angles['shoulder_level'] = abs(coords[11][1] - coords[12][1]) 
             angles['hip_level'] = abs(coords[23][1] - coords[24][1])
             
-            # Ângulo do pescoço (Vista frontal - menos preciso, mas útil para desvio lateral)
-            # Pescoço: Nariz (0), Ponto central ombros (mid_shoulder), Ponto central quadril
             mid_hip_x = (coords[23][0] + coords[24][0]) / 2
             mid_hip_y = (coords[23][1] + coords[24][1]) / 2
             angles['neck_angle'] = calcular_angulo(coords[0], (mid_shoulder_x, mid_shoulder_y), (mid_hip_x, mid_hip_y))
             
             
         elif view == 'lateral':
-            # Tronco (Ombro - Quadril - Joelho)
             angles['trunk_hip_knee'] = calcular_angulo(coords[11], coords[23], coords[25])
-            
-            # Lordose Lombar (Quadril - Joelho - Tornozelo) - Proxy para a curva lombar
             angles['lumbar_proxy'] = calcular_angulo(coords[23], coords[25], coords[27])
-
-            # Cifose Torácica (Ombro - Quadril - Ponto atrás do ombro) - Proxy
-            # Usa a linha Ombro-Quadril para verticalidade
             angles['thoracic_proxy'] = calcular_angulo(coords[23], coords[11], (coords[11][0], 0))
-            
-            # Cabeça e pescoço (Orelha - Ombro - Quadril)
-            # Usando Nariz como proxy para a cabeça (Orelha seria melhor, mas o Nariz é mais confiável no MP)
             angles['head_forward'] = calcular_angulo(coords[23], coords[11], coords[0])
 
         
-        # Converter para o formato de porcentagem para plotagem futura (se necessário)
         for key, value in angles.items():
             angles[key] = round(value, 2)
             
-        # Gera a imagem com landmarks (para visualização)
         marked_image = draw_landmarks(frame, results)
         
-        # Converte a imagem para Base64
         _, buffer = cv2.imencode('.png', cv2.cvtColor(marked_image, cv2.COLOR_RGB2BGR))
         image_base64 = base64.b64encode(buffer).decode('utf-8')
         
@@ -281,54 +246,40 @@ def generate_analysis_data(angles, view):
     
     if view == 'frontal':
         
-        # Nivelamento dos ombros (Exemplo: diferença em Y maior que 5% da altura da pessoa é um desvio)
-        # Usando um limiar fixo simples para demonstração
-        if angles.get('shoulder_level', 0) > 20: # 20 pixels de diferença
+        if angles.get('shoulder_level', 0) > 20: 
             analise['shoulder_level'] = "Desnível dos ombros detectado."
             recomendacoes.append("Exercícios para fortalecimento dos músculos do pescoço e trapézio (laterais).")
             
-        # Verticalidade (Coluna - Ombro/Quadril)
-        # O ideal é que o ângulo com a vertical (0) seja < 5 graus.
-        # Desvio lateral de tronco
-        
-        if angles.get('shoulder_hip_L', 0) > 85 or angles.get('shoulder_hip_R', 0) > 85: # 90 graus é o ideal com a linha vertical (0)
+        if angles.get('shoulder_hip_L', 0) > 85 or angles.get('shoulder_hip_R', 0) > 85: 
              analise['trunk_lateral_deviation'] = "Desvio lateral de tronco (escoliose funcional/estrutural)."
              recomendacoes.append("Alongamentos e fortalecimento assimétrico do core (prancha lateral).")
 
-        # Angulo do Pescoço
-        if angles.get('neck_angle', 0) < 170 or angles.get('neck_angle', 0) > 190: # Variação de 10 graus (ideal 180)
+        if angles.get('neck_angle', 0) < 170 or angles.get('neck_angle', 0) > 190: 
             analise['neck_frontal_alignment'] = "Possível inclinação lateral da cabeça."
             recomendacoes.append("Ajuste ergonômico no uso de celular/computador (evitar inclinar a cabeça).")
 
     elif view == 'lateral':
         
-        # Cifose Torácica (Aumento da curvatura superior)
-        # Um ângulo Ombro-Vertical menor que 170 graus (ou maior se medir com outra referência) indica "Ombros para Frente".
         if angles.get('thoracic_proxy', 0) < 165: 
             analise['thoracic_kyphosis'] = "Postura com ombros protraídos (cifose aumentada)."
             recomendacoes.append("Fortalecimento da musculatura das costas (remadas) e alongamento peitoral.")
 
-        # Lordose Lombar (Aumento da curvatura inferior - Ângulo joelho-quadril-tornozelo mais aberto)
-        # Valores muito maiores que 180 (ângulo reto) ou muito menores, dependendo da referência.
-        # Usando um limiar simples para detecção de tilt pélvico anterior
         if angles.get('lumbar_proxy', 0) > 175: 
             analise['lumbar_lordosis'] = "Possível aumento da Lordose Lombar (Tilt Pélvico Anterior)."
             recomendacoes.append("Fortalecimento do core abdominal e alongamento dos flexores do quadril e isquiotibiais.")
             
-        # Protrusão de Cabeça (Head Forward Posture)
-        if angles.get('head_forward', 0) < 165: # Ângulo ombro-quadril-cabeça
+        if angles.get('head_forward', 0) < 165: 
             analise['head_forward_posture'] = "Protrusão de cabeça detectada."
             recomendacoes.append("Exercícios de retração cervical e alinhamento de pescoço.")
         
     
-    # Se nenhuma análise específica foi feita, adiciona uma genérica
     if not analise:
         analise['geral'] = "Nenhuma alteração postural significativa detectada nesta vista."
         recomendacoes.append("Continue monitorando sua postura e pratique atividades físicas regularmente.")
         
     return {
         "analise": analise,
-        "recomendacoes": list(set(recomendacoes)) # Remove duplicatas
+        "recomendacoes": list(set(recomendacoes)) 
     }
 
 # ==========================================================
@@ -341,7 +292,6 @@ def analyze_images():
     try:
         data = request.get_json()
         
-        # 1. Obter e salvar as imagens base64
         frontal_base64 = data.get('frontalImage')
         transversal_base64 = data.get('transversalImage')
         
@@ -350,9 +300,7 @@ def analyze_images():
         
         analysis_id = str(uuid.uuid4())
         
-        # Salva as imagens em arquivos temporários (necessário para o cv2.VideoCapture)
         def save_base64_to_temp_file(base64_string, prefix):
-            # Remove o cabeçalho 'data:image/png;base64,'
             if ',' in base64_string:
                 base64_string = base64_string.split(',')[1]
             image_data = base64.b64decode(base64_string)
@@ -387,7 +335,6 @@ def analyze_images():
             resultados['analise_geral'].update(analise_f['analise'])
             
         except (IOError, ValueError) as e:
-            # Captura erros de leitura ou detecção (não interrompe se houver a vista lateral)
             print(f"❌ Erro na análise frontal: {str(e)}")
             resultados['frontal'] = {"error": str(e)}
 
@@ -412,13 +359,11 @@ def analyze_images():
         # 4. Finalização e limpeza
         resultados['recomendacoes'] = list(set(resultados['recomendacoes']))
         
-        # Adicionando uma recomendação final, caso não haja nenhuma
         if not resultados['recomendacoes']:
             resultados['recomendacoes'] = [
                 "Os resultados preliminares são bons. Mantenha os hábitos posturais saudáveis e faça exercícios de fortalecimento do core abdominal."
             ]
         
-        # Limpar arquivos temporários
         try:
             os.unlink(frontal_path)
             if transversal_path:
@@ -446,7 +391,6 @@ def analyze_images():
 @app.route('/api/analysis/<analysis_id>', methods=['GET'])
 def get_analysis(analysis_id):
     """Endpoint para recuperar análise existente (simulado)."""
-    # Em uma aplicação real, aqui você buscaria o resultado no banco de dados.
     return jsonify({
         "analysis_id": analysis_id,
         "status": "completed",
@@ -454,6 +398,6 @@ def get_analysis(analysis_id):
     })
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 8080)) # Usando 8080 conforme sua configuração
     print(f"🌐 Servidor Railway rodando na porta {port}")
     app.run(host='0.0.0.0', port=port)
