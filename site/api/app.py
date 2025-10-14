@@ -1,4 +1,4 @@
-# site/api/app.py - TENTATIVA FINAL COM CODEC MP4V E .MP4
+# site/api/app.py - TENTATIVA DE CODEC MP4V PADRÃO
 
 import os
 import uuid
@@ -53,8 +53,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     if not cap.isOpened():
         raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
 
-    # TENTATIVA FINAL: Usando MP4V, a extensão MP4 é a preferida para web.
-    # O seu log de erro mostrou que o OpenCV tentou isso por último.
+    # RETORNANDO AO MP4V PADRÃO
     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
     
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
@@ -226,7 +225,7 @@ def delete_analysis_route(analysis_id):
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
         video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
-        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
+        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") # Limpa .avi de tentativas anteriores
 
         def safe_delete(filepath):
             if os.path.exists(filepath):
