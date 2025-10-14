@@ -6,37 +6,47 @@
     <link rel="stylesheet" href="/style.css" />
     <title>Dashboard de Análise - The Posture Lab</title>
     
-    <!-- Dependências que estavam no original consulta.html -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
         :root { --primary: #4f46e5; --light: #f3f4f6; }
-        /* Mantendo estilos Tailwind/Chart.js específicos para este arquivo */
+        body { font-family: 'Inter', sans-serif; background-color: var(--light); }
         .chart-container { position: relative; height: 350px; width: 100%; }
         .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
-        .hidden { display: none; }
-        .video-placeholder { 
-            background-color: #fce7e7; /* Vermelho claro para erro */
-            border: 1px dashed #ef4444; /* Borda tracejada vermelha */
-        }
-        
-        /* Adicionei estes estilos inline no original para funcionar com o HTML externo */
-        /* Se eles já estiverem no seu /style.css, pode ignorar esta seção */
         .navbar { background-color: white; padding: 1rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .the-posture-lab { font-size: 1.5rem; font-weight: bold; }
-        .span { color: #4f46e5; } /* Cor primary */
+        .span { color: var(--primary); }
         .frame-16 { display: flex; justify-content: space-between; align-items: center; }
         .frame-17 { display: flex; gap: 1.5rem; }
         .text-wrapper-26 { text-decoration: none; color: #374151; font-weight: 500; }
-        
-        /* Ajuste do Body para usar a cor de fundo do Tailwind original */
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .hidden { display: none; }
+        .video-placeholder { 
+            background-color: #fce7e7;
+            border: 1px dashed #ef4444; 
+        }
+        /* Estilos críticos para exibir a imagem Base64 */
+        .image-container { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            min-height: 12rem; /* Altura mínima para visualização */
+        }
+        .landmarks-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
     </style>
   </head>
   <body>
-    <!-- NAVBAR (Com cabeçalho e links fornecidos) -->
+    <!-- NAVBAR (Estrutura solicitada) -->
     <div class="navbar">
       <div class="frame-16">
         <p class="the-posture-lab">
@@ -46,7 +56,6 @@
           <a href="/" class="text-wrapper-26">Home</a>
           <a href="/login" class="text-wrapper-26">Login</a>
           <a href="/" class="text-wrapper-26">Configurações</a>
-          <!-- Nota: Adicionei um link para "Nova Análise" para usabilidade do dashboard -->
           <a href="/nova-analise" class="text-wrapper-26">Nova Análise</a>
         </div>
       </div>
@@ -59,13 +68,13 @@
         </header>
 
         <section id="video-section" class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Vídeos da Análise</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Mídia da Análise</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="video-container">
-                 <!-- Placeholder inicial de carregamento de vídeo -->
-                 <div class="bg-white p-4 rounded-xl shadow-sm"><div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center"><p class="text-gray-500">Carregando vídeos...</p></div></div>
+                 <div class="bg-white p-4 rounded-xl shadow-sm"><div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center"><p class="text-gray-500">Carregando mídias...</p></div></div>
             </div>
         </section>
-
+        
+        <!-- Tabs Section -->
         <div class="bg-white rounded-xl shadow-sm p-2 mb-8">
             <nav id="tabs" class="flex flex-wrap items-center justify-start space-x-2 sm:space-x-4">
                 <button data-tab="angulos" class="tab-button active font-semibold py-3 px-4 border-b-2 border-transparent">Ângulos Articulares</button>
@@ -90,19 +99,13 @@
 
     <script>
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
-        // Variáveis globais para armazenar os dados e o ID da análise
         let currentAnalysisData = null;
         let currentAnalysisId = null;
-
-        /**
-         * Lida com o erro de carregamento de vídeo sem exibir nada para o usuário.
-         * @param {HTMLVideoElement} videoElement - O elemento <video> que falhou.
-         * @param {string} type - Tipo de vídeo (Original ou Landmarks).
-         */
+        let chartInstances = {};
+        
         function handleVideoError(videoElement, type) {
             console.error(`[FRONTEND ERRO] Falha ao carregar o vídeo ${type}. URL: ${videoElement.src}`);
             
-            // Cria um placeholder visualmente neutro
             const parentDiv = videoElement.parentElement;
             if (parentDiv) {
                 parentDiv.innerHTML = `
@@ -111,7 +114,6 @@
                         <p class="text-sm text-red-600 font-semibold">${type} indisponível.</p>
                         <p class="text-xs text-red-400">Verifique o console (F12) para detalhes.</p>
                     </div>`;
-                // Recria o ícone de aviso
                 if(typeof lucide !== 'undefined' && lucide.createIcons) {
                     lucide.createIcons(); 
                 }
@@ -122,14 +124,32 @@
             const videoContainer = document.getElementById("video-container");
             videoContainer.innerHTML = '';
             
+            const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
+            // CRÍTICO: Pega a imagem Base64 do JSON de resposta
+            const firstFrameBase64 = apiResponse.data.first_frame_base64;
+            
             if (apiResponse.data.temporal_data_frontal) {
-                // URLs para buscar o vídeo original e o processado (ambos .mp4)
-                const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
-                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`; 
                 
-                // --- LOG DE CONSOLE: URLS NO FRONTEND ---
-                console.log(`[FRONTEND DEBUG] Tentando carregar Original: ${videoUrlOriginal}`);
-                console.log(`[FRONTEND DEBUG] Tentando carregar Landmarks: ${videoUrlLandmarks}`);
+                let landmarksMediaHTML = '';
+                if (firstFrameBase64) {
+                    landmarksMediaHTML = `
+                        <div class="bg-white p-4 rounded-xl shadow-sm">
+                            <h3 class="font-bold mb-2">Plano Coronal (Landmarks - 1º Frame)</h3>
+                            <div class="image-container w-full h-48">
+                                <img src="${firstFrameBase64}" alt="Primeiro Frame com Landmarks" class="landmarks-img"/>
+                            </div>
+                        </div>`;
+                } else {
+                    landmarksMediaHTML = `
+                        <div class="bg-white p-4 rounded-xl shadow-sm">
+                            <h3 class="font-bold mb-2">Plano Coronal (Landmarks - 1º Frame)</h3>
+                            <div class="w-full h-48 rounded-lg flex flex-col items-center justify-center video-placeholder bg-yellow-100 text-yellow-700 border-yellow-400">
+                                <i data-lucide="alert-triangle" class="w-6 h-6 mb-2"></i>
+                                <p class="text-sm font-semibold">Imagem de Landmarks não gerada.</p>
+                                <p class="text-xs">O servidor não conseguiu extrair o primeiro frame com a postura.</p>
+                            </div>
+                        </div>`;
+                }
 
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
@@ -139,13 +159,7 @@
                                onerror="handleVideoError(this, 'Original')">
                         </video>
                     </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm">
-                        <h3 class="font-bold mb-2">Plano Coronal (com Landmarks)</h3>
-                        <video controls muted preload="metadata" class="w-full rounded-lg" 
-                               src="${videoUrlLandmarks}"
-                               onerror="handleVideoError(this, 'Landmarks')">
-                        </video>
-                    </div>`;
+                    ${landmarksMediaHTML}`;
             }
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
         }
@@ -155,12 +169,19 @@
                 if (!analysisId) throw new Error("ID da análise não foi encontrado na URL.");
                 const apiUrl = `${backendBaseUrl}/api/analysis/${analysisId}`;
                 const response = await fetch(apiUrl);
+                
+                if (response.status === 404) throw new Error("Análise não encontrada no servidor (404).");
                 if (!response.ok) throw new Error(`Erro na rede: ${response.status}`);
+                
                 const apiResponse = await response.json();
-                if (!apiResponse.success) throw new Error(`Erro no backend: ${apiResponse.error}`);
+                
+                if (!apiResponse.success) {
+                     const errorMsg = apiResponse.error || 'Erro desconhecido no backend.';
+                     console.error('[BACKEND ERRO]', apiResponse.details || errorMsg);
+                     throw new Error(`Erro no processamento: ${errorMsg}`);
+                }
                 return apiResponse;
             } catch (error) {
-                // Loga o erro, mas apresenta uma mensagem suave ao usuário
                 console.error(`[FRONTEND ERRO CRÍTICO] Falha ao buscar análise: ${error.message}`);
                 document.getElementById('loading-indicator').innerHTML = `<h2 class="text-red-500 font-bold">Falha ao carregar dados da análise. (Consulte o console F12)</h2>`;
                 return null;
@@ -172,7 +193,6 @@
             const deleteUrl = `${backendBaseUrl}/api/delete-analysis/${id}`;
             const data = new Blob([''], {type : 'application/json'});
             
-            // Usa sendBeacon para tentar deletar os arquivos temporários no servidor
             navigator.sendBeacon(deleteUrl, data);
             
             console.log(`Cleanup request sent for analysis ID: ${id}`);
@@ -203,15 +223,13 @@
                     loadingIndicator.style.display = 'none';
                     tabContent.classList.remove('hidden');
                     setupAllCharts(currentAnalysisData);
-                    // Garante que os ícones do lucide sejam criados após a injeção do HTML
                     if(typeof lucide !== 'undefined' && lucide.createIcons) {
                         lucide.createIcons();
                     }
                 } else {
-                     // Exibe aviso se o processamento não gerou dados suficientes
                      loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-xl">
                         <h2 class="font-bold text-xl">Análise com Baixa Detecção</h2>
-                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo. Se o vídeo original não reproduzir por completo, o processamento pode ter sido interrompido.</p></div>`;
+                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo. Dados insuficientes para gerar gráficos.</p></div>`;
                 }
             }
             
@@ -232,7 +250,6 @@
             
             document.querySelectorAll('.text-wrapper-26').forEach(link => {
                 link.addEventListener('click', (event) => {
-                    // Limpa a análise se o usuário navegar para Home ou Nova Análise
                     if (currentAnalysisId && (link.getAttribute('href') === '/' || link.getAttribute('href') === '/nova-analise')) {
                         cleanupAnalysis(currentAnalysisId);
                     }
@@ -257,7 +274,6 @@
             document.body.removeChild(link);
         }
         
-        // Adiciona um "vigia" de cliques para os botões de exportar
         document.getElementById('tab-content').addEventListener('click', function(event) {
             const exportButton = event.target.closest('.export-button');
             if (!exportButton || !currentAnalysisData) return;
@@ -368,8 +384,7 @@
             new Chart('chartDistribuicaoQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Distribuição Y', data: analysisData.map(d => d.oscilacao_vertical_quadril), showLine: false, pointRadius: 3 }] }, options: chartOptions('Posição (0-1)') });
         }
 
-        // Garante que o handleVideoError está disponível globalmente.
         window.handleVideoError = handleVideoError;
     </script>
-</body>
+  </body>
 </html>
