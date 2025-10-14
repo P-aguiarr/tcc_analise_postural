@@ -42,21 +42,15 @@
           <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
         </div>
         
-        <!-- 2. BOTÃO OFICIAL GSI (ESCONDIDO) PARA ACIONAR O FLUXO -->
+        <!-- 2. CONFIGURAÇÃO GSI (O BOTÃO NATIVO É ESCONDIDO, APENAS A CONFIGURAÇÃO É MANTIDA) -->
+        <!-- O GSI usa essa div apenas para ler os data-atributos e configurar o fluxo. -->
         <div id="g_id_onload"
              data-client_id="584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com"
              data-context="signin"
              data-ux_mode="popup"
              data-callback="handleCredentialResponse"
              data-auto_prompt="false"
-             data-type="standard"
-             data-size="large"
-             data-theme="outline"
-             data-text="signin_with"
-             data-shape="rectangular"
-             data-logo_alignment="left"
              style="display: none; visibility: hidden;"> 
-             <!-- O ID CRÍTICO AQUI é 'g_id_onload'. O GSI renderiza um botão interno com ID 'gsi-button' aqui. -->
         </div>
 
       </div>
@@ -66,19 +60,15 @@
       <div id="errorDetails" class="error-message" style="display: none;"></div>
       <div id="successMessage" class="success-message" style="display: none;">Login bem-sucedido! Redirecionando...</div>
 
-      <!-- Botão de Debug/Teste (REMOVIDO conforme solicitação) -->
       <div class="debug-area">
-        <!-- O botão de teste "Testar Conexão Railway API" foi removido. -->
+        <!-- Botão de teste removido -->
       </div>
 
     </div>
   </div>
 
   <script>
-    // **CRÍTICO: URL BASE DA API DE ANÁLISE (RAILWAY) - Agora é o endpoint de callback também**
-    // Se o frontend e o backend estiverem no mesmo domínio, pode-se usar /api/callback
-    // Se estiverem em domínios diferentes (como Railway/Vercel), DEVE ser o endereço completo do backend.
-    // Usando a URL base para manter a configuração anterior, o callback será RAILWAY_API_BASE_URL + /api/callback
+    // **CRÍTICO: URL BASE DA API DE ANÁLISE (RAILWAY)**
     const RAILWAY_API_BASE_URL = 'https://tccanalisepostural-production.up.railway.app';
     
     // ==========================================================
@@ -119,55 +109,31 @@
     }
 
     // ==========================================================
-    // LÓGICA DE CLIQUE CUSTOMIZADO (AGORA USANDO MUTATIONOBSERVER)
+    // LÓGICA DE CLIQUE CUSTOMIZADO (USANDO API GSI)
     // ==========================================================
     function triggerGoogleSignIn() {
         showLoading();
         
-        // O Google injeta um botão 'gsi-button' dentro do container 'g_id_onload'
-        const gsiButton = document.getElementById('gsi-button');
-        
-        if (gsiButton) {
-            // Se o botão já estiver no DOM (carregamento rápido)
-            console.log('✅ Botão GSI encontrado imediatamente. Simulando clique.');
-            gsiButton.click();
-            return;
-        }
-
-        console.log('⏳ Botão GSI não encontrado. Observando o DOM para carregamento do Google...');
-
-        const targetNode = document.getElementById('g_id_onload');
-        if (!targetNode) {
-            console.error('❌ Container g_id_onload não encontrado. Estrutura HTML incorreta.');
-            showError('Erro interno: Container de login do Google não encontrado.');
-            return;
-        }
-
-        // Configurações e Callback do MutationObserver para esperar o botão do GSI ser injetado
-        const config = { childList: true, subtree: true };
-        const observer = new MutationObserver(function(mutationsList, observer) {
-            const loadedButton = document.getElementById('gsi-button');
+        // **MÉTODO ROBUSTO:** Se o GSI (Google Identity Services) estiver carregado, 
+        // usamos o método `prompt()` do Google para forçar a abertura do pop-up.
+        if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+            console.log('✅ GSI Client pronto. Disparando prompt de login...');
             
-            if (loadedButton) {
-                observer.disconnect(); // Parar de observar
-                console.log('✅ MutationObserver: Botão GSI detectado e pronto. Simulando clique.');
-                loadedButton.click();
-            }
-        });
-
-        observer.observe(targetNode, config);
-        
-        // Configurar um timeout de fallback, caso algo trave
-        setTimeout(() => {
-            if (observer) {
-                observer.disconnect();
-                const finalCheck = document.getElementById('gsi-button');
-                if (!finalCheck) {
-                    console.error('❌ Observer: Falha ao carregar botão GSI após timeout de 5s.');
-                    showError('O serviço de login do Google falhou ao carregar. Tente recarregar.');
+            // Força a exibição do pop-up de login
+            google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    // O pop-up não pode ser exibido (ex: bloqueado pelo navegador)
+                    console.error('❌ Falha ao mostrar pop-up do Google. Verifique bloqueadores.');
+                    showError('Falha ao abrir o pop-up de login. Desative bloqueadores de pop-up.');
                 }
-            }
-        }, 5000); // 5 segundos de timeout para fallback
+            });
+            
+        } else {
+            console.log('⏳ GSI Client ainda não carregado. Aguardando...');
+            // O GSI é carregado de forma assíncrona, e o "onload" não garante 
+            // que o objeto 'google' esteja pronto. Apenas mostramos um erro.
+            showError('Serviço de login do Google não carregou. Tente recarregar a página.');
+        }
     }
 
 
@@ -217,7 +183,7 @@
       showLoading();
 
       try {
-        // CHAMA A NOVA ROTA DE CALLBACK NO SEU BACKEND FLASK (app.py)
+        // CHAMA A ROTA DE CALLBACK NO SEU BACKEND FLASK (Railway)
         const apiResponse = await fetch(`${RAILWAY_API_BASE_URL}/api/callback`, {
           method: 'POST',
           headers: {
