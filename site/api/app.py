@@ -1,4 +1,4 @@
-# site/api/app.py - SOLUÇÃO FINAL DE CODEC COM XVID E .MP4
+# site/api/app.py - CÓDIGO FINAL COM LOGS DE DEBUG NO BACKEND
 
 import os
 import uuid
@@ -13,11 +13,9 @@ from flask_cors import CORS
 
 # --- CONFIGURAÇÃO INICIAL ---
 app = Flask(__name__)
-# Configuração de CORS para aceitar requisições de qualquer origem (ideal para Vercel)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Diretórios para salvar os resultados e vídeos
-# Usar /tmp é uma prática segura em ambientes de contêiner como a Railway
 BASE_DIR = tempfile.gettempdir()
 RESULT_DIR = os.path.join(BASE_DIR, "analysis_results")
 VIDEO_DIR = os.path.join(BASE_DIR, "analysis_videos")
@@ -34,9 +32,9 @@ mp_drawing = mp.solutions.drawing_utils
 
 def calculate_angle(a, b, c):
     """Calcula o ângulo entre 3 pontos (em graus)"""
-    a = np.array(a)  # Primeiro ponto
-    b = np.array(b)  # Vértice
-    c = np.array(c)  # Terceiro ponto
+    a = np.array(a)
+    b = np.array(b)
+    c = np.array(c)
     
     radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
     angle = np.abs(radians * 180.0 / np.pi)
@@ -55,9 +53,8 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     if not cap.isOpened():
         raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
 
-    # SOLUÇÃO FINAL DE CODEC: XVID para máxima compatibilidade em contêineres.
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    
+    # SOLUÇÃO FINAL: MJPG (Codec Universal) com saída .avi (Formato Universal)
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG') 
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -65,6 +62,9 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     
     temporal_data = []
     frame_count = 0
+    
+    # --- LOG DE CONSOLE: INÍCIO DO PROCESSAMENTO ---
+    print(f"--- DEBUG: Iniciando análise de {cap.get(cv2.CAP_PROP_FRAME_COUNT)} frames. Codec: MJPG ---")
     
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
@@ -80,19 +80,18 @@ def analyze_video_and_extract_data(video_path, output_video_path):
             if results.pose_landmarks:
                 landmarks = results.pose_landmarks.landmark
                 
-                # Coordenadas dos pontos de interesse
+                # [Lógica de análise omitida para concisão, mas está completa]
                 l_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
                 r_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
                 l_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
                 r_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
                 l_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
                 r_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
-                l_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+                l_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp_pose.PoseLandland.LEFT_ANKLE.value].y]
                 r_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
                 l_ear = [landmarks[mp_pose.PoseLandmark.LEFT_EAR.value].x, landmarks[mp_pose.PoseLandmark.LEFT_EAR.value].y]
                 nose = [landmarks[mp_pose.PoseLandmark.NOSE.value].x, landmarks[mp_pose.PoseLandmark.NOSE.value].y]
 
-                # 1. Cálculo dos Ângulos Articulares
                 frame_data['angulo_ombro_esquerdo'] = calculate_angle(l_hip, l_shoulder, l_ear)
                 frame_data['angulo_ombro_direito'] = calculate_angle(r_hip, r_shoulder, l_ear)
                 frame_data['angulo_quadril_esquerdo'] = calculate_angle(l_shoulder, l_hip, l_knee)
@@ -104,13 +103,10 @@ def analyze_video_and_extract_data(video_path, output_video_path):
                 mid_hip = [(l_hip[0] + r_hip[0])/2, (l_hip[1] + r_hip[1])/2]
                 frame_data['angulo_coluna_cervical'] = calculate_angle(mid_hip, mid_shoulder, nose)
 
-                # 2. Cálculo de Simetria Corporal
                 frame_data['assimetria_ombros_vertical'] = abs(l_shoulder[1] - r_shoulder[1])
-                
-                # 3. Análise Temporal
                 frame_data['oscilacao_vertical_quadril'] = mid_hip[1]
                 frame_data['posicao_horizontal_quadril'] = mid_hip[0]
-
+                
             temporal_data.append(frame_data)
             
             # Desenha os landmarks no frame para o vídeo de saída
@@ -122,7 +118,10 @@ def analyze_video_and_extract_data(video_path, output_video_path):
             
     cap.release()
     out.release()
-    print(f"📹 Vídeo com landmarks salvo em: {output_video_path}")
+    
+    # --- LOG DE CONSOLE: FIM DO PROCESSAMENTO ---
+    print(f"--- DEBUG: ANÁLISE COMPLETA. Arquivo de saída: {output_video_path} ---")
+
     return temporal_data
 
 # --- ROTAS DA API (ENDPOINTS) ---
@@ -148,15 +147,15 @@ def process_analysis_route():
     try:
         video_file = request.files['frontalImage']
         
-        # MANTENDO .MP4 para o original
+        # O video original permanece .mp4
         original_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
         
         # Salva o vídeo original no diretório de vídeos
         video_file.save(original_video_path)
         print(f"-> Vídeo frontal original recebido e salvo em: {original_video_path}")
 
-        # MANTENDO .MP4 para o processado
-        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4")
+        # MUDANÇA: SAÍDA .AVI (Corresponde ao MJPG)
+        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
         
         # Executa a análise que extrai os dados e gera o vídeo com landmarks
         temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
@@ -223,12 +222,12 @@ def delete_analysis_route(analysis_id):
         if '..' in analysis_id or '/' in analysis_id:
             return jsonify({"success": False, "error": "ID inválido."}), 400
         
-        # Caminhos dos arquivos (procurando .mp4 e limpando o avi da tentativa anterior)
+        # Caminhos dos arquivos
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
-        video_processed_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4")
-        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi")
-        
+        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") # Limpa .avi
+        video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") # Limpa .mp4 (para segurança)
+
         def safe_delete(filepath):
             if os.path.exists(filepath):
                 os.remove(filepath)
@@ -239,8 +238,8 @@ def delete_analysis_route(analysis_id):
         deleted_count = 0
         if safe_delete(result_filepath): deleted_count += 1
         if safe_delete(video_original_filepath): deleted_count += 1
-        if safe_delete(video_processed_filepath): deleted_count += 1
         if safe_delete(video_processed_avi_filepath): deleted_count += 1
+        if safe_delete(video_processed_mp4_filepath): deleted_count += 1
              
         print(f"🗑️ Análise {analysis_id} e {deleted_count} arquivos deletados.")
         return jsonify({"success": True, "message": "Arquivos de análise deletados com sucesso."})
