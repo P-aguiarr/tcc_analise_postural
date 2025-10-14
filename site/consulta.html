@@ -80,10 +80,15 @@
             videoContainer.innerHTML = '';
             
             if (apiResponse.data.temporal_data_frontal) {
-                // URLs para buscar o vídeo original e o processado (ambos .mp4)
+                // URL do vídeo original (MP4)
                 const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
-                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`; 
+                // BUSCANDO .AVI para máxima compatibilidade de codificação.
+                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.avi`; 
                 
+                // --- LOG DE CONSOLE: URLS NO FRONTEND ---
+                console.log(`[FRONTEND DEBUG] Tentando carregar Original: ${videoUrlOriginal}`);
+                console.log(`[FRONTEND DEBUG] Tentando carregar Landmarks: ${videoUrlLandmarks}`);
+
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
@@ -112,15 +117,11 @@
             }
         }
         
-        /**
-         * Envia uma requisição DELETE para a API para limpar os arquivos da análise.
-         */
         function cleanupAnalysis(id) {
             if (!id) return;
             const deleteUrl = `${backendBaseUrl}/api/delete-analysis/${id}`;
             const data = new Blob([''], {type : 'application/json'});
             
-            // SendBeacon para garantir a requisição na saída da página
             navigator.sendBeacon(deleteUrl, data);
             
             console.log(`Cleanup request sent for analysis ID: ${id}`);
@@ -137,14 +138,13 @@
                 return;
             }
             
-            currentAnalysisId = analysisId; // Armazena o ID globalmente
+            currentAnalysisId = analysisId; 
 
             const apiResponse = await fetchAnalysisData(analysisId);
             
             if (apiResponse && apiResponse.data) {
                 populateVideosUI(analysisId, apiResponse);
                 
-                // Armazena os dados globalmente
                 currentAnalysisData = apiResponse.data.temporal_data_frontal;
                 const validFrames = currentAnalysisData ? currentAnalysisData.filter(d => d.angulo_ombro_esquerdo != null).length : 0;
 
@@ -170,7 +170,6 @@
                 });
             });
             
-            // --- LÓGICA DE CLEANUP AO NAVEGAR/FECHAR ---
             window.addEventListener('beforeunload', () => {
                 if (currentAnalysisId) {
                     cleanupAnalysis(currentAnalysisId);
@@ -252,7 +251,6 @@
             }
         });
 
-        // Simplifica a criação dos cards e botões
         function createChartCard(id, title, category) {
             const container = document.getElementById(`${category}-content`);
             if (!container) return;
