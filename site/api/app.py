@@ -1,4 +1,4 @@
-# site/api/app.py - EXTRAÇÃO DE DADOS E IMAGEM BASE64 (Sem VideoWriter)
+# site/api/app.py - Codificação MP4V para Railway
 
 import os
 import uuid
@@ -8,7 +8,8 @@ import traceback
 import numpy as np
 import cv2
 import mediapipe as mp
-import base64
+
+# Importações de Flask e CORS
 from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_cors import CORS
 
@@ -18,7 +19,6 @@ from google.auth.transport import requests as google_requests
 
 # --- CONFIGURAÇÃO INICIAL ---
 app = Flask(__name__)
-# Configura CORS para permitir chamadas de qualquer origem
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Variáveis de Ambiente do Google (CRÍTICO para o SSO)
@@ -29,8 +29,6 @@ if not GOOGLE_CLIENT_ID:
 else:
     print(f"✅ GOOGLE_CLIENT_ID configurado: {GOOGLE_CLIENT_ID}")
 
-
-# Diretórios para salvar os resultados e vídeos
 BASE_DIR = tempfile.gettempdir()
 RESULT_DIR = os.path.join(BASE_DIR, "analysis_results")
 VIDEO_DIR = os.path.join(BASE_DIR, "analysis_videos")
@@ -42,6 +40,11 @@ print(f"✅ Backend iniciado. Resultados em: {RESULT_DIR}, Vídeos em: {VIDEO_DI
 # Instâncias do MediaPipe
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
+
+# --- CONFIGURAÇÃO DE CÓDEC (Voltando ao MP4V/MP4 para compatibilidade web) ---
+VIDEO_FOURCC = 'mp4v' 
+VIDEO_EXTENSION = '.mp4'
+VIDEO_MIN_SIZE_BYTES = 1000 # Tamanho mínimo de arquivo para ser considerado válido
 
 # --- FUNÇÕES DE ANÁLISE ---
 
@@ -59,21 +62,38 @@ def calculate_angle(a, b, c):
         
     return angle
 
-def analyze_video_and_extract_data(video_path):
+def analyze_video_and_extract_data(video_path, output_video_path):
     """
-    Processa um vídeo para extrair dados de postura frame a frame.
-    Retorna os dados temporais e o primeiro frame com landmarks em Base64.
+    Processa um vídeo para extrair dados de postura frame a frame e, ao mesmo tempo,
+    gera um novo vídeo com os landmarks (pontos corporais) desenhados.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        print(f"❌ Erro ao abrir vídeo: {video_path}")
-        return [], None
+        raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
 
+    # CRÍTICO: Tenta usar o codec MP4V
+    try:
+        fourcc = cv2.VideoWriter_fourcc(*VIDEO_FOURCC) 
+    except Exception as e:
+        print(f"❌ Erro ao inicializar fourcc com {VIDEO_FOURCC}: {e}")
+        cap.release()
+        return []
+
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    if width <= 0 or height <= 0:
+        print(f"❌ Erro: Largura ({width}) ou Altura ({height}) inválida.")
+        cap.release()
+        return []
+        
+    out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
+    
     temporal_data = []
-    first_frame_base64 = None
     frame_count = 0
     
-    print(f"--- DEBUG: Iniciando análise de vídeo. Sem codificação de vídeo de saída. ---")
+    print(f"--- DEBUG: Iniciando análise de {cap.get(cv2.CAP_PROP_FRAME_COUNT)} frames. Codec: {VIDEO_FOURCC} ---")
     
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
@@ -85,11 +105,12 @@ def analyze_video_and_extract_data(video_path):
                 image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = pose.process(image_rgb)
                 
-                frame_data = {"frame": frame_count, "tempo_segundos": frame_count / (cap.get(cv2.CAP_PROP_FPS) or 30)}
+                frame_data = {"frame": frame_count, "tempo_segundos": frame_count / fps}
 
                 if results.pose_landmarks:
                     landmarks = results.pose_landmarks.landmark
                     
+                    # Extração de Landmarks e Cálculo de Ângulos (a ser usado nos gráficos)
                     l_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
                     r_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
                     l_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
@@ -116,39 +137,34 @@ def analyze_video_and_extract_data(video_path):
                     frame_data['oscilacao_vertical_quadril'] = mid_hip[1]
                     frame_data['posicao_horizontal_quadril'] = mid_hip[0]
                     
-                temporal_data.append(frame_data)
-                
-                # --- GERA IMAGEM BASE64 DO PRIMEIRO FRAME COM LANDMARKS ---
-                if frame_count == 0 and results.pose_landmarks:
-                    # Desenha os landmarks no frame
+                    temporal_data.append(frame_data)
+                    
+                    # Desenha os landmarks no frame para o vídeo de saída
                     mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
                                               mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                               mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+                    out.write(frame)
+                else:
+                    # Se não detectou landmarks, ainda escreve o frame original
+                    out.write(frame) 
                     
-                    # Converte para JPEG e depois para Base64
-                    ret, buffer = cv2.imencode('.png', frame)
-                    if ret:
-                        first_frame_base64 = base64.b64encode(buffer).decode('utf-8')
-                        print("✅ Primeiro frame com landmarks capturado em Base64.")
-                    else:
-                        print("❌ Erro ao codificar o frame em Base64.")
-                        
             except Exception as e:
                 print(f"⚠️ Aviso: Erro de processamento no frame {frame_count}: {e}")
+                out.write(frame) 
                 
             frame_count += 1
             
     cap.release()
+    out.release()
     
-    print("--- DEBUG: Análise concluída. ---")
+    print(f"--- DEBUG: ANÁLISE COMPLETA. Arquivo de saída: {output_video_path} ---")
 
-    return temporal_data, first_frame_base64
+    return temporal_data
 
 # --- ROTAS DA API (ENDPOINTS) ---
-# (As rotas de SSO, health check e root permanecem as mesmas)
+
 @app.route('/api/callback', methods=['POST'])
 def google_sso_callback():
-    # ... (código do SSO)
     if not GOOGLE_CLIENT_ID:
         print("❌ SSO ERRO: GOOGLE_CLIENT_ID ausente.")
         return jsonify({"success": False, "error": "Configuração do servidor incompleta (CLIENT ID)."}), 500
@@ -177,9 +193,6 @@ def google_sso_callback():
         print(f"✅ Login Google bem-sucedido para: {user_data['email']}")
         return jsonify({"success": True, "user": user_data})
 
-    except ValueError as e:
-        print(f"❌ SSO ERRO (Validação de Token): {e}")
-        return jsonify({"success": False, "error": "Falha na validação do token do Google.", "details": str(e)}), 401
     except Exception as e:
         print(f"❌ SSO ERRO (Geral): {e}")
         print(traceback.format_exc())
@@ -188,12 +201,10 @@ def google_sso_callback():
 
 @app.route('/', methods=['GET'])
 def root_health_check():
-    """Rota raiz para o health check da Railway."""
     return jsonify({"status": "ok", "message": "Servidor de análise postural no ar!"})
 
 @app.route('/api/health', methods=['GET'])
 def api_health_check():
-    """Rota de health check legada, caso seja necessária."""
     sso_status = "Configurado" if GOOGLE_CLIENT_ID else "CLIENT_ID Ausente"
     return jsonify({"status": "ok", "sso_status": sso_status})
 
@@ -208,44 +219,51 @@ def process_analysis_route():
     try:
         video_file = request.files['frontalImage']
         
-        # MANTENDO .MP4 para o original
         original_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
         video_file.save(original_video_path)
         print(f"-> Vídeo frontal original recebido e salvo em: {original_video_path}")
 
-        # Executa a análise que extrai os dados e gera o Base64 do primeiro frame
-        temporal_data, first_frame_base64 = analyze_video_and_extract_data(original_video_path)
+        output_video_filename = f"{analysis_id}_frontal{VIDEO_EXTENSION}"
+        output_video_path = os.path.join(VIDEO_DIR, output_video_filename)
         
-        # --- VERIFICAÇÃO CRÍTICA ---
-        if not temporal_data or not first_frame_base64:
-             error_message = "A detecção de postura falhou no vídeo fornecido."
-             print(f"❌ Erro de processamento: {error_message}")
-             return jsonify({"success": False, "error": error_message, "analysis_id": analysis_id}), 500
-        # ---------------------------
+        temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
 
-        # Monta o JSON final com os resultados
-        full_result = {
-            "success": True,
-            "analysis_id": analysis_id,
-            "data": {
-                "temporal_data_frontal": temporal_data,
-                "first_frame_base64": f"data:image/png;base64,{first_frame_base64}" # Adiciona o Base64
+        video_size = os.path.getsize(output_video_path) if os.path.exists(output_video_path) else 0
+
+        if not temporal_data or video_size < VIDEO_MIN_SIZE_BYTES:
+             error_message = f"O vídeo de landmarks não pôde ser gerado (Tamanho: {video_size} bytes). O servidor não suporta codificação de vídeo com {VIDEO_FOURCC}."
+             print(f"❌ Erro de processamento/arquivo: {error_message}")
+             
+             full_result = {
+                "success": True, 
+                "analysis_id": analysis_id,
+                "data": {
+                    "temporal_data_frontal": temporal_data,
+                    "video_processed_filename": None # Nome NULO se falhar
+                }
             }
-        }
+        else:
+             full_result = {
+                "success": True,
+                "analysis_id": analysis_id,
+                "data": {
+                    "temporal_data_frontal": temporal_data,
+                    "video_processed_filename": output_video_filename 
+                }
+            }
         
-        # Salva o arquivo JSON com os resultados
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         with open(result_filepath, 'w') as f:
             json.dump(full_result, f)
         
-        print(f"✅ Análise {analysis_id} concluída. JSON salvo em: {result_filepath}. Imagem Base64 gerada.")
+        print(f"✅ Análise {analysis_id} concluída. Vídeo final: {output_video_filename if video_size >= VIDEO_MIN_SIZE_BYTES else 'FALHOU'}")
         
         return jsonify({"success": True, "analysis_id": analysis_id})
         
     except Exception as e:
         print(f"❌ Erro crítico na análise {analysis_id}: {e}")
         print(traceback.format_exc())
-        return jsonify({"success": False, "error": f"Erro interno no servidor: {e}", "analysis_id": analysis_id}), 500
+        return jsonify({"success": False, "error": f"Erro interno no servidor: {e}"}), 500
     finally:
         pass
 
@@ -271,20 +289,20 @@ def get_analysis_route(analysis_id):
 @app.route('/api/video/<video_filename>', methods=['GET'])
 def get_video_route(video_filename):
     """
-    Serve os arquivos de vídeo (apenas o original, pois o processado não é mais gerado como arquivo).
+    Serve os arquivos de vídeo.
+    (Tratamento robusto para 404/500.)
     """
     try:
         if '..' in video_filename or '/' in video_filename:
             print(f"❌ Tentativa de acesso de vídeo inválida: {video_filename}")
-            abort(400) 
+            abort(400) # Bad Request
         
         filepath = os.path.join(VIDEO_DIR, video_filename)
         
         if not os.path.exists(filepath):
-            print(f"❌ Aviso 404: Vídeo '{video_filename}' não encontrado.")
+            print(f"❌ Aviso 404: Vídeo '{video_filename}' não encontrado no disco.")
             abort(404)
             
-        # Tenta servir o arquivo
         return send_from_directory(VIDEO_DIR, video_filename)
         
     except FileNotFoundError:
@@ -293,8 +311,7 @@ def get_video_route(video_filename):
     except Exception as e:
         print(f"❌ Erro Crítico ao servir vídeo '{video_filename}': {e}")
         print(traceback.format_exc())
-        abort(500)
-
+        abort(500) # Internal Server Error
 
 @app.route('/api/delete-analysis/<analysis_id>', methods=['DELETE'])
 def delete_analysis_route(analysis_id):
@@ -306,6 +323,7 @@ def delete_analysis_route(analysis_id):
         # Caminhos dos arquivos
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
+        video_processed_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
         
         def safe_delete(filepath):
             if os.path.exists(filepath):
@@ -313,11 +331,11 @@ def delete_analysis_route(analysis_id):
                 return True
             return False
 
-        # Deleta os arquivos
         deleted_count = 0
         if safe_delete(result_filepath): deleted_count += 1
         if safe_delete(video_original_filepath): deleted_count += 1
-        
+        if safe_delete(video_processed_filepath): deleted_count += 1
+                 
         print(f"🗑️ Análise {analysis_id} e {deleted_count} arquivos deletados.")
         return jsonify({"success": True, "message": "Arquivos de análise deletados com sucesso."})
 
