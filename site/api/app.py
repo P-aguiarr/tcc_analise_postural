@@ -1,4 +1,4 @@
-# site/api/app.py - TENTATIVA DE CODEC AVI (MJPG)
+# site/api/app.py - TENTATIVA DE CÓDECS EM SEQUÊNCIA (FALLBACK)
 
 import os
 import uuid
@@ -24,7 +24,6 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Variáveis de Ambiente do Google (CRÍTICO para o SSO)
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
-# GOOGLE_CLIENT_SECRET não é usado para validação do token ID.
 
 if not GOOGLE_CLIENT_ID:
     print("🚨 ERRO: A variável de ambiente GOOGLE_CLIENT_ID não está configurada.")
@@ -45,10 +44,15 @@ print(f"✅ Backend iniciado. Resultados em: {RESULT_DIR}, Vídeos em: {VIDEO_DI
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 
-# --- CONFIGURAÇÃO DO VÍDEO (AJUSTE CRÍTICO DE CODEC) ---
-# Trocamos para 'MJPG' e usaremos o contêiner AVI (mais estável em Linux Headless)
-# O FRONTEND TENTARÁ CARREGAR .MP4 PRIMEIRO E, SE FALHAR, TENTARÁ .AVI
-VIDEO_FOURCC = 'MJPG' 
+# --- CONFIGURAÇÃO DE CÓDECS E EXTENSÕES (ORDEM DE PREFERÊNCIA) ---
+# O backend tentará esses codecs em ordem até que um vídeo de landmarks seja gerado com sucesso.
+CODEC_FALLBACK_LIST = [
+    {'codec': 'MJPG', 'ext': '.avi', 'min_size': 1000}, # Mais robusto para Linux headless
+    {'codec': 'DIVX', 'ext': '.avi', 'min_size': 1000}, # Alternativa de AVI
+    {'codec': 'VP80', 'ext': '.webm', 'min_size': 1000} # Formato web amigável (se libvpx estiver disponível)
+    # MP4V e H264 são omitidos pois falharam anteriormente
+]
+VIDEO_MIN_SIZE_BYTES = 1000 # Tamanho mínimo de arquivo para ser considerado válido
 
 # --- FUNÇÕES DE ANÁLISE ---
 
@@ -67,37 +71,41 @@ def calculate_angle(a, b, c):
         
     return angle
 
-def analyze_video_and_extract_data(video_path, output_video_path):
+def analyze_video_and_extract_data(video_path, output_video_path, codec_info):
     """
     Processa um vídeo para extrair dados de postura frame a frame e, ao mesmo tempo,
-    gera um novo vídeo com os landmarks (pontos corporais) desenhados.
+    gera um novo vídeo com os landmarks (pontos corporais) desenhados usando o codec especificado.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print(f"❌ Erro ao abrir vídeo: {video_path}")
-        # Retorna lista vazia se não conseguir abrir o vídeo
         return []
 
-    # USANDO O CODEC DEFINIDO GLOBALMENTE (MJPG)
-    fourcc = cv2.VideoWriter_fourcc(*VIDEO_FOURCC) 
+    codec_str = codec_info['codec']
+    ext_str = codec_info['ext']
     
+    try:
+        fourcc = cv2.VideoWriter_fourcc(*codec_str) 
+    except Exception as e:
+        print(f"❌ Erro ao inicializar fourcc com {codec_str}: {e}")
+        cap.release()
+        return [] # Falha catastrófica de codec
+
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Verifica se a largura/altura é válida antes de criar o VideoWriter
     if width <= 0 or height <= 0:
         print(f"❌ Erro: Largura ({width}) ou Altura ({height}) inválida.")
         cap.release()
         return []
         
-    # O arquivo de saída é .avi para o codec MJPG
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
     
     temporal_data = []
     frame_count = 0
     
-    print(f"--- DEBUG: Iniciando análise de vídeo. Codec: {VIDEO_FOURCC} ---")
+    print(f"--- DEBUG: Iniciando análise de vídeo. Tentando Codec: {codec_str} ({ext_str}) ---")
     
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
@@ -105,7 +113,6 @@ def analyze_video_and_extract_data(video_path, output_video_path):
             if not ret:
                 break
 
-            # Usar try-except para isolar erros de processamento por frame
             try:
                 image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = pose.process(image_rgb)
@@ -115,7 +122,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
                 if results.pose_landmarks:
                     landmarks = results.pose_landmarks.landmark
                     
-                    # Extração de Landmarks para o JSON (Coordenadas normalizadas 0-1)
+                    # Extração de Landmarks e Cálculo de Ângulos
                     l_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
                     r_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
                     l_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
@@ -127,7 +134,6 @@ def analyze_video_and_extract_data(video_path, output_video_path):
                     l_ear = [landmarks[mp_pose.PoseLandmark.LEFT_EAR.value].x, landmarks[mp_pose.PoseLandmark.LEFT_EAR.value].y]
                     nose = [landmarks[mp_pose.PoseLandmark.NOSE.value].x, landmarks[mp_pose.PoseLandmark.NOSE.value].y]
 
-                    # Cálculo de Ângulos (usando coordenadas normalizadas 0-1)
                     frame_data['angulo_ombro_esquerdo'] = calculate_angle(l_hip, l_shoulder, l_ear)
                     frame_data['angulo_ombro_direito'] = calculate_angle(r_hip, r_shoulder, l_ear)
                     frame_data['angulo_quadril_esquerdo'] = calculate_angle(l_shoulder, l_hip, l_knee)
@@ -139,7 +145,6 @@ def analyze_video_and_extract_data(video_path, output_video_path):
                     mid_hip = [(l_hip[0] + r_hip[0])/2, (l_hip[1] + r_hip[1])/2]
                     frame_data['angulo_coluna_cervical'] = calculate_angle(mid_hip, mid_shoulder, nose)
 
-                    # Simetria e Posição (usando coordenadas normalizadas 0-1)
                     frame_data['assimetria_ombros_vertical'] = abs(l_shoulder[1] - r_shoulder[1])
                     frame_data['oscilacao_vertical_quadril'] = mid_hip[1]
                     frame_data['posicao_horizontal_quadril'] = mid_hip[0]
@@ -153,9 +158,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
                 out.write(frame)
                 
             except Exception as e:
-                # Loga o erro, mas continua processando o próximo frame
                 print(f"⚠️ Aviso: Erro de processamento no frame {frame_count}: {e}")
-                # Escreve o frame original no vídeo de saída para evitar quebra
                 out.write(frame) 
                 
             frame_count += 1
@@ -163,7 +166,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     cap.release()
     out.release()
     
-    print(f"--- DEBUG: ANÁLISE COMPLETA. Arquivo de saída: {output_video_path} ---")
+    print(f"--- DEBUG: Análise concluída. Codec: {codec_str} ---")
 
     return temporal_data
 
@@ -173,7 +176,6 @@ def analyze_video_and_extract_data(video_path, output_video_path):
 def google_sso_callback():
     """
     Rota de callback para validar o ID Token do Google e retornar dados do usuário.
-    Essa rota é chamada pelo login.html.
     """
     if not GOOGLE_CLIENT_ID:
         print("❌ SSO ERRO: GOOGLE_CLIENT_ID ausente.")
@@ -187,31 +189,20 @@ def google_sso_callback():
         return jsonify({"success": False, "error": "Token de autenticação não recebido."}), 400
 
     try:
-        # 1. Especifica o ID do cliente que a app de destino usa
         id_info = id_token.verify_oauth2_token(
             id_token_jwt, 
             google_requests.Request(), 
             GOOGLE_CLIENT_ID
         )
 
-        # 2. Verifica se o token foi emitido para seu domínio (opcional, mas recomendado)
-        # if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
-        #     raise ValueError('Token incorreto (issuer inválido).')
-
-        # 3. Extrai as informações do usuário
-        user_id = id_info['sub']
-        user_email = id_info.get('email', 'N/A')
-        user_name = id_info.get('name', 'Usuário Google')
-        user_picture = id_info.get('picture', '')
-
         user_data = {
-            "id": user_id,
-            "email": user_email,
-            "name": user_name,
-            "picture": user_picture
+            "id": id_info['sub'],
+            "email": id_info.get('email', 'N/A'),
+            "name": id_info.get('name', 'Usuário Google'),
+            "picture": id_info.get('picture', '')
         }
         
-        print(f"✅ Login Google bem-sucedido para: {user_email}")
+        print(f"✅ Login Google bem-sucedido para: {user_data['email']}")
         return jsonify({"success": True, "user": user_data})
 
     except ValueError as e:
@@ -247,36 +238,47 @@ def process_analysis_route():
         
         # MANTENDO .MP4 para o original
         original_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
-        
-        # Salva o vídeo original no diretório de vídeos
         video_file.save(original_video_path)
         print(f"-> Vídeo frontal original recebido e salvo em: {original_video_path}")
 
-        # MUDANÇA CRÍTICA: Saída para .AVI (para usar o codec MJPG)
-        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
+        temporal_data = []
+        final_output_video_filename = None
         
-        # Executa a análise que extrai os dados e gera o vídeo com landmarks
-        temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
-        
-        # --- VERIFICAÇÃO CRÍTICA DO VÍDEO PROCESSADO ---
-        video_size = os.path.getsize(output_video_path) if os.path.exists(output_video_path) else 0
-        if video_size < 1000 and len(temporal_data) > 0: # 1KB como threshold, mas só se tiver gerado frames.
-             print(f"⚠️ Aviso: Arquivo de vídeo processado '{output_video_path}' é muito pequeno ({video_size} bytes). Pode ter falhado o codec.")
-        
-        if not temporal_data or video_size < 100:
-             # Se não houver dados temporais (nenhum frame detectado) OU o arquivo de vídeo for minúsculo (falha no codec/escrita)
-             error_message = "O vídeo não pôde ser processado (verifique o formato/codec) ou a detecção de postura falhou."
-             print(f"❌ Erro de processamento/arquivo: {error_message}")
+        # --- TENTATIVA DE FALLBACK DE CÓDECS ---
+        for i, codec_info in enumerate(CODEC_FALLBACK_LIST):
+            temp_output_filename = f"{analysis_id}_frontal_temp{i}{codec_info['ext']}"
+            temp_output_path = os.path.join(VIDEO_DIR, temp_output_filename)
+            
+            # Executa a análise (o temporal_data é o mesmo para todas as tentativas, mas processamos o vídeo novamente)
+            temporal_data = analyze_video_and_extract_data(original_video_path, temp_output_path, codec_info)
+
+            video_size = os.path.getsize(temp_output_path) if os.path.exists(temp_output_path) else 0
+
+            if video_size >= codec_info['min_size'] and len(temporal_data) > 0:
+                print(f"✅ SUCESSO: Vídeo gerado com o Codec: {codec_info['codec']} ({codec_info['ext']})")
+                
+                # Renomeia para o nome final
+                final_output_video_filename = f"{analysis_id}_frontal{codec_info['ext']}"
+                os.rename(temp_output_path, os.path.join(VIDEO_DIR, final_output_video_filename))
+                break 
+            else:
+                print(f"❌ FALHA: Codec {codec_info['codec']} ({codec_info['ext']}) gerou arquivo muito pequeno ({video_size} bytes). Tentando próximo...")
+                if os.path.exists(temp_output_path):
+                    os.remove(temp_output_path) # Limpa arquivo falho
+        # ------------------------------------
+
+        if not final_output_video_filename or not temporal_data or video_size < 100:
+             error_message = "O vídeo de landmarks não pôde ser gerado em nenhum formato de codec testado. O ambiente de servidor pode não suportar codificação de vídeo."
+             print(f"❌ Erro de processamento/arquivo FINAL: {error_message}")
              return jsonify({"success": False, "error": error_message, "analysis_id": analysis_id}), 500
-        # -----------------------------------------------
 
         # Monta o JSON final com os resultados
         full_result = {
             "success": True,
             "analysis_id": analysis_id,
             "data": {
-                # Dados que o frontend espera (os ângulos calculados no analyze_video_and_extract_data)
-                "temporal_data_frontal": temporal_data
+                "temporal_data_frontal": temporal_data,
+                "video_processed_filename": final_output_video_filename # Adiciona o nome do arquivo FINAL
             }
         }
         
@@ -285,7 +287,7 @@ def process_analysis_route():
         with open(result_filepath, 'w') as f:
             json.dump(full_result, f)
         
-        print(f"✅ Análise {analysis_id} concluída. JSON salvo em: {result_filepath}")
+        print(f"✅ Análise {analysis_id} concluída. JSON salvo em: {result_filepath}. Vídeo final: {final_output_video_filename}")
         
         return jsonify({"success": True, "analysis_id": analysis_id})
         
@@ -305,7 +307,6 @@ def get_analysis_route(analysis_id):
         
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         if not os.path.exists(result_filepath):
-            # Loga o erro internamente
             print(f"❌ Erro 404: Análise ID '{analysis_id}' não encontrada no disco.")
             return jsonify({"success": False, "error": "Análise não encontrada."}), 404
         
@@ -313,7 +314,6 @@ def get_analysis_route(analysis_id):
             data = json.load(f)
         return jsonify(data)
     except Exception as e:
-        # Loga o erro internamente
         print(f"❌ Erro ao servir análise JSON '{analysis_id}': {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -322,20 +322,16 @@ def get_video_route(video_filename):
     """
     Serve os arquivos de vídeo processados.
     
-    Ajuste: Adicionada verificação de arquivo para evitar 500 do Flask
-    e garantir que a falha resulte em 404 para o fallback do frontend.
+    Ajuste: Tratamento robusto para 404/500 para evitar quebra no frontend.
     """
     try:
         if '..' in video_filename or '/' in video_filename:
-            # Loga a tentativa de acesso inválida
             print(f"❌ Tentativa de acesso de vídeo inválida: {video_filename}")
-            # Usar abort para garantir que o Flask pare o processamento e retorne o código HTTP correto
             abort(400) # Bad Request
         
         filepath = os.path.join(VIDEO_DIR, video_filename)
         
         if not os.path.exists(filepath):
-            # Se o arquivo não existir, retorna 404 (o que é esperado para o .mp4 processado)
             print(f"❌ Aviso 404: Vídeo '{video_filename}' não encontrado no disco.")
             abort(404)
             
@@ -343,11 +339,9 @@ def get_video_route(video_filename):
         return send_from_directory(VIDEO_DIR, video_filename)
         
     except FileNotFoundError:
-        # Flask/Werkzeug pode lançar FileNotFoundError, o que é mapeado para 404
         print(f"❌ Aviso 404 (Tratado): Vídeo '{video_filename}' não encontrado.")
         abort(404)
     except Exception as e:
-        # Loga o erro geral internamente, mas retorna 500 silencioso
         print(f"❌ Erro Crítico ao servir vídeo '{video_filename}': {e}")
         print(traceback.format_exc())
         abort(500) # Internal Server Error
@@ -363,10 +357,10 @@ def delete_analysis_route(analysis_id):
         # Caminhos dos arquivos
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
-        # Deve limpar ambos os nomes de arquivo possíveis (avi e mp4)
-        video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
-        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
-
+        
+        # Limpa todos os possíveis formatos gerados
+        possible_extensions = ['.mp4', '.avi', '.webm']
+        
         def safe_delete(filepath):
             if os.path.exists(filepath):
                 os.remove(filepath)
@@ -377,9 +371,12 @@ def delete_analysis_route(analysis_id):
         deleted_count = 0
         if safe_delete(result_filepath): deleted_count += 1
         if safe_delete(video_original_filepath): deleted_count += 1
-        if safe_delete(video_processed_mp4_filepath): deleted_count += 1
-        if safe_delete(video_processed_avi_filepath): deleted_count += 1
-             
+        
+        # Limpa o vídeo processado em qualquer um dos formatos
+        for ext in possible_extensions:
+            if safe_delete(os.path.join(VIDEO_DIR, f"{analysis_id}_frontal{ext}")):
+                 deleted_count += 1
+                 
         print(f"🗑️ Análise {analysis_id} e {deleted_count} arquivos deletados.")
         return jsonify({"success": True, "message": "Arquivos de análise deletados com sucesso."})
 
