@@ -80,10 +80,9 @@
             videoContainer.innerHTML = '';
             
             if (apiResponse.data.temporal_data_frontal) {
-                // URL do vídeo original (MP4)
+                // URLs para buscar o vídeo original e o processado (ambos .mp4)
                 const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
-                // MUDANÇA: URL do vídeo processado agora é .avi
-                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.avi`; 
+                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`; 
                 
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
