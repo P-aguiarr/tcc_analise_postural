@@ -24,9 +24,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Variáveis de Ambiente do Google (CRÍTICO para o SSO)
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
-# GOOGLE_CLIENT_SECRET não é usado para validação do token ID, 
-# mas é bom estar configurado se for usar fluxo OAuth completo.
-# GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+# GOOGLE_CLIENT_SECRET não é usado para validação do token ID.
 
 if not GOOGLE_CLIENT_ID:
     print("🚨 ERRO: A variável de ambiente GOOGLE_CLIENT_ID não está configurada.")
@@ -55,6 +53,7 @@ def calculate_angle(a, b, c):
     b = np.array(b)
     c = np.array(c)
     
+    # Apenas pontos X e Y são usados para a análise 2D no plano
     radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
     angle = np.abs(radians * 180.0 / np.pi)
     
@@ -70,20 +69,29 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
+        print(f"❌ Erro ao abrir vídeo: {video_path}")
+        # Retorna lista vazia se não conseguir abrir o vídeo
+        return []
 
-    # RETORNANDO AO MP4V PADRÃO
+    # RETORNANDO AO MP4V PADRÃO (Compatibilidade com Web/Railway)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
     
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    # Verifica se a largura/altura é válida antes de criar o VideoWriter
+    if width <= 0 or height <= 0:
+        print(f"❌ Erro: Largura ({width}) ou Altura ({height}) inválida.")
+        cap.release()
+        return []
+        
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
     
     temporal_data = []
     frame_count = 0
     
-    print(f"--- DEBUG: Iniciando análise de {cap.get(cv2.CAP_PROP_FRAME_COUNT)} frames. Codec: MP4V ---")
+    print(f"--- DEBUG: Iniciando análise de vídeo. Codec: MP4V ---")
     
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
@@ -91,48 +99,59 @@ def analyze_video_and_extract_data(video_path, output_video_path):
             if not ret:
                 break
 
-            image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = pose.process(image_rgb)
-            
-            frame_data = {"frame": frame_count, "tempo_segundos": frame_count / fps}
-
-            if results.pose_landmarks:
-                landmarks = results.pose_landmarks.landmark
+            # Usar try-except para isolar erros de processamento por frame
+            try:
+                image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = pose.process(image_rgb)
                 
-                # CORREÇÃO CRÍTICA DO MEDIAPIPE APLICADA
-                l_shoulder = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value].y]
-                r_shoulder = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value].y]
-                l_hip = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].y]
-                r_hip = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_HIP.value].y]
-                l_knee = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE.value].y]
-                r_knee = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_KNEE.value].y]
-                l_ankle = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_ANKLE.value].y]
-                r_ankle = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_ANKLE.value].y]
-                l_ear = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_EAR.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_EAR.value].y]
-                nose = [landmarks[mp.solutions.pose.PoseLandmark.NOSE.value].x, landmarks[mp.solutions.pose.PoseLandmark.NOSE.value].y]
+                frame_data = {"frame": frame_count, "tempo_segundos": frame_count / fps}
 
-                frame_data['angulo_ombro_esquerdo'] = calculate_angle(l_hip, l_shoulder, l_ear)
-                frame_data['angulo_ombro_direito'] = calculate_angle(r_hip, r_shoulder, l_ear)
-                frame_data['angulo_quadril_esquerdo'] = calculate_angle(l_shoulder, l_hip, l_knee)
-                frame_data['angulo_quadril_direito'] = calculate_angle(r_shoulder, r_hip, r_knee)
-                frame_data['angulo_joelho_esquerdo'] = calculate_angle(l_hip, l_knee, l_ankle)
-                frame_data['angulo_joelho_direito'] = calculate_angle(r_hip, r_knee, r_ankle)
-                
-                mid_shoulder = [(l_shoulder[0] + r_shoulder[0])/2, (l_shoulder[1] + r_shoulder[1])/2]
-                mid_hip = [(l_hip[0] + r_hip[0])/2, (l_hip[1] + r_hip[1])/2]
-                frame_data['angulo_coluna_cervical'] = calculate_angle(mid_hip, mid_shoulder, nose)
+                if results.pose_landmarks:
+                    landmarks = results.pose_landmarks.landmark
+                    
+                    # Extração de Landmarks para o JSON (Coordenadas normalizadas 0-1)
+                    l_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                    r_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                    l_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
+                    r_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+                    l_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+                    r_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
+                    l_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+                    r_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
+                    l_ear = [landmarks[mp_pose.PoseLandmark.LEFT_EAR.value].x, landmarks[mp_pose.PoseLandmark.LEFT_EAR.value].y]
+                    nose = [landmarks[mp_pose.PoseLandmark.NOSE.value].x, landmarks[mp_pose.PoseLandmark.NOSE.value].y]
 
-                frame_data['assimetria_ombros_vertical'] = abs(l_shoulder[1] - r_shoulder[1])
-                frame_data['oscilacao_vertical_quadril'] = mid_hip[1]
-                frame_data['posicao_horizontal_quadril'] = mid_hip[0]
+                    # Cálculo de Ângulos (usando coordenadas normalizadas 0-1)
+                    frame_data['angulo_ombro_esquerdo'] = calculate_angle(l_hip, l_shoulder, l_ear)
+                    frame_data['angulo_ombro_direito'] = calculate_angle(r_hip, r_shoulder, l_ear)
+                    frame_data['angulo_quadril_esquerdo'] = calculate_angle(l_shoulder, l_hip, l_knee)
+                    frame_data['angulo_quadril_direito'] = calculate_angle(r_shoulder, r_hip, r_knee)
+                    frame_data['angulo_joelho_esquerdo'] = calculate_angle(l_hip, l_knee, l_ankle)
+                    frame_data['angulo_joelho_direito'] = calculate_angle(r_hip, r_knee, r_ankle)
+                    
+                    mid_shoulder = [(l_shoulder[0] + r_shoulder[0])/2, (l_shoulder[1] + r_shoulder[1])/2]
+                    mid_hip = [(l_hip[0] + r_hip[0])/2, (l_hip[1] + r_hip[1])/2]
+                    frame_data['angulo_coluna_cervical'] = calculate_angle(mid_hip, mid_shoulder, nose)
+
+                    # Simetria e Posição (usando coordenadas normalizadas 0-1)
+                    frame_data['assimetria_ombros_vertical'] = abs(l_shoulder[1] - r_shoulder[1])
+                    frame_data['oscilacao_vertical_quadril'] = mid_hip[1]
+                    frame_data['posicao_horizontal_quadril'] = mid_hip[0]
+                    
+                temporal_data.append(frame_data)
                 
-            temporal_data.append(frame_data)
-            
-            # Desenha os landmarks no frame para o vídeo de saída
-            mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-                                      mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
-                                      mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
-            out.write(frame)
+                # Desenha os landmarks no frame para o vídeo de saída
+                mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                          mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+                                          mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+                out.write(frame)
+                
+            except Exception as e:
+                # Loga o erro, mas continua processando o próximo frame
+                print(f"⚠️ Aviso: Erro de processamento no frame {frame_count}: {e}")
+                # Escreve o frame original no vídeo de saída para evitar quebra
+                out.write(frame) 
+                
             frame_count += 1
             
     cap.release()
@@ -163,7 +182,6 @@ def google_sso_callback():
 
     try:
         # 1. Especifica o ID do cliente que a app de destino usa
-        # Especifique o ID do cliente da sua app.
         id_info = id_token.verify_oauth2_token(
             id_token_jwt, 
             google_requests.Request(), 
@@ -207,7 +225,6 @@ def root_health_check():
 @app.route('/api/health', methods=['GET'])
 def api_health_check():
     """Rota de health check legada, caso seja necessária."""
-    # Adicionando um check de configuração básica ao health check
     sso_status = "Configurado" if GOOGLE_CLIENT_ID else "CLIENT_ID Ausente"
     return jsonify({"status": "ok", "sso_status": sso_status})
 
@@ -240,7 +257,9 @@ def process_analysis_route():
             "success": True,
             "analysis_id": analysis_id,
             "data": {
+                # Dados que o frontend espera (os ângulos calculados no analyze_video_and_extract_data)
                 "temporal_data_frontal": temporal_data
+                # Em um cenário ideal, você faria uma análise mais completa aqui, como em analise_completa.py
             }
         }
         
@@ -250,12 +269,17 @@ def process_analysis_route():
             json.dump(full_result, f)
         
         print(f"✅ Análise {analysis_id} concluída. JSON salvo em: {result_filepath}")
+        
+        # Se temporal_data estiver vazio, significa que o vídeo não pôde ser processado (problema de codec ou arquivo)
+        if not temporal_data:
+             return jsonify({"success": False, "error": "O vídeo não pôde ser processado (verifique o formato/codec).", "analysis_id": analysis_id}), 500
+
         return jsonify({"success": True, "analysis_id": analysis_id})
         
     except Exception as e:
         print(f"❌ Erro crítico na análise {analysis_id}: {e}")
         print(traceback.format_exc())
-        return jsonify({"success": False, "error": f"Erro interno no servidor: {e}"}), 500
+        return jsonify({"success": False, "error": f"Erro interno no servidor: {e}", "analysis_id": analysis_id}), 500
     finally:
         pass
 
@@ -268,27 +292,39 @@ def get_analysis_route(analysis_id):
         
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         if not os.path.exists(result_filepath):
+            # Loga o erro internamente
+            print(f"❌ Erro 404: Análise ID '{analysis_id}' não encontrada no disco.")
             return jsonify({"success": False, "error": "Análise não encontrada."}), 404
         
         with open(result_filepath, 'r') as f:
             data = json.load(f)
         return jsonify(data)
     except Exception as e:
+        # Loga o erro internamente
+        print(f"❌ Erro ao servir análise JSON '{analysis_id}': {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/video/<video_filename>', methods=['GET'])
 def get_video_route(video_filename):
-    """Serve os arquivos de vídeo processados. Corrigido para retornar 404 se não for encontrado."""
+    """Serve os arquivos de vídeo processados. Sem log na resposta HTTP."""
     try:
         if '..' in video_filename or '/' in video_filename:
-            return "Nome de arquivo inválido", 400
+            # Loga a tentativa de acesso inválida
+            print(f"❌ Tentativa de acesso de vídeo inválida: {video_filename}")
+            return "", 400
+            
         # Tenta servir o arquivo
         return send_from_directory(VIDEO_DIR, video_filename)
+        
     except FileNotFoundError:
-        # Se o arquivo não existir (devido à limpeza do /tmp ou falha de processamento), retorna 404
-        return "Vídeo não encontrado.", 404
+        # Loga 404 internamente, mas retorna uma resposta vazia e silenciosa no HTTP
+        print(f"❌ Aviso 404: Vídeo '{video_filename}' não encontrado.")
+        return "", 404 
     except Exception as e:
-        return str(e), 500
+        # Loga o erro geral internamente, mas retorna 500 silencioso
+        print(f"❌ Erro ao servir vídeo '{video_filename}': {e}")
+        return "", 500
+
 
 @app.route('/api/delete-analysis/<analysis_id>', methods=['DELETE'])
 def delete_analysis_route(analysis_id):
