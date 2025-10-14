@@ -10,16 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- MediaPipe para análise no navegador (CRÍTICO) -->
-    <!-- Adicionando a constante POSE_CONNECTIONS explicitamente -->
-    <script type="module">
-      import { POSE_CONNECTIONS } from 'https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675466826/pose.js';
-      window.POSE_CONNECTIONS = POSE_CONNECTIONS;
-      window.Pose = Pose;
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-    
     <style>
         :root { --primary: #4f46e5; --light: #f3f4f6; }
         body { font-family: 'Inter', sans-serif; background-color: var(--light); }
@@ -37,24 +27,17 @@
             border: 1px dashed #ef4444; 
         }
         .media-box {
-            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9; 
+            max-height: 480px; 
+            margin: 0 auto;
+        }
+        .media-content {
             width: 100%;
             height: 100%;
             border-radius: 0.5rem;
-            overflow: hidden;
-            background-color: black;
-            aspect-ratio: 16 / 9; /* Garante que o container se ajuste */
-        }
-        .landmarks-canvas, .original-video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
             object-fit: contain;
-        }
-        .landmarks-canvas {
-            z-index: 10; /* Garante que o canvas fique sobre o vídeo */
+            background-color: black;
         }
     </style>
   </head>
@@ -114,111 +97,8 @@
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
         let currentAnalysisData = null;
         let currentAnalysisId = null;
-        let chartInstances = {};
-        
-        let videoElement = null;
-        let canvasElement = null;
-        let pose = null;
-        let animationFrameId = null;
-
-        // ==========================================================
-        // 1. ANÁLISE DE LANDMARKS LOCAL (BROWSER)
-        // ==========================================================
-
-        function onResults(results) {
-            if (!canvasElement || !videoElement) return;
-
-            const canvasCtx = canvasElement.getContext('2d');
-            
-            // Desenha o frame do vídeo e depois os landmarks sobre ele
-            canvasCtx.save();
-            // Limpa o canvas para o próximo frame
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
-            // Desenha o vídeo no canvas
-            canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-
-            if (results.poseLandmarks) {
-                // Desenha as conexões
-                drawConnectors(canvasCtx, results.poseLandmarks, window.POSE_CONNECTIONS,
-                               {color: '#F97316', lineWidth: 4}); // Laranja
-
-                // Desenha os pontos (landmarks)
-                drawLandmarks(canvasCtx, results.poseLandmarks,
-                              {color: '#EC4899', lineWidth: 2}); // Rosa/Roxo
-            }
-            canvasCtx.restore();
-            
-            // Solicita o próximo frame para o MediaPipe
-            if (!videoElement.paused && !videoElement.ended) {
-                 animationFrameId = requestAnimationFrame(sendToMediaPipe);
-            } else {
-                 cancelAnimationFrame(animationFrameId);
-                 console.log("[MEDIAPIPE] Análise de vídeo finalizada.");
-            }
-        }
-        
-        function sendToMediaPipe() {
-            if (!pose || !videoElement || videoElement.paused || videoElement.ended) return;
-            
-            // O MediaPipe Pose espera um objeto de imagem para processamento
-            pose.send({ image: videoElement });
-        }
-
-        async function initMediaPipe(videoElement) {
-            if (window.pose) return; 
-
-            window.pose = new Pose({locateFile: (file) => {
-                // Certifica-se de que o MediaPipe pode encontrar seus arquivos WASM/BIN
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675466826/${file}`;
-            }});
-            
-            window.pose.setOptions({
-                modelComplexity: 1,
-                smoothLandmarks: true,
-                enableSegmentation: false,
-                smoothSegmentation: false,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-            
-            window.pose.onResults(onResults);
-            
-            videoElement.addEventListener('loadeddata', () => {
-                if (canvasElement) {
-                    // Ajusta o canvas para as dimensões nativas do vídeo
-                    canvasElement.width = videoElement.videoWidth;
-                    canvasElement.height = videoElement.videoHeight;
-                    // Inicia a reprodução e o loop de análise
-                    videoElement.play();
-                }
-            });
-
-            videoElement.addEventListener('play', () => {
-                // Inicia o loop de análise quando o usuário clica em "Play" ou ele auto-inicia
-                 console.log("[MEDIAPIPE] Análise local iniciada/retomada.");
-                 sendToMediaPipe();
-            });
-
-            videoElement.addEventListener('pause', () => {
-                 cancelAnimationFrame(animationFrameId);
-            });
-            
-            videoElement.addEventListener('seeked', sendToMediaPipe); // Processa um frame quando o usuário navega
-
-            // Tenta forçar o carregamento
-            if (videoElement.readyState >= 3) {
-                 videoElement.load();
-            }
-        }
-
-
-        // ==========================================================
-        // 2. FUNÇÕES DE SUPORTE (HTML/API)
-        // ==========================================================
 
         function handleVideoError(videoElement, type) {
-            // ... (função de erro de vídeo permanece a mesma)
             console.error(`[FRONTEND ERRO] Falha ao carregar o vídeo ${type}. URL: ${videoElement.src}`);
             
             const parentDiv = videoElement.parentElement;
@@ -227,7 +107,7 @@
                     <div class="w-full h-48 rounded-lg flex flex-col items-center justify-center video-placeholder">
                         <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 mb-2"></i>
                         <p class="text-sm text-red-600 font-semibold">${type} indisponível.</p>
-                        <p class="text-xs text-red-400">Verifique o console (F12) e as URLs (Network tab).</p>
+                        <p class="text-xs text-red-400">O servidor falhou ao codificar o vídeo (${type}).</p>
                     </div>`;
                 if(typeof lucide !== 'undefined' && lucide.createIcons) {
                     lucide.createIcons(); 
@@ -240,44 +120,60 @@
             videoContainer.innerHTML = '';
             
             const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
+            // CRÍTICO: Espera o nome do arquivo FINAL do backend (será o .mp4 se a codificação funcionar)
+            const videoProcessedFilename = apiResponse.data.video_processed_filename || `${analysisId}_frontal.mp4`;
             
-            if (apiResponse.data.temporal_data_frontal) {
-                
-                // Div para o Vídeo Original
-                videoContainer.innerHTML += `
+            // 1. Vídeo Original
+            videoContainer.innerHTML += `
+                <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
+                    <div class="media-box">
+                        <video controls muted preload="auto" class="media-content" 
+                            src="${videoUrlOriginal}" 
+                            onerror="handleVideoError(this, 'Original')">
+                        </video>
+                    </div>
+                </div>`;
+
+            // 2. Vídeo com Landmarks (Usa o nome de arquivo retornado ou o nome padrão)
+            let landmarksHtml;
+
+            // Se o backend retornou um nome (significa que tentou codificar)
+            if (videoProcessedFilename) {
+                 const videoUrlLandmarks = `${backendBaseUrl}/api/video/${videoProcessedFilename}`;
+                 landmarksHtml = `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
-                        <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
+                        <h3 class="font-bold mb-2">Plano Coronal (Landmarks - Processado)</h3>
                         <div class="media-box">
-                            <video id="originalVideo" controls muted preload="auto" class="original-video" 
-                                src="${videoUrlOriginal}" 
-                                onerror="handleVideoError(this, 'Original')">
+                            <video controls muted preload="auto" class="media-content" 
+                                src="${videoUrlLandmarks}"
+                                onerror="handleVideoError(this, 'Landmarks')">
                             </video>
                         </div>
                     </div>`;
-
-                // Div para o Vídeo com Landmarks (Canvas - AQUI É O VÍDEO COMPLETO!)
-                videoContainer.innerHTML += `
+            } else {
+                 // Caso o backend explicitamente retorne video_processed_filename: null (falha na codificação)
+                 landmarksHtml = `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
-                        <h3 class="font-bold mb-2">Plano Coronal (Landmarks - Local)</h3>
+                        <h3 class="font-bold mb-2">Plano Coronal (Landmarks - Processado)</h3>
                         <div class="media-box">
-                            <canvas id="landmarksCanvas" class="landmarks-canvas"></canvas>
+                             <div class="w-full h-full rounded-lg flex flex-col items-center justify-center video-placeholder">
+                                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 mb-2"></i>
+                                <p class="text-sm text-red-600 font-semibold">Geração de Vídeo Falhou.</p>
+                                <p class="text-xs text-red-400">O servidor não conseguiu codificar o vídeo.</p>
+                            </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">A análise dos pontos (landmarks) é feita em tempo real no seu navegador.</p>
                     </div>`;
-
-                // Inicializa os elementos de vídeo e canvas
-                videoElement = document.getElementById('originalVideo');
-                canvasElement = document.getElementById('landmarksCanvas');
-                
-                // Inicia o MediaPipe no navegador
-                initMediaPipe(videoElement);
             }
+
+            videoContainer.innerHTML += landmarksHtml;
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
+            if(typeof lucide !== 'undefined' && lucide.createIcons) { lucide.createIcons(); }
         }
 
         async function fetchAnalysisData(analysisId) {
             try {
-                if (!analysisId) throw new Error("ID da análise não foi encontrado na URL.");
+                if (!analysisId) throw new Error("ID da Análise não encontrado na URL.");
                 const apiUrl = `${backendBaseUrl}/api/analysis/${analysisId}`;
                 const response = await fetch(apiUrl);
                 
@@ -301,13 +197,9 @@
         
         function cleanupAnalysis(id) {
             if (!id) return;
-            if (animationFrameId) { cancelAnimationFrame(animationFrameId); }
-
             const deleteUrl = `${backendBaseUrl}/api/delete-analysis/${id}`;
             const data = new Blob([''], {type : 'application/json'});
-            
             navigator.sendBeacon(deleteUrl, data);
-            
             console.log(`Cleanup request sent for analysis ID: ${id}`);
         }
 
@@ -340,10 +232,10 @@
                         lucide.createIcons();
                     }
                 } else {
-                     // Mantém a visualização de vídeo funcional mesmo que os dados para gráficos falhem
+                     // Aviso para o usuário se o processamento de DADOS falhou
                      loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-xl">
                         <h2 class="font-bold text-xl">Análise de Dados com Baixa Detecção</h2>
-                        <p>O backend não detectou pontos corporais suficientes para gerar os gráficos. O vídeo de landmarks está rodando no navegador.</p></div>`;
+                        <p>O servidor não detectou pontos corporais suficientes para gerar os gráficos.</p></div>`;
                 }
             }
             
@@ -372,8 +264,7 @@
         });
         
         function exportToCSV(data, filename) {
-             // Export CSV logic
-             if (!data || data.length === 0) { console.error("Não há dados para exportar."); return; }
+            if (!data || data.length === 0) { console.error("Não há dados para exportar."); return; }
             const headers = Object.keys(data[0]);
             const csvRows = [headers.join(',')];
             for (const row of data) {
@@ -423,7 +314,7 @@
                     dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, posicao_y_quadril: d.oscilacao_vertical_quadril }));
                     break;
                 case 'chartPosicaoHorizontal':
-                    fileName = 'temporal_posicao_horizontal.csv';
+                    fileName = 'temporal_posilçao_horizontal.csv';
                     dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, posicao_x_quadril: d.posicao_horizontal_quadril }));
                     break;
                 case 'chartDistribuicaoQuadris':
@@ -498,8 +389,6 @@
             createChartCard('chartDistribuicaoQuadris', 'Distribuição Vertical do Quadril (Y)', 'distribuicoes');
             new Chart('chartDistribuicaoQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Distribuição Y', data: analysisData.map(d => d.oscilacao_vertical_quadril), showLine: false, pointRadius: 3 }] }, options: chartOptions('Posição (0-1)') });
         }
-
-        window.handleVideoError = handleVideoError;
     </script>
   </body>
 </html>
