@@ -1,4 +1,4 @@
-# site/api/app.py - TENTATIVA DE CODEC MP4V PADRÃO
+# site/api/app.py - TENTATIVA DE CODEC AVI (MJPG)
 
 import os
 import uuid
@@ -46,9 +46,9 @@ mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 
 # --- CONFIGURAÇÃO DO VÍDEO (AJUSTE CRÍTICO DE CODEC) ---
-# Trocamos o codec para XVID, que é mais robusto em ambientes Railway/Linux headless 
-# e corrige o erro de sintaxe do VideoWriter.
-VIDEO_FOURCC = 'XVID' 
+# Trocamos para 'MJPG' e usaremos o contêiner AVI (mais estável em Linux Headless)
+# O FRONTEND TENTARÁ CARREGAR .MP4 PRIMEIRO E, SE FALHAR, TENTARÁ .AVI
+VIDEO_FOURCC = 'MJPG' 
 
 # --- FUNÇÕES DE ANÁLISE ---
 
@@ -78,8 +78,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
         # Retorna lista vazia se não conseguir abrir o vídeo
         return []
 
-    # USANDO O CODEC DEFINIDO GLOBALMENTE (XVID)
-    # CORREÇÃO CRÍTICA: O nome da função deve ser cv2.VideoWriter_fourcc
+    # USANDO O CODEC DEFINIDO GLOBALMENTE (MJPG)
     fourcc = cv2.VideoWriter_fourcc(*VIDEO_FOURCC) 
     
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
@@ -92,6 +91,8 @@ def analyze_video_and_extract_data(video_path, output_video_path):
         cap.release()
         return []
         
+    # O arquivo de saída é .avi para o codec MJPG
+    # Nota: output_video_path DEVE SER AJUSTADO PARA .avi na função chamadora se o codec não for mp4/h264
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
     
     temporal_data = []
@@ -252,8 +253,8 @@ def process_analysis_route():
         video_file.save(original_video_path)
         print(f"-> Vídeo frontal original recebido e salvo em: {original_video_path}")
 
-        # SAÍDA .MP4 para o processado
-        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
+        # MUDANÇA CRÍTICA: Saída para .AVI (para usar o codec MJPG)
+        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
         
         # Executa a análise que extrai os dados e gera o vídeo com landmarks
         temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
@@ -277,7 +278,6 @@ def process_analysis_route():
             "data": {
                 # Dados que o frontend espera (os ângulos calculados no analyze_video_and_extract_data)
                 "temporal_data_frontal": temporal_data
-                # Em um cenário ideal, você faria uma análise mais completa aqui, como em analise_completa.py
             }
         }
         
@@ -350,8 +350,9 @@ def delete_analysis_route(analysis_id):
         # Caminhos dos arquivos
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
+        # Deve limpar ambos os nomes de arquivo possíveis (avi e mp4)
         video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
-        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") # Limpa .avi de tentativas anteriores
+        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
 
         def safe_delete(filepath):
             if os.path.exists(filepath):
