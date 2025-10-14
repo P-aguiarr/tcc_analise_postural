@@ -8,12 +8,31 @@ import traceback
 import numpy as np
 import cv2
 import mediapipe as mp
+
+# Importações de Flask e CORS
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
+# Importações para o Google SSO
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
 # --- CONFIGURAÇÃO INICIAL ---
 app = Flask(__name__)
+# Configura CORS para permitir chamadas de qualquer origem
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Variáveis de Ambiente do Google (CRÍTICO para o SSO)
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+# GOOGLE_CLIENT_SECRET não é usado para validação do token ID, 
+# mas é bom estar configurado se for usar fluxo OAuth completo.
+# GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+
+if not GOOGLE_CLIENT_ID:
+    print("🚨 ERRO: A variável de ambiente GOOGLE_CLIENT_ID não está configurada.")
+else:
+    print(f"✅ GOOGLE_CLIENT_ID configurado: {GOOGLE_CLIENT_ID}")
+
 
 # Diretórios para salvar os resultados e vídeos
 BASE_DIR = tempfile.gettempdir()
@@ -125,6 +144,61 @@ def analyze_video_and_extract_data(video_path, output_video_path):
 
 # --- ROTAS DA API (ENDPOINTS) ---
 
+@app.route('/api/callback', methods=['POST'])
+def google_sso_callback():
+    """
+    Rota de callback para validar o ID Token do Google e retornar dados do usuário.
+    Essa rota é chamada pelo login.html.
+    """
+    if not GOOGLE_CLIENT_ID:
+        print("❌ SSO ERRO: GOOGLE_CLIENT_ID ausente.")
+        return jsonify({"success": False, "error": "Configuração do servidor incompleta (CLIENT ID)."}), 500
+
+    data = request.get_json()
+    id_token_jwt = data.get('id_token')
+
+    if not id_token_jwt:
+        print("❌ SSO ERRO: Token ID não recebido.")
+        return jsonify({"success": False, "error": "Token de autenticação não recebido."}), 400
+
+    try:
+        # 1. Especifica o ID do cliente que a app de destino usa
+        # Especifique o ID do cliente da sua app.
+        id_info = id_token.verify_oauth2_token(
+            id_token_jwt, 
+            google_requests.Request(), 
+            GOOGLE_CLIENT_ID
+        )
+
+        # 2. Verifica se o token foi emitido para seu domínio (opcional, mas recomendado)
+        # if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+        #     raise ValueError('Token incorreto (issuer inválido).')
+
+        # 3. Extrai as informações do usuário
+        user_id = id_info['sub']
+        user_email = id_info.get('email', 'N/A')
+        user_name = id_info.get('name', 'Usuário Google')
+        user_picture = id_info.get('picture', '')
+
+        user_data = {
+            "id": user_id,
+            "email": user_email,
+            "name": user_name,
+            "picture": user_picture
+        }
+        
+        print(f"✅ Login Google bem-sucedido para: {user_email}")
+        return jsonify({"success": True, "user": user_data})
+
+    except ValueError as e:
+        print(f"❌ SSO ERRO (Validação de Token): {e}")
+        return jsonify({"success": False, "error": "Falha na validação do token do Google.", "details": str(e)}), 401
+    except Exception as e:
+        print(f"❌ SSO ERRO (Geral): {e}")
+        print(traceback.format_exc())
+        return jsonify({"success": False, "error": "Erro interno ao processar o login."}), 500
+
+
 @app.route('/', methods=['GET'])
 def root_health_check():
     """Rota raiz para o health check da Railway."""
@@ -133,7 +207,9 @@ def root_health_check():
 @app.route('/api/health', methods=['GET'])
 def api_health_check():
     """Rota de health check legada, caso seja necessária."""
-    return jsonify({"status": "ok"})
+    # Adicionando um check de configuração básica ao health check
+    sso_status = "Configurado" if GOOGLE_CLIENT_ID else "CLIENT_ID Ausente"
+    return jsonify({"status": "ok", "sso_status": sso_status})
 
 @app.route('/api/process-analysis', methods=['POST'])
 def process_analysis_route():
