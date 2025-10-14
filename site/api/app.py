@@ -1,4 +1,4 @@
-# site/api/app.py - Codificação MP4V para Railway
+# site/api/app.py - Codificação H.264 (AVC) para compatibilidade web
 
 import os
 import uuid
@@ -8,6 +8,7 @@ import traceback
 import numpy as np
 import cv2
 import mediapipe as mp
+import mimetypes # Importado para forçar o tipo MIME
 
 # Importações de Flask e CORS
 from flask import Flask, request, jsonify, send_from_directory, abort
@@ -21,7 +22,6 @@ from google.auth.transport import requests as google_requests
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Variáveis de Ambiente do Google (CRÍTICO para o SSO)
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 
 if not GOOGLE_CLIENT_ID:
@@ -41,10 +41,11 @@ print(f"✅ Backend iniciado. Resultados em: {RESULT_DIR}, Vídeos em: {VIDEO_DI
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 
-# --- CONFIGURAÇÃO DE CÓDEC (Voltando ao MP4V/MP4 para compatibilidade web) ---
-VIDEO_FOURCC = 'mp4v' 
+# --- CONFIGURAÇÃO DE CÓDEC (H.264) ---
+# CRÍTICO: 'avc1' é o FourCC para H.264, o padrão para navegadores.
+VIDEO_FOURCC = 'avc1' 
 VIDEO_EXTENSION = '.mp4'
-VIDEO_MIN_SIZE_BYTES = 1000 # Tamanho mínimo de arquivo para ser considerado válido
+VIDEO_MIN_SIZE_BYTES = 1000 
 
 # --- FUNÇÕES DE ANÁLISE ---
 
@@ -64,14 +65,14 @@ def calculate_angle(a, b, c):
 
 def analyze_video_and_extract_data(video_path, output_video_path):
     """
-    Processa um vídeo para extrair dados de postura frame a frame e, ao mesmo tempo,
-    gera um novo vídeo com os landmarks (pontos corporais) desenhados.
+    Processa um vídeo para extrair dados de postura e gera um novo vídeo 
+    com os landmarks (pontos corporais) desenhados usando o codec H.264.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
 
-    # CRÍTICO: Tenta usar o codec MP4V
+    # Tenta usar o codec H.264 (avc1)
     try:
         fourcc = cv2.VideoWriter_fourcc(*VIDEO_FOURCC) 
     except Exception as e:
@@ -110,7 +111,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
                 if results.pose_landmarks:
                     landmarks = results.pose_landmarks.landmark
                     
-                    # Extração de Landmarks e Cálculo de Ângulos (a ser usado nos gráficos)
+                    # Cálculo de Ângulos 
                     l_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
                     r_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
                     l_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
@@ -145,7 +146,6 @@ def analyze_video_and_extract_data(video_path, output_video_path):
                                               mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
                     out.write(frame)
                 else:
-                    # Se não detectou landmarks, ainda escreve o frame original
                     out.write(frame) 
                     
             except Exception as e:
@@ -157,7 +157,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     cap.release()
     out.release()
     
-    print(f"--- DEBUG: ANÁLISE COMPLETA. Arquivo de saída: {output_video_path} ---")
+    print(f"--- DEBUG: ANÁLISE CONCLUÍDA. Arquivo de saída: {output_video_path} ---")
 
     return temporal_data
 
@@ -239,7 +239,7 @@ def process_analysis_route():
                 "analysis_id": analysis_id,
                 "data": {
                     "temporal_data_frontal": temporal_data,
-                    "video_processed_filename": None # Nome NULO se falhar
+                    "video_processed_filename": None 
                 }
             }
         else:
@@ -290,7 +290,7 @@ def get_analysis_route(analysis_id):
 def get_video_route(video_filename):
     """
     Serve os arquivos de vídeo.
-    (Tratamento robusto para 404/500.)
+    (Tratamento robusto para 404/500 e forçando o MIME type correto.)
     """
     try:
         if '..' in video_filename or '/' in video_filename:
@@ -302,8 +302,19 @@ def get_video_route(video_filename):
         if not os.path.exists(filepath):
             print(f"❌ Aviso 404: Vídeo '{video_filename}' não encontrado no disco.")
             abort(404)
+        
+        # Tenta determinar o MIME type, assumindo 'video/mp4' se falhar
+        mimetype, encoding = mimetypes.guess_type(video_filename)
+        if not mimetype:
+            mimetype = 'video/mp4'
             
-        return send_from_directory(VIDEO_DIR, video_filename)
+        # Retorna o arquivo com o MIME type forçado
+        return send_from_directory(
+            VIDEO_DIR, 
+            video_filename, 
+            mimetype=mimetype, 
+            as_attachment=False
+        )
         
     except FileNotFoundError:
         print(f"❌ Aviso 404 (Tratado): Vídeo '{video_filename}' não encontrado.")
@@ -320,7 +331,6 @@ def delete_analysis_route(analysis_id):
         if '..' in analysis_id or '/' in analysis_id:
             return jsonify({"success": False, "error": "ID inválido."}), 400
         
-        # Caminhos dos arquivos
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
         video_processed_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
