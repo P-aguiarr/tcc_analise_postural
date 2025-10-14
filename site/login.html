@@ -66,21 +66,21 @@
       <div id="errorDetails" class="error-message" style="display: none;"></div>
       <div id="successMessage" class="success-message" style="display: none;">Login bem-sucedido! Redirecionando...</div>
 
-      <!-- Botão de Debug/Teste -->
+      <!-- Botão de Debug/Teste (REMOVIDO conforme solicitação) -->
       <div class="debug-area">
-        <button onclick="testAPI()" class="test-api-button">Testar Conexão Railway API</button>
+        <!-- O botão de teste "Testar Conexão Railway API" foi removido. -->
       </div>
 
     </div>
   </div>
 
   <script>
-    // **CRÍTICO: URL BASE DA API DE ANÁLISE (RAILWAY)**
+    // **CRÍTICO: URL BASE DA API DE ANÁLISE (RAILWAY) - Agora é o endpoint de callback também**
+    // Se o frontend e o backend estiverem no mesmo domínio, pode-se usar /api/callback
+    // Se estiverem em domínios diferentes (como Railway/Vercel), DEVE ser o endereço completo do backend.
+    // Usando a URL base para manter a configuração anterior, o callback será RAILWAY_API_BASE_URL + /api/callback
     const RAILWAY_API_BASE_URL = 'https://tccanalisepostural-production.up.railway.app';
     
-    // **Vercel Serverless Function URL (Local)**
-    const VERCEL_CALLBACK_URL = window.location.origin; 
-
     // ==========================================================
     // FUNÇÕES DE EXIBIÇÃO
     // ==========================================================
@@ -124,6 +124,7 @@
     function triggerGoogleSignIn() {
         showLoading();
         
+        // O Google injeta um botão 'gsi-button' dentro do container 'g_id_onload'
         const gsiButton = document.getElementById('gsi-button');
         
         if (gsiButton) {
@@ -135,7 +136,6 @@
 
         console.log('⏳ Botão GSI não encontrado. Observando o DOM para carregamento do Google...');
 
-        // O container que o GSI usa é o g_id_onload
         const targetNode = document.getElementById('g_id_onload');
         if (!targetNode) {
             console.error('❌ Container g_id_onload não encontrado. Estrutura HTML incorreta.');
@@ -143,29 +143,21 @@
             return;
         }
 
-        // Configurações do observador: Observar todos os filhos e subárvores
+        // Configurações e Callback do MutationObserver para esperar o botão do GSI ser injetado
         const config = { childList: true, subtree: true };
-
-        // Função de callback a ser executada quando mudanças são detectadas
-        const callback = function(mutationsList, observer) {
-            // Procurar pelo botão que o GSI injeta (ID 'gsi-button')
+        const observer = new MutationObserver(function(mutationsList, observer) {
             const loadedButton = document.getElementById('gsi-button');
             
             if (loadedButton) {
-                // SUCESSO: Botão encontrado
                 observer.disconnect(); // Parar de observar
                 console.log('✅ MutationObserver: Botão GSI detectado e pronto. Simulando clique.');
                 loadedButton.click();
             }
-        };
+        });
 
-        // Criar uma instância do observador com a função de callback
-        const observer = new MutationObserver(callback);
-
-        // Começar a observar o elemento alvo para mudanças configuradas
         observer.observe(targetNode, config);
         
-        // Configurar um timeout de fallback, caso algo trave ou o GSI falhe completamente
+        // Configurar um timeout de fallback, caso algo trave
         setTimeout(() => {
             if (observer) {
                 observer.disconnect();
@@ -214,7 +206,7 @@
     }
     
     // ==========================================================
-    // FUNÇÃO PRINCIPAL DE RESPOSTA DO GOOGLE (CHAMA VERCEL CALLBACK)
+    // FUNÇÃO PRINCIPAL DE RESPOSTA DO GOOGLE (CHAMA O CALLBACK DO FLASK)
     // ==========================================================
     async function handleCredentialResponse(response) {
       if (!response.credential) {
@@ -225,19 +217,19 @@
       showLoading();
 
       try {
-        // CHAMA A VERCEL SERVERLESS FUNCTION (CALLBACK.JS)
-        const apiResponse = await fetch(`${VERCEL_CALLBACK_URL}/api/callback`, {
+        // CHAMA A NOVA ROTA DE CALLBACK NO SEU BACKEND FLASK (app.py)
+        const apiResponse = await fetch(`${RAILWAY_API_BASE_URL}/api/callback`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ id_token: response.credential })
+          body: JSON.stringify({ id_token: response.credential }) // Enviamos o token ID
         });
 
         const data = await apiResponse.json();
 
-        if (data.success) {
-          // Os dados do usuário são retornados pelo seu callback.js
+        if (apiResponse.ok && data.success) {
+          // O backend retornou os dados do usuário
           localStorage.setItem('user', JSON.stringify(data.user));
           localStorage.setItem('loginTime', new Date().getTime().toString());
           
@@ -249,8 +241,10 @@
           }, 1500); 
 
         } else {
+          // Se o backend falhar na validação do token
+          const errorMessage = data.error || 'Erro desconhecido ao processar o login.';
           console.error('❌ Erro na API de Callback:', data.error, data.details);
-          showError(data.error || 'Erro desconhecido ao processar o login.');
+          showError(errorMessage);
         }
 
       } catch (error) {
@@ -262,43 +256,9 @@
     }
 
 
-    // ==========================================================
-    // FUNÇÕES DE DEBUG (CHAMA RAILWAY API)
-    // ==========================================================
-    async function testAPIConnection() {
-      try {
-        // Rota de Healthcheck do seu backend Flask (app.py)
-        const response = await fetch(`${RAILWAY_API_BASE_URL}/api/health`); 
-        return response.ok; 
-      } catch (error) {
-        console.error('Erro de rede ou CORS ao tentar conectar com a API Railway:', error);
-        throw new Error('Falha de rede (CORS?) ao tentar acessar a API Railway. Verifique o console.');
-      }
-    }
-
-    async function testAPI() {
-      showLoading();
-      
-      try {
-        const available = await testAPIConnection();
-        
-        if (available) {
-          showSuccess('✅ API Railway disponível e a rota /api/health funciona!');
-        } else {
-          showError('❌ Conexão estabelecida, mas a API não respondeu OK (Verifique 404/500 no console).');
-        }
-      } catch (error) {
-        console.error('Erro de Conexão Geral:', error.message);
-        showError(error.message);
-      } finally {
-        hideLoading();
-      }
-    }
-
     // Expor funções para console
     window.handleCredentialResponse = handleCredentialResponse;
     window.checkUserAndRedirect = checkUserAndRedirect;
-    window.testAPI = testAPI;
     window.triggerGoogleSignIn = triggerGoogleSignIn;
   </script>
 </body>
