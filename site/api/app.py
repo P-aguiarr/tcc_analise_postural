@@ -45,6 +45,11 @@ print(f"✅ Backend iniciado. Resultados em: {RESULT_DIR}, Vídeos em: {VIDEO_DI
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 
+# --- CONFIGURAÇÃO DO VÍDEO (AJUSTE CRÍTICO DE CODEC) ---
+# Trocamos o codec para XVID, que é mais robusto em ambientes Railway/Linux headless 
+# e corrige o erro de sintaxe do VideoWriter.
+VIDEO_FOURCC = 'XVID' 
+
 # --- FUNÇÕES DE ANÁLISE ---
 
 def calculate_angle(a, b, c):
@@ -73,8 +78,9 @@ def analyze_video_and_extract_data(video_path, output_video_path):
         # Retorna lista vazia se não conseguir abrir o vídeo
         return []
 
-    # RETORNANDO AO MP4V PADRÃO (Compatibilidade com Web/Railway)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+    # USANDO O CODEC DEFINIDO GLOBALMENTE (XVID)
+    # CORREÇÃO CRÍTICA: O nome da função deve ser cv2.VideoWriter_fourcc
+    fourcc = cv2.VideoWriter_fourcc(*VIDEO_FOURCC) 
     
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -91,7 +97,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     temporal_data = []
     frame_count = 0
     
-    print(f"--- DEBUG: Iniciando análise de vídeo. Codec: MP4V ---")
+    print(f"--- DEBUG: Iniciando análise de vídeo. Codec: {VIDEO_FOURCC} ---")
     
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
@@ -252,6 +258,18 @@ def process_analysis_route():
         # Executa a análise que extrai os dados e gera o vídeo com landmarks
         temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
         
+        # --- VERIFICAÇÃO CRÍTICA DO VÍDEO PROCESSADO ---
+        video_size = os.path.getsize(output_video_path) if os.path.exists(output_video_path) else 0
+        if video_size < 1000 and len(temporal_data) > 0: # 1KB como threshold, mas só se tiver gerado frames.
+             print(f"⚠️ Aviso: Arquivo de vídeo processado '{output_video_path}' é muito pequeno ({video_size} bytes). Pode ter falhado o codec.")
+        
+        if not temporal_data or video_size < 100:
+             # Se não houver dados temporais (nenhum frame detectado) OU o arquivo de vídeo for minúsculo (falha no codec/escrita)
+             error_message = "O vídeo não pôde ser processado (verifique o formato/codec) ou a detecção de postura falhou."
+             print(f"❌ Erro de processamento/arquivo: {error_message}")
+             return jsonify({"success": False, "error": error_message, "analysis_id": analysis_id}), 500
+        # -----------------------------------------------
+
         # Monta o JSON final com os resultados
         full_result = {
             "success": True,
@@ -270,10 +288,6 @@ def process_analysis_route():
         
         print(f"✅ Análise {analysis_id} concluída. JSON salvo em: {result_filepath}")
         
-        # Se temporal_data estiver vazio, significa que o vídeo não pôde ser processado (problema de codec ou arquivo)
-        if not temporal_data:
-             return jsonify({"success": False, "error": "O vídeo não pôde ser processado (verifique o formato/codec).", "analysis_id": analysis_id}), 500
-
         return jsonify({"success": True, "analysis_id": analysis_id})
         
     except Exception as e:
