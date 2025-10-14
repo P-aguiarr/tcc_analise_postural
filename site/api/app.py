@@ -10,7 +10,7 @@ import cv2
 import mediapipe as mp
 
 # Importações de Flask e CORS
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_cors import CORS
 
 # Importações para o Google SSO
@@ -92,7 +92,6 @@ def analyze_video_and_extract_data(video_path, output_video_path):
         return []
         
     # O arquivo de saída é .avi para o codec MJPG
-    # Nota: output_video_path DEVE SER AJUSTADO PARA .avi na função chamadora se o codec não for mp4/h264
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
     
     temporal_data = []
@@ -320,24 +319,38 @@ def get_analysis_route(analysis_id):
 
 @app.route('/api/video/<video_filename>', methods=['GET'])
 def get_video_route(video_filename):
-    """Serve os arquivos de vídeo processados. Sem log na resposta HTTP."""
+    """
+    Serve os arquivos de vídeo processados.
+    
+    Ajuste: Adicionada verificação de arquivo para evitar 500 do Flask
+    e garantir que a falha resulte em 404 para o fallback do frontend.
+    """
     try:
         if '..' in video_filename or '/' in video_filename:
             # Loga a tentativa de acesso inválida
             print(f"❌ Tentativa de acesso de vídeo inválida: {video_filename}")
-            return "", 400
+            # Usar abort para garantir que o Flask pare o processamento e retorne o código HTTP correto
+            abort(400) # Bad Request
+        
+        filepath = os.path.join(VIDEO_DIR, video_filename)
+        
+        if not os.path.exists(filepath):
+            # Se o arquivo não existir, retorna 404 (o que é esperado para o .mp4 processado)
+            print(f"❌ Aviso 404: Vídeo '{video_filename}' não encontrado no disco.")
+            abort(404)
             
         # Tenta servir o arquivo
         return send_from_directory(VIDEO_DIR, video_filename)
         
     except FileNotFoundError:
-        # Loga 404 internamente, mas retorna uma resposta vazia e silenciosa no HTTP
-        print(f"❌ Aviso 404: Vídeo '{video_filename}' não encontrado.")
-        return "", 404 
+        # Flask/Werkzeug pode lançar FileNotFoundError, o que é mapeado para 404
+        print(f"❌ Aviso 404 (Tratado): Vídeo '{video_filename}' não encontrado.")
+        abort(404)
     except Exception as e:
         # Loga o erro geral internamente, mas retorna 500 silencioso
-        print(f"❌ Erro ao servir vídeo '{video_filename}': {e}")
-        return "", 500
+        print(f"❌ Erro Crítico ao servir vídeo '{video_filename}': {e}")
+        print(traceback.format_exc())
+        abort(500) # Internal Server Error
 
 
 @app.route('/api/delete-analysis/<analysis_id>', methods=['DELETE'])
