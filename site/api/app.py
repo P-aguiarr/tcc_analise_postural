@@ -1,4 +1,4 @@
-# site/api/app.py - CÓDIGO FINAL COM LOGS DE DEBUG NO BACKEND
+# site/api/app.py - CÓDIGO FINAL COM CORREÇÃO CRÍTICA DO MEDIAPIPE
 
 import os
 import uuid
@@ -53,7 +53,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     if not cap.isOpened():
         raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
 
-    # SOLUÇÃO FINAL: MJPG (Codec Universal) com saída .avi (Formato Universal)
+    # Codec MJPG para estabilidade
     fourcc = cv2.VideoWriter_fourcc(*'MJPG') 
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -80,17 +80,20 @@ def analyze_video_and_extract_data(video_path, output_video_path):
             if results.pose_landmarks:
                 landmarks = results.pose_landmarks.landmark
                 
-                # [Lógica de análise omitida para concisão, mas está completa]
-                l_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-                r_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
-                l_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
-                r_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
-                l_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
-                r_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
-                l_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp_pose.PoseLandland.LEFT_ANKLE.value].y]
-                r_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
-                l_ear = [landmarks[mp_pose.PoseLandmark.LEFT_EAR.value].x, landmarks[mp_pose.PoseLandmark.LEFT_EAR.value].y]
-                nose = [landmarks[mp_pose.PoseLandmark.NOSE.value].x, landmarks[mp_pose.PoseLandmark.NOSE.value].y]
+                # CORREÇÃO CRÍTICA APLICADA AQUI
+                # O PoseLandmark agora é acessado via mp.solutions.pose
+                
+                # Coordenadas dos pontos de interesse
+                l_shoulder = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                r_shoulder = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                l_hip = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].y]
+                r_hip = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_HIP.value].y]
+                l_knee = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE.value].y]
+                r_knee = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_KNEE.value].y]
+                l_ankle = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_ANKLE.value].y]
+                r_ankle = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_ANKLE.value].y]
+                l_ear = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_EAR.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_EAR.value].y]
+                nose = [landmarks[mp.solutions.pose.PoseLandmark.NOSE.value].x, landmarks[mp.solutions.pose.PoseLandmark.NOSE.value].y]
 
                 frame_data['angulo_ombro_esquerdo'] = calculate_angle(l_hip, l_shoulder, l_ear)
                 frame_data['angulo_ombro_direito'] = calculate_angle(r_hip, r_shoulder, l_ear)
@@ -154,7 +157,7 @@ def process_analysis_route():
         video_file.save(original_video_path)
         print(f"-> Vídeo frontal original recebido e salvo em: {original_video_path}")
 
-        # MUDANÇA: SAÍDA .AVI (Corresponde ao MJPG)
+        # SAÍDA .AVI (Corresponde ao MJPG)
         output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
         
         # Executa a análise que extrai os dados e gera o vídeo com landmarks
@@ -225,8 +228,8 @@ def delete_analysis_route(analysis_id):
         # Caminhos dos arquivos
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
-        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") # Limpa .avi
-        video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") # Limpa .mp4 (para segurança)
+        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi")
+        video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4")
 
         def safe_delete(filepath):
             if os.path.exists(filepath):
