@@ -10,6 +10,16 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
+    <!-- MediaPipe para análise no navegador (CRÍTICO) -->
+    <!-- Adicionando a constante POSE_CONNECTIONS explicitamente -->
+    <script type="module">
+      import { POSE_CONNECTIONS } from 'https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675466826/pose.js';
+      window.POSE_CONNECTIONS = POSE_CONNECTIONS;
+      window.Pose = Pose;
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    
     <style>
         :root { --primary: #4f46e5; --light: #f3f4f6; }
         body { font-family: 'Inter', sans-serif; background-color: var(--light); }
@@ -26,22 +36,25 @@
             background-color: #fce7e7;
             border: 1px dashed #ef4444; 
         }
-        /* Estilos críticos para exibir a imagem Base64 */
-        .image-container { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
+        .media-box {
+            position: relative;
             width: 100%;
             height: 100%;
-            overflow: hidden;
             border-radius: 0.5rem;
-            min-height: 12rem; /* Altura mínima para visualização */
+            overflow: hidden;
+            background-color: black;
+            aspect-ratio: 16 / 9; /* Garante que o container se ajuste */
         }
-        .landmarks-img {
-            max-width: 100%;
-            max-height: 100%;
+        .landmarks-canvas, .original-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
-            display: block;
+        }
+        .landmarks-canvas {
+            z-index: 10; /* Garante que o canvas fique sobre o vídeo */
         }
     </style>
   </head>
@@ -103,7 +116,109 @@
         let currentAnalysisId = null;
         let chartInstances = {};
         
+        let videoElement = null;
+        let canvasElement = null;
+        let pose = null;
+        let animationFrameId = null;
+
+        // ==========================================================
+        // 1. ANÁLISE DE LANDMARKS LOCAL (BROWSER)
+        // ==========================================================
+
+        function onResults(results) {
+            if (!canvasElement || !videoElement) return;
+
+            const canvasCtx = canvasElement.getContext('2d');
+            
+            // Desenha o frame do vídeo e depois os landmarks sobre ele
+            canvasCtx.save();
+            // Limpa o canvas para o próximo frame
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Desenha o vídeo no canvas
+            canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.poseLandmarks) {
+                // Desenha as conexões
+                drawConnectors(canvasCtx, results.poseLandmarks, window.POSE_CONNECTIONS,
+                               {color: '#F97316', lineWidth: 4}); // Laranja
+
+                // Desenha os pontos (landmarks)
+                drawLandmarks(canvasCtx, results.poseLandmarks,
+                              {color: '#EC4899', lineWidth: 2}); // Rosa/Roxo
+            }
+            canvasCtx.restore();
+            
+            // Solicita o próximo frame para o MediaPipe
+            if (!videoElement.paused && !videoElement.ended) {
+                 animationFrameId = requestAnimationFrame(sendToMediaPipe);
+            } else {
+                 cancelAnimationFrame(animationFrameId);
+                 console.log("[MEDIAPIPE] Análise de vídeo finalizada.");
+            }
+        }
+        
+        function sendToMediaPipe() {
+            if (!pose || !videoElement || videoElement.paused || videoElement.ended) return;
+            
+            // O MediaPipe Pose espera um objeto de imagem para processamento
+            pose.send({ image: videoElement });
+        }
+
+        async function initMediaPipe(videoElement) {
+            if (window.pose) return; 
+
+            window.pose = new Pose({locateFile: (file) => {
+                // Certifica-se de que o MediaPipe pode encontrar seus arquivos WASM/BIN
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675466826/${file}`;
+            }});
+            
+            window.pose.setOptions({
+                modelComplexity: 1,
+                smoothLandmarks: true,
+                enableSegmentation: false,
+                smoothSegmentation: false,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+            
+            window.pose.onResults(onResults);
+            
+            videoElement.addEventListener('loadeddata', () => {
+                if (canvasElement) {
+                    // Ajusta o canvas para as dimensões nativas do vídeo
+                    canvasElement.width = videoElement.videoWidth;
+                    canvasElement.height = videoElement.videoHeight;
+                    // Inicia a reprodução e o loop de análise
+                    videoElement.play();
+                }
+            });
+
+            videoElement.addEventListener('play', () => {
+                // Inicia o loop de análise quando o usuário clica em "Play" ou ele auto-inicia
+                 console.log("[MEDIAPIPE] Análise local iniciada/retomada.");
+                 sendToMediaPipe();
+            });
+
+            videoElement.addEventListener('pause', () => {
+                 cancelAnimationFrame(animationFrameId);
+            });
+            
+            videoElement.addEventListener('seeked', sendToMediaPipe); // Processa um frame quando o usuário navega
+
+            // Tenta forçar o carregamento
+            if (videoElement.readyState >= 3) {
+                 videoElement.load();
+            }
+        }
+
+
+        // ==========================================================
+        // 2. FUNÇÕES DE SUPORTE (HTML/API)
+        // ==========================================================
+
         function handleVideoError(videoElement, type) {
+            // ... (função de erro de vídeo permanece a mesma)
             console.error(`[FRONTEND ERRO] Falha ao carregar o vídeo ${type}. URL: ${videoElement.src}`);
             
             const parentDiv = videoElement.parentElement;
@@ -112,7 +227,7 @@
                     <div class="w-full h-48 rounded-lg flex flex-col items-center justify-center video-placeholder">
                         <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 mb-2"></i>
                         <p class="text-sm text-red-600 font-semibold">${type} indisponível.</p>
-                        <p class="text-xs text-red-400">Verifique o console (F12) para detalhes.</p>
+                        <p class="text-xs text-red-400">Verifique o console (F12) e as URLs (Network tab).</p>
                     </div>`;
                 if(typeof lucide !== 'undefined' && lucide.createIcons) {
                     lucide.createIcons(); 
@@ -125,41 +240,37 @@
             videoContainer.innerHTML = '';
             
             const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
-            // CRÍTICO: Pega a imagem Base64 do JSON de resposta
-            const firstFrameBase64 = apiResponse.data.first_frame_base64;
             
             if (apiResponse.data.temporal_data_frontal) {
                 
-                let landmarksMediaHTML = '';
-                if (firstFrameBase64) {
-                    landmarksMediaHTML = `
-                        <div class="bg-white p-4 rounded-xl shadow-sm">
-                            <h3 class="font-bold mb-2">Plano Coronal (Landmarks - 1º Frame)</h3>
-                            <div class="image-container w-full h-48">
-                                <img src="${firstFrameBase64}" alt="Primeiro Frame com Landmarks" class="landmarks-img"/>
-                            </div>
-                        </div>`;
-                } else {
-                    landmarksMediaHTML = `
-                        <div class="bg-white p-4 rounded-xl shadow-sm">
-                            <h3 class="font-bold mb-2">Plano Coronal (Landmarks - 1º Frame)</h3>
-                            <div class="w-full h-48 rounded-lg flex flex-col items-center justify-center video-placeholder bg-yellow-100 text-yellow-700 border-yellow-400">
-                                <i data-lucide="alert-triangle" class="w-6 h-6 mb-2"></i>
-                                <p class="text-sm font-semibold">Imagem de Landmarks não gerada.</p>
-                                <p class="text-xs">O servidor não conseguiu extrair o primeiro frame com a postura.</p>
-                            </div>
-                        </div>`;
-                }
-
+                // Div para o Vídeo Original
                 videoContainer.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
-                        <video controls muted preload="metadata" class="w-full rounded-lg" 
-                               src="${videoUrlOriginal}" 
-                               onerror="handleVideoError(this, 'Original')">
-                        </video>
-                    </div>
-                    ${landmarksMediaHTML}`;
+                        <div class="media-box">
+                            <video id="originalVideo" controls muted preload="auto" class="original-video" 
+                                src="${videoUrlOriginal}" 
+                                onerror="handleVideoError(this, 'Original')">
+                            </video>
+                        </div>
+                    </div>`;
+
+                // Div para o Vídeo com Landmarks (Canvas - AQUI É O VÍDEO COMPLETO!)
+                videoContainer.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl shadow-sm">
+                        <h3 class="font-bold mb-2">Plano Coronal (Landmarks - Local)</h3>
+                        <div class="media-box">
+                            <canvas id="landmarksCanvas" class="landmarks-canvas"></canvas>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">A análise dos pontos (landmarks) é feita em tempo real no seu navegador.</p>
+                    </div>`;
+
+                // Inicializa os elementos de vídeo e canvas
+                videoElement = document.getElementById('originalVideo');
+                canvasElement = document.getElementById('landmarksCanvas');
+                
+                // Inicia o MediaPipe no navegador
+                initMediaPipe(videoElement);
             }
             document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
         }
@@ -190,6 +301,8 @@
         
         function cleanupAnalysis(id) {
             if (!id) return;
+            if (animationFrameId) { cancelAnimationFrame(animationFrameId); }
+
             const deleteUrl = `${backendBaseUrl}/api/delete-analysis/${id}`;
             const data = new Blob([''], {type : 'application/json'});
             
@@ -227,9 +340,10 @@
                         lucide.createIcons();
                     }
                 } else {
+                     // Mantém a visualização de vídeo funcional mesmo que os dados para gráficos falhem
                      loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-xl">
-                        <h2 class="font-bold text-xl">Análise com Baixa Detecção</h2>
-                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo. Dados insuficientes para gerar gráficos.</p></div>`;
+                        <h2 class="font-bold text-xl">Análise de Dados com Baixa Detecção</h2>
+                        <p>O backend não detectou pontos corporais suficientes para gerar os gráficos. O vídeo de landmarks está rodando no navegador.</p></div>`;
                 }
             }
             
@@ -258,7 +372,8 @@
         });
         
         function exportToCSV(data, filename) {
-            if (!data || data.length === 0) { console.error("Não há dados para exportar."); return; }
+             // Export CSV logic
+             if (!data || data.length === 0) { console.error("Não há dados para exportar."); return; }
             const headers = Object.keys(data[0]);
             const csvRows = [headers.join(',')];
             for (const row of data) {
