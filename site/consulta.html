@@ -80,10 +80,9 @@
             videoContainer.innerHTML = '';
             
             if (apiResponse.data.temporal_data_frontal) {
-                // URL do vídeo original (MP4)
+                // URLs para buscar o vídeo original e o processado (ambos .mp4)
                 const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
-                // BUSCANDO .AVI para máxima compatibilidade de codificação.
-                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.avi`; 
+                const videoUrlLandmarks = `${backendBaseUrl}/api/video/${analysisId}_frontal.mp4`; 
                 
                 // --- LOG DE CONSOLE: URLS NO FRONTEND ---
                 console.log(`[FRONTEND DEBUG] Tentando carregar Original: ${videoUrlOriginal}`);
