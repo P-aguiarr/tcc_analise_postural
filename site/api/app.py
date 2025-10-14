@@ -1,4 +1,4 @@
-# site/api/app.py - CÓDIGO FINAL COM CORREÇÃO CRÍTICA DO MEDIAPIPE
+# site/api/app.py - TENTATIVA FINAL COM CODEC MP4V E .MP4
 
 import os
 import uuid
@@ -53,8 +53,10 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     if not cap.isOpened():
         raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
 
-    # Codec MJPG para estabilidade
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG') 
+    # TENTATIVA FINAL: Usando MP4V, a extensão MP4 é a preferida para web.
+    # O seu log de erro mostrou que o OpenCV tentou isso por último.
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+    
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -63,8 +65,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     temporal_data = []
     frame_count = 0
     
-    # --- LOG DE CONSOLE: INÍCIO DO PROCESSAMENTO ---
-    print(f"--- DEBUG: Iniciando análise de {cap.get(cv2.CAP_PROP_FRAME_COUNT)} frames. Codec: MJPG ---")
+    print(f"--- DEBUG: Iniciando análise de {cap.get(cv2.CAP_PROP_FRAME_COUNT)} frames. Codec: MP4V ---")
     
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
@@ -80,10 +81,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
             if results.pose_landmarks:
                 landmarks = results.pose_landmarks.landmark
                 
-                # CORREÇÃO CRÍTICA APLICADA AQUI
-                # O PoseLandmark agora é acessado via mp.solutions.pose
-                
-                # Coordenadas dos pontos de interesse
+                # CORREÇÃO CRÍTICA DO MEDIAPIPE APLICADA
                 l_shoulder = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value].y]
                 r_shoulder = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value].y]
                 l_hip = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].y]
@@ -122,7 +120,6 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     cap.release()
     out.release()
     
-    # --- LOG DE CONSOLE: FIM DO PROCESSAMENTO ---
     print(f"--- DEBUG: ANÁLISE COMPLETA. Arquivo de saída: {output_video_path} ---")
 
     return temporal_data
@@ -150,15 +147,15 @@ def process_analysis_route():
     try:
         video_file = request.files['frontalImage']
         
-        # O video original permanece .mp4
+        # MANTENDO .MP4 para o original
         original_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
         
         # Salva o vídeo original no diretório de vídeos
         video_file.save(original_video_path)
         print(f"-> Vídeo frontal original recebido e salvo em: {original_video_path}")
 
-        # SAÍDA .AVI (Corresponde ao MJPG)
-        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
+        # SAÍDA .MP4 para o processado
+        output_video_path = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
         
         # Executa a análise que extrai os dados e gera o vídeo com landmarks
         temporal_data = analyze_video_and_extract_data(original_video_path, output_video_path)
@@ -228,8 +225,8 @@ def delete_analysis_route(analysis_id):
         # Caminhos dos arquivos
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
-        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi")
-        video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4")
+        video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
+        video_processed_avi_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.avi") 
 
         def safe_delete(filepath):
             if os.path.exists(filepath):
@@ -241,8 +238,8 @@ def delete_analysis_route(analysis_id):
         deleted_count = 0
         if safe_delete(result_filepath): deleted_count += 1
         if safe_delete(video_original_filepath): deleted_count += 1
-        if safe_delete(video_processed_avi_filepath): deleted_count += 1
         if safe_delete(video_processed_mp4_filepath): deleted_count += 1
+        if safe_delete(video_processed_avi_filepath): deleted_count += 1
              
         print(f"🗑️ Análise {analysis_id} e {deleted_count} arquivos deletados.")
         return jsonify({"success": True, "message": "Arquivos de análise deletados com sucesso."})
