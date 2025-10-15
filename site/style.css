@@ -1688,7 +1688,7 @@ body {
   width: auto;
   height: auto;
   max-width: 100%;
-  max-height: 600px;  /* 🔹 era 200px — triplicado */
+  max-height: 400px;  /* 🔹 era 200px — triplicado */
   object-fit: contain;
   display: block;
   margin: 0 auto;
