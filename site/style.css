@@ -9,7 +9,7 @@
 .landing-page .div {
   background-color: #ffffff;
   width: 1440px;
-  height: 3382px;
+  height: auto; 
   position: relative;
 }
 
