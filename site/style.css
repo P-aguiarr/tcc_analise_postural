@@ -1789,3 +1789,12 @@ body {
     max-width: 100%;
   }
 }
+.navbar .frame-16 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto; 
+  padding: 0 20px;
+  width: 100%;
+}
