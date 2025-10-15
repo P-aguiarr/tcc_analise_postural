@@ -1,4 +1,4 @@
-# site/api/app.py - Codificação H.264 (AVC) para compatibilidade web
+# site/api/app.py - Codificação WebM (VP80) para máxima compatibilidade web
 
 import os
 import uuid
@@ -8,7 +8,7 @@ import traceback
 import numpy as np
 import cv2
 import mediapipe as mp
-import mimetypes # Importado para forçar o tipo MIME
+import mimetypes 
 
 # Importações de Flask e CORS
 from flask import Flask, request, jsonify, send_from_directory, abort
@@ -41,10 +41,10 @@ print(f"✅ Backend iniciado. Resultados em: {RESULT_DIR}, Vídeos em: {VIDEO_DI
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 
-# --- CONFIGURAÇÃO DE CÓDEC (H.264) ---
-# CRÍTICO: 'avc1' é o FourCC para H.264, o padrão para navegadores.
-VIDEO_FOURCC = 'avc1' 
-VIDEO_EXTENSION = '.mp4'
+# --- CONFIGURAÇÃO DE CÓDEC (VP80 - WEB STANDARD) ---
+# CRÍTICO: Codec WebM/VP8 para máxima compatibilidade nativa no navegador.
+VIDEO_FOURCC = 'VP80' 
+VIDEO_EXTENSION = '.webm'
 VIDEO_MIN_SIZE_BYTES = 1000 
 
 # --- FUNÇÕES DE ANÁLISE ---
@@ -66,13 +66,13 @@ def calculate_angle(a, b, c):
 def analyze_video_and_extract_data(video_path, output_video_path):
     """
     Processa um vídeo para extrair dados de postura e gera um novo vídeo 
-    com os landmarks (pontos corporais) desenhados usando o codec H.264.
+    com os landmarks (pontos corporais) desenhados usando o codec VP80.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
 
-    # Tenta usar o codec H.264 (avc1)
+    # Tenta usar o codec VP80
     try:
         fourcc = cv2.VideoWriter_fourcc(*VIDEO_FOURCC) 
     except Exception as e:
@@ -94,7 +94,7 @@ def analyze_video_and_extract_data(video_path, output_video_path):
     temporal_data = []
     frame_count = 0
     
-    print(f"--- DEBUG: Iniciando análise de {cap.get(cv2.CAP_PROP_FRAME_COUNT)} frames. Codec: {VIDEO_FOURCC} ---")
+    print(f"--- DEBUG: Iniciando análise de {cap.get(cv2.CAP_PROP_FRAME_COUNT)} frames. Codec: {VIDEO_FOURCC} ({VIDEO_EXTENSION}) ---")
     
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
@@ -230,8 +230,10 @@ def process_analysis_route():
 
         video_size = os.path.getsize(output_video_path) if os.path.exists(output_video_path) else 0
 
-        if not temporal_data or video_size < VIDEO_MIN_SIZE_BYTES:
-             error_message = f"O vídeo de landmarks não pôde ser gerado (Tamanho: {video_size} bytes). O servidor não suporta codificação de vídeo com {VIDEO_FOURCC}."
+        # --- DEBUG: Verifica se a codificação WebM falhou ---
+        if video_size < VIDEO_MIN_SIZE_BYTES:
+             # Retorna o erro detalhado para o frontend se a codificação falhar
+             error_message = f"O vídeo de landmarks não pôde ser gerado (Tamanho: {video_size} bytes). O servidor não suporta codificação de vídeo com {VIDEO_FOURCC}. Verifique o FFmpeg no Railway."
              print(f"❌ Erro de processamento/arquivo: {error_message}")
              
              full_result = {
@@ -239,7 +241,8 @@ def process_analysis_route():
                 "analysis_id": analysis_id,
                 "data": {
                     "temporal_data_frontal": temporal_data,
-                    "video_processed_filename": None 
+                    "video_processed_filename": None,
+                    "error_details": error_message
                 }
             }
         else:
@@ -261,9 +264,10 @@ def process_analysis_route():
         return jsonify({"success": True, "analysis_id": analysis_id})
         
     except Exception as e:
-        print(f"❌ Erro crítico na análise {analysis_id}: {e}")
-        print(traceback.format_exc())
-        return jsonify({"success": False, "error": f"Erro interno no servidor: {e}"}), 500
+        # Se houver um erro antes da verificação de tamanho, retorna 500
+        error_trace = traceback.format_exc()
+        print(f"❌ Erro crítico na análise {analysis_id}: {e}\n{error_trace}")
+        return jsonify({"success": False, "error": f"Erro interno: {e}", "details": error_trace}), 500
     finally:
         pass
 
@@ -289,8 +293,7 @@ def get_analysis_route(analysis_id):
 @app.route('/api/video/<video_filename>', methods=['GET'])
 def get_video_route(video_filename):
     """
-    Serve os arquivos de vídeo.
-    (Tratamento robusto para 404/500 e forçando o MIME type correto.)
+    Serve os arquivos de vídeo. (Garantindo Content-Type para WebM)
     """
     try:
         if '..' in video_filename or '/' in video_filename:
@@ -303,18 +306,24 @@ def get_video_route(video_filename):
             print(f"❌ Aviso 404: Vídeo '{video_filename}' não encontrado no disco.")
             abort(404)
         
-        # Tenta determinar o MIME type, assumindo 'video/mp4' se falhar
-        mimetype, encoding = mimetypes.guess_type(video_filename)
-        if not mimetype:
+        # Define MIME Type baseado na extensão para compatibilidade
+        if video_filename.endswith('.webm'):
+            mimetype = 'video/webm'
+        elif video_filename.endswith('.mp4'):
             mimetype = 'video/mp4'
+        else:
+            mimetype = 'application/octet-stream' # Fallback
             
-        # Retorna o arquivo com o MIME type forçado
-        return send_from_directory(
+        # Retorna o arquivo com o MIME type forçado e desativa o cache
+        response = send_from_directory(
             VIDEO_DIR, 
             video_filename, 
             mimetype=mimetype, 
             as_attachment=False
         )
+        # CRÍTICO: Desativa o cache do navegador para evitar problemas com arquivos corrompidos
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        return response
         
     except FileNotFoundError:
         print(f"❌ Aviso 404 (Tratado): Vídeo '{video_filename}' não encontrado.")
@@ -333,7 +342,10 @@ def delete_analysis_route(analysis_id):
         
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
         video_original_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal_original.mp4")
-        video_processed_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
+        
+        # Limpa .mp4 e .webm
+        video_processed_mp4_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.mp4") 
+        video_processed_webm_filepath = os.path.join(VIDEO_DIR, f"{analysis_id}_frontal.webm") 
         
         def safe_delete(filepath):
             if os.path.exists(filepath):
@@ -344,7 +356,8 @@ def delete_analysis_route(analysis_id):
         deleted_count = 0
         if safe_delete(result_filepath): deleted_count += 1
         if safe_delete(video_original_filepath): deleted_count += 1
-        if safe_delete(video_processed_filepath): deleted_count += 1
+        if safe_delete(video_processed_mp4_filepath): deleted_count += 1
+        if safe_delete(video_processed_webm_filepath): deleted_count += 1
                  
         print(f"🗑️ Análise {analysis_id} e {deleted_count} arquivos deletados.")
         return jsonify({"success": True, "message": "Arquivos de análise deletados com sucesso."})
