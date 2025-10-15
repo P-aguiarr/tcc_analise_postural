@@ -1,9 +1,7 @@
 .landing-page { 
-  background-color: #ffffff;
   display: flex;
-  flex-direction: row;
-  justify-content: center;
-  width: 100%;
+  flex-direction: column;
+  flex-grow: 1; 
 }
 
 .landing-page .div {
@@ -988,9 +986,10 @@ body {
 .login-section {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: calc(100vh - 160px);
+  justify-content: center; /* Centraliza VERTICALMENTE o conteúdo (o botão) */
+  align-items: center;     /* Centraliza HORIZONTALMENTE o conteúdo */
+  flex-grow: 1;            /* CRÍTICO: Ocupa todo o espaço vertical restante, empurrando o footer */
+  min-height: calc(100vh - 120px); /* Garante uma altura mínima de visualização (ajuste se necessário) */
   text-align: center;
   padding: 20px;
 }
