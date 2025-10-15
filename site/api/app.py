@@ -20,7 +20,7 @@ from google.auth.transport import requests as google_requests
 
 # --- CONFIGURAÇÃO INICIAL ---
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "https://ttc-analise-postural.vercel.app"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 
