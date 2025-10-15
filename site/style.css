@@ -9,8 +9,9 @@
 .landing-page .div {
   background-color: #ffffff;
   width: 1440px;
-  height: auto; 
+  height: auto; /* CORRIGIDO: Permite que o container se expanda com o conteúdo */
   position: relative;
+  min-height: 100vh; /* Para garantir que o rodapé fique no mínimo no final da tela */
 }
 
 
