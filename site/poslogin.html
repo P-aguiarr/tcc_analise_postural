@@ -9,18 +9,20 @@
 </head>
 <body>
   <div class="landing-page">
-        <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
+        <header> 
+      <div class="navbar">
+        <div class="frame-16">
+          <p class="the-posture-lab">
+            <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+          </p>
+          <div class="frame-17">
+            <a href="/" class="text-wrapper-26">Home</a>
+            <a href="/login.html" class="text-wrapper-26">Login</a>
+            <a href="/configuracoes.html" class="text-wrapper-26">Configurações</a>
         </div>
       </div>
     </div>
+    </header>
 
     <div class="dashboard"> 
       <button class="card" onclick="window.location.href='/nova_analise.html'">
@@ -44,7 +46,7 @@
         const user = localStorage.getItem('user');
         if (!user) {
           alert('Você precisa fazer login primeiro!');
-          window.location.href = '/login.html'; // Corrigido para .html
+          window.location.href = '/login.html'; 
           return;
         }
         
@@ -53,7 +55,7 @@
           console.log('Usuário logado:', userData.email);
         } catch (e) {
           console.error('Erro ao carregar dados do usuário:', e);
-          window.location.href = '/login.html'; // Corrigido para .html
+          window.location.href = '/login.html';
         }
       });
     </script>
