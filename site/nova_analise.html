@@ -9,14 +9,16 @@
   <title>Nova Análise - The Posture Lab</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background-color: #f5f5f5; }
-    /* REMOVIDO: Estrutura flex/min-height para que o footer siga o conteúdo */
+    /* landing-page não mais como coluna flex, para que o footer siga o conteúdo */
     .landing-page {
         width: 100%;
+        min-height: 100vh; /* Garante que o rodapé não suba demais em telas pequenas */
     }
     .navbar { 
         background-color: #fff; 
         padding: 15px 30px; 
         box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        /* CRÍTICO: Fixar a navbar no topo para evitar sobreposição */
         position: sticky; 
         top: 0; 
         z-index: 100;
@@ -29,15 +31,15 @@
     .frame-17 { display: flex; gap: 20px; }
     .text-wrapper-26 { text-decoration: none; color: #333; }
     
-    /* CORREÇÃO DE LAYOUT: Margem superior para compensar a navbar fixa */
+    /* CORREÇÃO DE LAYOUT: O margin-top não é mais necessário se a navbar não for fixed */
     .upload-container { 
         max-width: 1000px; 
         padding: 20px; 
         background-color: #fff; 
         border-radius: 8px; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        /* Mantendo o margin-top para o corpo principal, e removendo margin-bottom */
-        margin: 30px auto 0 auto; 
+        /* Margem superior/inferior padronizada */
+        margin: 30px auto; 
     }
     .upload-title { text-align: center; }
     .upload-subtitle { text-align: center; color: #666; margin-bottom: 30px; }
@@ -49,7 +51,7 @@
     .file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
     .file-item.empty { justify-content: center; color: #999; border: none; }
     .file-remove { color: #999; cursor: pointer; }
-    .validation-container { text-align: center; margin-top: 30px; padding-bottom: 30px; /* Padding no final do container de upload */ }
+    .validation-container { text-align: center; margin-top: 30px; padding-bottom: 30px; }
     .validate-button { background-color: #4d77ff; color: white; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-size: 16px; }
     .validation-error { color: #e74c3c; display: none; margin-top: 10px; }
     .processing-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
@@ -81,7 +83,7 @@
 </head>
 <body>
   <div class="landing-page">
-    <!-- NAVBAR (MODELO SIMPLIFICADO SOLICITADO) -->
+    <!-- NAVBAR (MODELO SIMPLIFICADO EXATO) -->
     <div class="navbar">
       <div class="frame-16">
         <p class="the-posture-lab">
@@ -90,7 +92,7 @@
         <div class="frame-17">
           <a href="/" class="text-wrapper-26">Home</a>
           <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/configuracoes" class="text-wrapper-26">Configurações</a> <!-- Corrigido para /configuracoes -->
+          <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
         </div>
       </div>
     </div>
