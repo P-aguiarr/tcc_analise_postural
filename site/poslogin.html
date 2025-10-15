@@ -1,64 +1,113 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="/style.css" />
-    <title>Pós-Login - The Posture Lab</title>
-  </head>
-  <body>
-    <!-- NAVBAR -->
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
-        </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/" class="text-wrapper-26">Configurações</a>
-        </div>
-      </div>
-    </div>
+<!DOCTYPE html> 
+<html lang="pt-br">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/style.css" />
+  <!-- Font Awesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>Configurações - The Posture Lab</title>
+</head>
+<body>
+  <div class="landing-page">
+    <!-- NAVBAR -->
+    <div class="navbar">
+      <div class="frame-16">
+        <p class="the-posture-lab">
+          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+        </p>
+        <div class="frame-17">
+          <a href="/" class="text-wrapper-26">Home</a>
+          <a href="/login" class="text-wrapper-26">Login</a>
+          <a href="/" class="text-wrapper-26">Configurações</a>
+        </div>
+      </div>
+    </div>
 
     <!-- CONTEÚDO PRINCIPAL -->
-    <div class="dashboard" style="display: flex; justify-content: center; align-items: center; min-height: 70vh;">
-      <!-- Botão de Nova Análise com Group 119.png - Centralizado e maior -->
-      <button class="card" onclick="window.location.href='/nova-analise'" style="width: 300px; height: 300px;">
-        <img src="/img/Group%20119.png" alt="Nova Análise" class="card-image" style="width: 80%; height: auto; max-width: 200px;">
+    <div class="dashboard" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 70vh; padding: 20px;">
+      
+      <h1 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 40px; color: #374151;">
+        Bem-vindo(a), <span id="userName" style="color: #4f46e5;">Usuário</span>!
+      </h1>
+
+      <!-- Botão de Nova Análise com Group 119.png - Centralizado e MAIOR -->
+      <button 
+        class="card" 
+        onclick="window.location.href='/nova-analise'" 
+        style="
+          width: 350px; 
+          height: 350px; 
+          background-color: white; 
+          border: 1px solid #e5e7eb; 
+          border-radius: 12px; 
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          transition: transform 0.2s;
+        "
+        onmouseover="this.style.transform='scale(1.03)'"
+        onmouseout="this.style.transform='scale(1)'"
+      >
+        <img 
+          src="/img/Group%20119.png" 
+          alt="Nova Análise" 
+          class="card-image" 
+          style="width: 90%; height: auto; max-width: 250px; margin-bottom: 15px;"
+        >
+        <span style="font-size: 1.2rem; font-weight: 600; color: #374151;">
+          Iniciar Nova Análise
+        </span>
       </button>
+
+      <p style="margin-top: 30px; color: #6b7280; font-size: 1rem;">
+        Clique para começar a análise postural de um novo vídeo.
+      </p>
     </div>
 
     <!-- FOOTER -->
-    <div class="footer">
-      <div class="footer-links">
-        <a href="#">Careers</a> | 
-        <a href="#">Privacy Policy</a> | 
-        <a href="#">Terms & Conditions</a>
+    <div class="footer" style="padding: 1rem; text-align: center; border-top: 1px solid #e5e7eb; margin-top: 50px;">
+      <div class="footer-links" style="margin-bottom: 0.5rem; font-size: 0.9rem;">
+        <a href="#" style="margin: 0 5px; color: #4f46e5; text-decoration: none;">Careers</a> | 
+        <a href="#" style="margin: 0 5px; color: #4f46e5; text-decoration: none;">Privacy Policy</a> | 
+        <a href="#" style="margin: 0 5px; color: #4f46e5; text-decoration: none;">Terms & Conditions</a>
       </div>
-      <div class="copyright">
+      <div class="copyright" style="font-size: 0.8rem; color: #6b7280;">
         © 2025 Analíse Postural 
       </div>
     </div>
 
     <script>
-      // Verificar se o usuário está logado
+      // Função para inicializar a tela e verificar login
       document.addEventListener('DOMContentLoaded', function() {
         const user = localStorage.getItem('user');
+        
         if (!user) {
-          alert('Você precisa fazer login primeiro!');
+          // Se não houver usuário logado, redireciona
+          console.error('Usuário não logado. Redirecionando...');
           window.location.href = '/login';
           return;
         }
         
         try {
           const userData = JSON.parse(user);
+          const userNameElement = document.getElementById('userName');
+          if (userNameElement) {
+             // Exibe apenas o primeiro nome do usuário logado
+             const firstName = userData.name ? userData.name.split(' ')[0] : 'Usuário';
+             userNameElement.textContent = firstName;
+          }
           console.log('Usuário logado:', userData.email);
         } catch (e) {
-          console.error('Erro ao carregar dados do usuário:', e);
+          console.error('Erro ao parsear dados do usuário:', e);
+          localStorage.removeItem('user');
           window.location.href = '/login';
         }
       });
     </script>
-  </body>
+  </div>
+</body>
 </html>
