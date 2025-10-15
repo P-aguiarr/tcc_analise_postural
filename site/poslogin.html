@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <title>Configurações - The Posture Lab</title>
+  <title>Dashboard - The Posture Lab</title>
 </head>
 <body>
   <div class="landing-page">
@@ -22,9 +22,9 @@
       </div>
     </div>
 
-    <div class="dashboard" style="display: flex; justify-content: center; align-items: center; min-height: 70vh;">
-      <button class="card" onclick="window.location.href='/nova-analise'" style="width: 300px; height: 300px;">
-        <img src="/img/Group%20119.png" alt="Nova Análise" class="card-image" style="width: 80%; height: auto; max-width: 200px;">
+    <div class="dashboard"> 
+      <button class="card" onclick="window.location.href='/nova_analise'">
+        <img src="/img/Group%20119.png" alt="Nova Análise" class="card-image" />
       </button>
     </div>
 
@@ -38,6 +38,24 @@
         © 2025 Analíse Postural 
       </div>
     </footer>
-    <script src="/poslogin.js"></script>
+    <script>
+      // Verificar se o usuário está logado
+      document.addEventListener('DOMContentLoaded', function() {
+        const user = localStorage.getItem('user');
+        if (!user) {
+          alert('Você precisa fazer login primeiro!');
+          window.location.href = '/login';
+          return;
+        }
+        
+        try {
+          const userData = JSON.parse(user);
+          console.log('Usuário logado:', userData.email);
+        } catch (e) {
+          console.error('Erro ao carregar dados do usuário:', e);
+          window.location.href = '/login';
+        }
+      });
+    </script>
   </body>
 </html>
