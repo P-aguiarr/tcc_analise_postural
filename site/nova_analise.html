@@ -6,65 +6,59 @@
   <link rel="stylesheet" href="/style.css" />
   <!-- Font Awesome para ícones -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <title>Pós-Login - The Posture Lab</title>
-
-  <!-- ESTILOS INTERNOS (PARA GARANTIR O LAYOUT E TAMANHO DO ÍCONE) -->
+  <title>Nova Análise - The Posture Lab</title>
   <style>
-    /* Usado para garantir que o rodapé fique na parte inferior */
-    .landing-page {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; background-color: #f5f5f5; }
+    .navbar { background-color: #fff; padding: 15px 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .frame-16 { display: flex; justify-content: space-between; align-items: center; }
+    .the-posture-lab { font-size: 24px; font-weight: bold; }
+    .span { color: #4d77ff; }
+    .frame-17 { display: flex; gap: 20px; }
+    .text-wrapper-26 { text-decoration: none; color: #333; }
+    .upload-container { max-width: 1000px; margin: 30px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .upload-title { text-align: center; }
+    .upload-subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .upload-area { border: 2px dashed #ccc; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; }
+    .upload-button { background-color: #4d77ff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 15px; }
+    .file-input { display: none; }
+    .file-list { border-top: 1px solid #eee; margin-top: 20px; padding-top: 20px; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+    .file-item.empty { justify-content: center; color: #999; border: none; }
+    .file-remove { color: #999; cursor: pointer; }
+    .validation-container { text-align: center; margin-top: 30px; }
+    .validate-button { background-color: #4d77ff; color: white; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    .validation-error { color: #e74c3c; display: none; margin-top: 10px; }
+    .processing-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .processing-content { background: white; padding: 40px; border-radius: 10px; text-align: center; }
+    .spinner { width: 60px; height: 60px; border: 5px solid #f3f3f3; border-top: 5px solid #4d77ff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
-    /* Estilos para o Card de Nova Análise (tamanho maior) */
-    .card {
-        width: 350px; 
-        height: 350px; 
-        background-color: white; 
-        border: 1px solid #e5e7eb; 
-        border-radius: 12px; 
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        transition: transform 0.2s;
-        text-decoration: none; 
+    /* Estilos para o Rodapé */
+    .footer {
+      background-color: #fff;
+      border-top: 1px solid #eee;
+      padding: 15px 30px;
+      text-align: center;
+      margin-top: auto; /* Garante que ele fique no final da página */
     }
-
-    .card-image {
-        width: 90%; 
-        height: auto; 
-        max-width: 250px; 
-        margin-bottom: 15px;
+    .footer-links {
+      margin-bottom: 5px;
     }
-    
-    @media (max-width: 600px) {
-        .card {
-            width: 90%;
-            height: auto;
-            min-height: 250px;
-        }
-        .dashboard {
-            padding: 10px;
-        }
+    .footer-links a {
+      color: #4d77ff;
+      text-decoration: none;
+      margin: 0 10px;
     }
-    /* Estilo para o Rodapé */
-    .footer-container {
-        padding: 1rem; 
-        text-align: center; 
-        border-top: 1px solid #e5e7eb; 
-        margin-top: auto; 
-        background-color: white;
+    .copyright {
+      font-size: 14px;
+      color: #666;
     }
   </style>
 </head>
 <body>
   <div class="landing-page">
-    <!-- NAVBAR (PADRÃO CONFIGURAÇÕES.HTML) -->
+    <!-- NAVBAR (PADRÃO SOLICITADO) -->
     <div class="navbar">
       <div class="frame-16">
         <p class="the-posture-lab">
@@ -73,78 +67,129 @@
         <div class="frame-17">
           <a href="/" class="text-wrapper-26">Home</a>
           <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/configuracoes" class="text-wrapper-26">Configurações</a> 
+          <a href="/configuracoes" class="text-wrapper-26">Configurações</a> <!-- Corrigido para /configuracoes -->
+          <a href="/nova-analise" class="text-wrapper-26">Nova Análise</a>
+          <a href="/consulta" class="text-wrapper-26">Resultados</a>
         </div>
       </div>
     </div>
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div class="dashboard" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 40px 20px;">
-      
-      <h1 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 40px; color: #374151;">
-        Bem-vindo(a), <span id="userName" style="color: #4f46e5;">Usuário</span>!
-      </h1>
-
-      <!-- Botão de Nova Análise -->
-      <a 
-        class="card" 
-        href="/nova-analise" 
-        onmouseover="this.style.transform='scale(1.03)'"
-        onmouseout="this.style.transform='scale(1)'"
-      >
-        <img 
-          src="/img/Group%20119.png" 
-          alt="Nova Análise" 
-          class="card-image" 
-        >
-        <span style="font-size: 1.2rem; font-weight: 600; color: #374151;">
-          Iniciar Nova Análise
-        </span>
-      </a>
-
-      <p style="margin-top: 30px; color: #6b7280; font-size: 1rem;">
-        Clique para começar a análise postural de um novo vídeo.
-      </p>
-    </div>
-
-    <!-- RODAPÉ ADICIONADO -->
-    <div class="footer-container">
-      <div class="footer-links" style="margin-bottom: 0.5rem; font-size: 0.9rem;">
-        <a href="#" style="margin: 0 5px; color: #4f46e5; text-decoration: none;">Careers</a> | 
-        <a href="#" style="margin: 0 5px; color: #4f46e5; text-decoration: none;">Privacy Policy</a> | 
-        <a href="#" style="margin: 0 5px; color: #4f46e5; text-decoration: none;">Terms & Conditions</a>
+  <div class="upload-container">
+    <h1 class="upload-title">Upload para Análise Postural</h1>
+    <p class="upload-subtitle">Selecione os vídeos para a análise. O vídeo do plano coronal é obrigatório.</p>
+    <div class="upload-grid">
+      <div class="upload-area" id="frontalUploadArea">
+        <h2>Plano Coronal (Obrigatório)</h2>
+        <button class="upload-button">Selecionar Vídeo</button>
+        <input type="file" id="frontalFileInput" class="file-input" accept="video/*">
       </div>
-      <div class="copyright" style="font-size: 0.8rem; color: #6b7280;">
+      <div class="upload-area" id="transversalUploadArea">
+        <h2>Plano Transversal (Opcional)</h2>
+        <button class="upload-button">Selecionar Vídeo</button>
+        <input type="file" id="transversalFileInput" class="file-input" accept="video/*">
+      </div>
+    </div>
+    <div class="file-list" id="fileList">
+      <div class="file-item empty">Nenhum vídeo selecionado</div>
+    </div>
+    <div class="validation-container">
+      <button class="validate-button" onclick="processAnalysis()">Processar Análise</button>
+      <div id="validationError" class="validation-error">É necessário adicionar o vídeo do Plano Coronal.</div>
+    </div>
+  </div>
+  <div class="processing-overlay" id="processingOverlay">
+    <div class="processing-content">
+      <div class="spinner"></div>
+      <h2>Processando Análise...</h2>
+      <p>Isso pode levar alguns minutos. Por favor, não feche esta janela.</p>
+    </div>
+  </div>
+
+  <script>
+    const files = new Map();
+    const fileInputs = {
+        frontal: document.getElementById('frontalFileInput'),
+        transversal: document.getElementById('transversalFileInput')
+    };
+    const validationError = document.getElementById('validationError');
+    const processingOverlay = document.getElementById('processingOverlay');
+
+    document.getElementById('frontalUploadArea').addEventListener('click', () => fileInputs.frontal.click());
+    document.getElementById('transversalUploadArea').addEventListener('click', () => fileInputs.transversal.click());
+
+    fileInputs.frontal.addEventListener('change', () => handleFile(fileInputs.frontal.files[0], 'frontal'));
+    fileInputs.transversal.addEventListener('change', () => handleFile(fileInputs.transversal.files[0], 'transversal'));
+
+    function handleFile(file, type) {
+        if (file) files.set(type, file);
+        updateFileListUI();
+    }
+
+    function removeFile(type) {
+        files.delete(type);
+        fileInputs[type].value = '';
+        updateFileListUI();
+    }
+
+    function updateFileListUI() {
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        if (files.size === 0) {
+            fileList.innerHTML = '<div class="file-item empty">Nenhum vídeo selecionado</div>';
+            return;
+        }
+        files.forEach((file, type) => {
+            const typeLabel = type === 'frontal' ? 'Plano Coronal' : 'Plano Transversal';
+            fileList.innerHTML += `<div class="file-item"><span>${file.name} (${typeLabel})</span><div class="file-remove" onclick="removeFile('${type}')">✕</div></div>`;
+        });
+    }
+
+    async function processAnalysis() {
+        if (!files.has('frontal')) {
+            validationError.style.display = 'block';
+            return;
+        }
+        validationError.style.display = 'none';
+        processingOverlay.style.display = 'flex';
+
+        try {
+            const formData = new FormData();
+            if (files.has('frontal')) formData.append('frontalImage', files.get('frontal'));
+            if (files.has('transversal')) formData.append('transversalImage', files.get('transversal'));
+            
+            // ATENÇÃO: Verifique se este endpoint está correto para o seu ambiente
+            const endpoint = "https://tccanalisepostural-production.up.railway.app/api/process-analysis";
+            const response = await fetch(endpoint, { method: 'POST', body: formData });
+
+            const resultText = await response.text();
+            if (!response.ok) {
+                 throw new Error(`Erro de rede ${response.status}: ${resultText}`);
+            }
+            
+            const result = JSON.parse(resultText);
+            if (result.success && result.analysis_id) {
+                // Redireciona para a página de consulta com o ID da análise
+                window.location.assign(`/consulta?analysis_id=${result.analysis_id}`);
+            } else {
+                throw new Error(`A análise falhou: ${result.error || 'ID da análise não foi recebido.'}`);
+            }
+        } catch (error) {
+            console.error("Falha na análise:", error);
+            alert("Falha na análise: " + error.message);
+            processingOverlay.style.display = 'none';
+        }
+    }
+  </script>
+  <!-- RODAPÉ ADICIONADO -->
+    <div class="footer">
+      <div class="footer-links">
+        <a href="#">Careers</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms & Conditions</a>
+      </div>
+      <div class="copyright">
         © 2025 Analíse Postural 
       </div>
     </div>
-
-    <script>
-      // Função para inicializar a tela e verificar login
-      document.addEventListener('DOMContentLoaded', function() {
-        const user = localStorage.getItem('user');
-        
-        if (!user) {
-          console.error('Usuário não logado. Redirecionando...');
-          window.location.assign('/login');
-          return;
-        }
-        
-        try {
-          const userData = JSON.parse(user);
-          const userNameElement = document.getElementById('userName');
-          if (userNameElement) {
-             const firstName = userData.name ? userData.name.split(' ')[0] : 'Usuário';
-             userNameElement.textContent = firstName;
-          }
-          console.log('Usuário logado:', userData.email);
-        } catch (e) {
-          console.error('Erro ao parsear dados do usuário:', e);
-          localStorage.removeItem('user');
-          window.location.assign('/login');
-        }
-      });
-    </script>
   </div>
 </body>
 </html>
