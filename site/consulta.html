@@ -6,7 +6,6 @@
     <link rel="stylesheet" href="/style.css" />
     <title>Dashboard de Análise - The Posture Lab</title>
     
-    <!-- Dependências essenciais -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -34,7 +33,6 @@
     </style>
   </head>
   <body>
-    <!-- NAVBAR -->
     <div class="navbar">
       <div class="frame-16">
         <p class="the-posture-lab">
@@ -43,8 +41,7 @@
         <div class="frame-17">
           <a href="/" class="text-wrapper-26">Home</a>
           <a href="/login" class="text-wrapper-26">Login</a>
-          <a href="/" class="text-wrapper-26">Configurações</a>
-          <a href="/nova-analise" class="text-wrapper-26">Nova Análise</a>
+          <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
         </div>
       </div>
     </div>
@@ -58,7 +55,6 @@
         <section id="video-section" class="mb-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Vídeos da Análise</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="video-container">
-                 <!-- Placeholder inicial de carregamento de vídeo -->
                  <div class="bg-white p-4 rounded-xl shadow-sm md:col-span-2">
                     <div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
                         <p class="text-gray-500">Carregando vídeos...</p>
@@ -88,6 +84,34 @@
             <div id="distribuicoes-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
         </main>
     </div>
+
+    <footer class="footer">
+      <div class="frame">
+        <p class="the-posture-lab"><span class="text-wrapper">The Posture </span> <span class="span">Lab</span></p>
+        <p class="p">
+          Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
+          sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu bem-estar
+        </p>
+      </div>
+      <div class="frame-2">
+        <div class="frame-3">
+          <div class="text-wrapper-2">Overview</div>
+          <div class="frame-4">
+            <div class="text-wrapper-3">Saúde</div>
+            <div class="text-wrapper-4">Postura</div>
+            <div class="text-wrapper-4">IA</div>
+          </div>
+        </div>
+        <div class="frame-3">
+          <div class="text-wrapper-2">Explore</div>
+          <div class="frame-4">
+            <div class="text-wrapper-3">Termos &amp; Condições</div>
+            <div class="text-wrapper-4">Políticas de Privacidade</div>
+            <div class="text-wrapper-4">Cookies</div>
+          </div>
+        </div>
+      </div>
+    </footer>
 
     <script>
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
@@ -162,7 +186,6 @@
                             <div class="media-box">
                                 <video controls muted preload="auto" class="media-content rounded-lg" 
                                        onerror="handleVideoError(this, 'Landmarks')">
-                                    <!-- CRÍTICO: Usando tag <source> para forçar o tipo MIME video/webm -->
                                     <source src="${videoUrlLandmarks}" type="video/webm">
                                     Seu navegador não suporta vídeos WebM.
                                 </video>
