@@ -98,10 +98,10 @@
 }
 
 .landing-page .testimonial {
-  position: absolute;
+  position: relative; 
   width: 1340px;
   height: 573px;
-  top: 2309px;
+  top: 2309px; 
   left: 0;
 }
 
