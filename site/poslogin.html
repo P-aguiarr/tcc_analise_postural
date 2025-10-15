@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html> 
 <html lang="pt-br">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -29,51 +29,15 @@
     </div>
 
     <footer class="footer">
-      <div class="frame">
-        <p class="the-posture-lab"><span class="text-wrapper">The Posture </span> <span class="span">Lab</span></p>
-        <p class="p">
-          Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
-          sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu bem-estar
-        </p>
+      <div class="footer-links">
+        <a href="#">Careers</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms & Conditions</a>
       </div>
-      <div class="frame-2">
-        <div class="frame-3">
-          <div class="text-wrapper-2">Overview</div>
-          <div class="frame-4">
-            <div class="text-wrapper-3">Saúde</div>
-            <div class="text-wrapper-4">Postura</div>
-            <div class="text-wrapper-4">IA</div>
-          </div>
-        </div>
-        <div class="frame-3">
-          <div class="text-wrapper-2">Explore</div>
-          <div class="frame-4">
-            <div class="text-wrapper-3">Termos &amp; Condições</div>
-            <div class="text-wrapper-4">Políticas de Privacidade</div>
-            <div class="text-wrapper-4">Cookies</div>
-          </div>
-        </div>
+      <div class="copyright">
+        © 2025 Analíse Postural 
       </div>
     </footer>
-
-    <script>
-      // Verificar se o usuário está logado
-      document.addEventListener('DOMContentLoaded', function() {
-        const user = localStorage.getItem('user');
-        if (!user) {
-          alert('Você precisa fazer login primeiro!');
-          window.location.href = '/login';
-          return;
-        }
-        
-        try {
-          const userData = JSON.parse(user);
-          console.log('Usuário logado:', userData.email);
-        } catch (e) {
-          console.error('Erro ao carregar dados do usuário:', e);
-          window.location.href = '/login';
-        }
-      });
-    </script>
+    <script src="/poslogin.js"></script>
   </body>
 </html>
