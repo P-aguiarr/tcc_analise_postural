@@ -4,61 +4,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="utf-8" />
   <title>Nova Análise - The Posture Lab</title>
+  
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/upload.css" /> 
 </head>
 <body>
-  <div class="navbar">
-    <div class="frame-16">
-      <p class="the-posture-lab">The Posture <span class="span">Lab</span></p>
-      <div class="frame-17">
-        <a href="/" class="text-wrapper-26">Home</a>
-        <a href="/login" class="text-wrapper-26">Login</a>
-        <a href="/configuracoes" class="text-wrapper-26">Configurações</a>
+  <div class="landing-page">
+    <header>
+      <div class="navbar">
+        <div class="frame-16">
+          <p class="the-posture-lab">The Posture <span class="span">Lab</span></p>
+          <div class="frame-17">
+            <a href="/" class="text-wrapper-26">Home</a>
+            <a href="/login.html" class="text-wrapper-26">Login</a>
+            <a href="/configuracoes.html" class="text-wrapper-26">Configurações</a>
+          </div>
+        </div>
+      </div>
+    </header>
+  
+    <div class="upload-container">
+      <h1 class="upload-title">Upload para Análise Postural</h1>
+      <p class="upload-subtitle">Selecione os vídeos para a análise. O vídeo do plano coronal é obrigatório.</p>
+      <div class="upload-grid">
+        <div class="upload-area" id="frontalUploadArea">
+          <h2>Plano Coronal (Obrigatório)</h2>
+          <button class="upload-button">Selecionar Vídeo</button>
+          <input type="file" id="frontalFileInput" class="file-input" accept="video/*">
+        </div>
+        <div class="upload-area" id="transversalUploadArea">
+          <h2>Plano Transversal (Opcional)</h2>
+          <button class="upload-button">Selecionar Vídeo</button>
+          <input type="file" id="transversalFileInput" class="file-input" accept="video/*">
+        </div>
+      </div>
+      <div class="file-list" id="fileList">
+        <div class="file-item empty">Nenhum vídeo selecionado</div>
+      </div>
+      <div class="validation-container">
+        <button class="validate-button" onclick="processAnalysis()">Processar Análise</button>
+        <div id="validationError" class="validation-error">É necessário adicionar o vídeo do Plano Coronal.</div>
       </div>
     </div>
-  </div>
-  <div class="upload-container">
-    <h1 class="upload-title">Upload para Análise Postural</h1>
-    <p class="upload-subtitle">Selecione os vídeos para a análise. O vídeo do plano coronal é obrigatório.</p>
-    <div class="upload-grid">
-      <div class="upload-area" id="frontalUploadArea">
-        <h2>Plano Coronal (Obrigatório)</h2>
-        <button class="upload-button">Selecionar Vídeo</button>
-        <input type="file" id="frontalFileInput" class="file-input" accept="video/*">
-      </div>
-      <div class="upload-area" id="transversalUploadArea">
-        <h2>Plano Transversal (Opcional)</h2>
-        <button class="upload-button">Selecionar Vídeo</button>
-        <input type="file" id="transversalFileInput" class="file-input" accept="video/*">
+    
+    <div class="processing-overlay" id="processingOverlay">
+      <div class="processing-content">
+        <div class="spinner"></div>
+        <h2>Processando Análise...</h2>
+        <p>Isso pode levar alguns minutos. Por favor, não feche esta janela.</p>
       </div>
     </div>
-    <div class="file-list" id="fileList">
-      <div class="file-item empty">Nenhum vídeo selecionado</div>
-    </div>
-    <div class="validation-container">
-      <button class="validate-button" onclick="processAnalysis()">Processar Análise</button>
-      <div id="validationError" class="validation-error">É necessário adicionar o vídeo do Plano Coronal.</div>
-    </div>
-  </div>
-  <div class="processing-overlay" id="processingOverlay">
-    <div class="processing-content">
-      <div class="spinner"></div>
-      <h2>Processando Análise...</h2>
-      <p>Isso pode levar alguns minutos. Por favor, não feche esta janela.</p>
-    </div>
-  </div>
 
-  <footer class="footer">
-    <div class="footer-links">
-      <a href="#">Careers</a> | 
-      <a href="#">Privacy Policy</a> | 
-      <a href="#">Terms & Conditions</a>
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="#">Careers</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms & Conditions</a>
+      </div>
+      <div class="copyright">
+        © 2025 Analíse Postural 
+      </div>
+    </footer>
     </div>
-    <div class="copyright">
-      © 2025 Analíse Postural 
-    </div>
-  </footer>
+  
   <script src="/upload.js"></script>
 </body>
 </html>
