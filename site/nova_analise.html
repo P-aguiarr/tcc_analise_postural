@@ -17,7 +17,7 @@
         background-color: #fff; 
         padding: 15px 30px; 
         box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-        /* Mantendo o sticky para que a navbar não seja sobreposta */
+        /* CRÍTICO: Fixar a navbar no topo */
         position: sticky; 
         top: 0; 
         z-index: 100;
@@ -30,14 +30,14 @@
     .frame-17 { display: flex; gap: 20px; }
     .text-wrapper-26 { text-decoration: none; color: #333; }
     
-    /* CORREÇÃO 1: Garante que o conteúdo comece abaixo da navbar */
+    /* CORREÇÃO 1: Garante que o upload-container comece logo abaixo e centralizado */
     .upload-container { 
         max-width: 1000px; 
         padding: 20px; 
         background-color: #fff; 
         border-radius: 8px; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        /* Margin-top para empurrar abaixo da navbar e centralizar */
+        /* Margem automática para centralizar. Rodapé colado na correção do footer. */
         margin: 30px auto; 
     }
     .upload-title { text-align: center; }
@@ -58,13 +58,13 @@
     .spinner { width: 60px; height: 60px; border: 5px solid #f3f3f3; border-top: 5px solid #4d77ff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
-    /* CORREÇÃO 2: Rodapé segue o conteúdo imediatamente, sem margin-top: auto */
+    /* CORREÇÃO 2: Rodapé colado no conteúdo, sem ocupar espaço da tela */
     .footer {
       background-color: #fff;
       border-top: 1px solid #eee;
       padding: 15px 30px;
       text-align: center;
-      margin-top: 30px; /* Adiciona uma margem entre o upload-container e o footer */
+      margin-top: 30px; /* Margem entre o upload-container e o footer */
     }
     .footer-links {
       margin-bottom: 5px;
