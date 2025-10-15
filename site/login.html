@@ -6,13 +6,10 @@
   <link rel="stylesheet" href="/style.css" />
   <title>Login - The Posture Lab</title>
 
-  <!-- Script da Google Identity Services para SSO (CRÍTICO: mantido no head) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<!-- A função checkUserAndRedirect é mantida para verificar login existente -->
 <body onload="checkUserAndRedirect()"> 
   <div class="landing-page">
-    <!-- NAVBAR -->
     <div class="navbar">
       <div class="frame-16">
         <p class="the-posture-lab">
@@ -26,24 +23,19 @@
       </div>
     </div>
 
-    <!-- CONTEÚDO LOGIN -->
     <div class="login-section">
       <p class="central-login">
         Entre na plataforma e descubra um mundo de possibilidades!
       </p>
 
-      <!-- Container para o botão do Google (Com lógica de imagem customizada) -->
       <div class="google-login-container">
         
-        <!-- 1. IMAGEM CUSTOMIZADA QUE O USUÁRIO CLICA -->
         <div id="customGoogleButton" 
              style="cursor: pointer; display: inline-block;" 
              onclick="triggerGoogleSignIn()">
           <img src="/img/google.png" alt="Login com Google" class="google-login-img" />
         </div>
         
-        <!-- 2. CONFIGURAÇÃO GSI (O BOTÃO NATIVO É ESCONDIDO, APENAS A CONFIGURAÇÃO É MANTIDA) -->
-        <!-- O GSI usa essa div apenas para ler os data-atributos e configurar o fluxo. -->
         <div id="g_id_onload"
              data-client_id="584796181991-rs0d2u96o5q6e4jcgr84itrks0d7297r.apps.googleusercontent.com"
              data-context="signin"
@@ -55,16 +47,42 @@
 
       </div>
 
-      <!-- Área de Feedback -->
       <div id="loadingSpinner" class="loading-spinner" style="display: none;"></div>
       <div id="errorDetails" class="error-message" style="display: none;"></div>
       <div id="successMessage" class="success-message" style="display: none;">Login bem-sucedido! Redirecionando...</div>
 
       <div class="debug-area">
-        <!-- Botão de teste removido -->
-      </div>
+        </div>
 
     </div>
+    
+    <footer class="footer">
+      <div class="frame">
+        <p class="the-posture-lab"><span class="text-wrapper">The Posture </span> <span class="span">Lab</span></p>
+        <p class="p">
+          Descubra a saúde da sua postura com nossa tecnologia de análise avançada. Usando seu celular, nosso
+          sistema identifica desvios e entrega um relatório visual e preciso, feito para você otimizar seu bem-estar
+        </p>
+      </div>
+      <div class="frame-2">
+        <div class="frame-3">
+          <div class="text-wrapper-2">Overview</div>
+          <div class="frame-4">
+            <div class="text-wrapper-3">Saúde</div>
+            <div class="text-wrapper-4">Postura</div>
+            <div class="text-wrapper-4">IA</div>
+          </div>
+        </div>
+        <div class="frame-3">
+          <div class="text-wrapper-2">Explore</div>
+          <div class="frame-4">
+            <div class="text-wrapper-3">Termos &amp; Condições</div>
+            <div class="text-wrapper-4">Políticas de Privacidade</div>
+            <div class="text-wrapper-4">Cookies</div>
+          </div>
+        </div>
+      </div>
+    </footer>
   </div>
 
   <script>
