@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <title>Dashboard Multi-Plano - The Posture Lab</title>
     
-    <!-- Dependências teste -->
+    <!-- Dependências -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -14,13 +14,15 @@
         :root { --primary: #4f46e5; }
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .chart-container { position: relative; height: 350px; width: 100%; }
+        .tab-button { transition: all 0.2s ease-in-out; }
         .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
-        .media-box { position: relative; width: 100%; padding-top: 56.25%; }
-        .media-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
+        .tab-pane.hidden { display: none; }
+        .media-box { position: relative; width: 100%; padding-top: 56.25%; background-color: #e5e7eb; border-radius: 0.5rem; }
+        .media-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 0.5rem;}
     </style>
 </head>
 <body>
-    <!-- NAVBAR (sem alterações) -->
+    <!-- NAVBAR -->
      <div class="navbar" style="background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
       <div class="frame-16" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem;">
         <p class="the-posture-lab" style="font-size: 1.5rem; font-weight: bold;">
@@ -50,112 +52,121 @@
             </div>
         </section>
 
-        <main id="charts-section" class="hidden">
-             <div class="bg-white rounded-xl shadow-sm p-2 mb-8">
-                <h2 class="text-2xl font-bold text-gray-800 p-4">Resultados da Análise Biomecânica</h2>
-            </div>
-            <div id="charts-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
-        </main>
-        
         <div id="loading-indicator" class="text-center p-10">
             <h2 class="text-xl font-semibold text-gray-700">Carregando e processando dados...</h2>
         </div>
+
+        <main id="charts-section" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm p-2 mb-8">
+                <nav id="tabs" class="flex flex-wrap items-center justify-start space-x-2 sm:space-x-4">
+                    <button data-tab="angulos" class="tab-button active font-semibold py-3 px-4 border-b-2 border-transparent">Ângulos Articulares</button>
+                    <button data-tab="simetria" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Simetria Corporal</button>
+                    <button data-tab="temporal" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Análise Temporal</button>
+                </nav>
+            </div>
+            
+            <div id="tab-content">
+                <div id="angulos-content" class="tab-pane grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
+                <div id="simetria-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
+                <div id="temporal-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
+            </div>
+        </main>
     </div>
 
     <script>
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
 
-        // *** 1. ESTRUTURA DE CONFIGURAÇÃO CENTRALIZADA PARA GRÁFICOS ***
+        // CONFIGURAÇÃO DOS GRÁFICOS COM CATEGORIAS RESTAURADAS
         const CHART_CONFIG = {
             'Angulos_Ombros': { 
-                title: 'Ângulos dos Ombros (Flexão/Extensão)',
+                title: 'Ângulos dos Ombros (Flexão/Extensão)', category: 'angulos',
                 yLabel: 'Ângulo (°)', yMin: 0, yMax: 180, xLabel: 'Tempo (s)',
-                datasets: [
-                    { key: 'angulo_ombro_esquerdo', label: 'Esquerdo' },
-                    { key: 'angulo_ombro_direito', label: 'Direito' }
-                ]
+                datasets: [ { key: 'angulo_ombro_esquerdo', label: 'Esquerdo' }, { key: 'angulo_ombro_direito', label: 'Direito' } ]
             },
             'Angulos_Quadris': { 
-                title: 'Ângulos dos Quadris (Flexão/Extensão)',
+                title: 'Ângulos dos Quadris (Flexão/Extensão)', category: 'angulos',
                 yLabel: 'Ângulo (°)', yMin: -15, yMax: 120, xLabel: 'Tempo (s)',
-                datasets: [
-                    { key: 'angulo_quadril_esquerdo', label: 'Esquerdo' },
-                    { key: 'angulo_quadril_direito', label: 'Direito' }
-                ]
+                datasets: [ { key: 'angulo_quadril_esquerdo', label: 'Esquerdo' }, { key: 'angulo_quadril_direito', label: 'Direito' } ]
             },
             'Angulos_Joelhos': { 
-                title: 'Ângulos dos Joelhos (Flexão/Extensão)',
+                title: 'Ângulos dos Joelhos (Flexão/Extensão)', category: 'angulos',
                 yLabel: 'Ângulo (°)', yMin: 0, yMax: 140, xLabel: 'Tempo (s)',
-                datasets: [
-                    { key: 'angulo_joelho_esquerdo', label: 'Esquerdo' },
-                    { key: 'angulo_joelho_direito', label: 'Direito' }
-                ]
+                datasets: [ { key: 'angulo_joelho_esquerdo', label: 'Esquerdo' }, { key: 'angulo_joelho_direito', label: 'Direito' } ]
             },
             'Angulo_Coluna': {
-                title: 'Ângulo da Coluna (Inclinação)',
+                title: 'Ângulo da Coluna (Inclinação)', category: 'angulos',
                 yLabel: 'Ângulo (°)', yMin: 0, yMax: 80, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'angulo_coluna', label: 'Coluna' }]
             },
             'Assimetria_Ombros': {
-                title: 'Assimetria Vertical dos Ombros',
+                title: 'Assimetria Vertical dos Ombros', category: 'simetria',
                 yLabel: 'Diferença de Altura (Proporcional)', yMin: 0, yMax: 0.2, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'assimetria_ombros_vertical', label: 'Diferença' }]
             },
             'Oscilacao_Vertical_Quadril': {
-                title: 'Oscilação Vertical do Quadril',
+                title: 'Oscilação Vertical do Quadril', category: 'temporal',
                 yLabel: 'Posição Vertical (Proporcional)', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'oscilacao_vertical_quadril', label: 'Posição Y'}]
             },
             'Oscilacao_Horizontal_Quadril': {
-                title: 'Oscilação Horizontal do Quadril',
+                title: 'Oscilação Horizontal do Quadril', category: 'temporal',
                 yLabel: 'Posição Horizontal (Proporcional)', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'oscilacao_horizontal_quadril', label: 'Posição X'}]
             }
         };
 
-        // *** 2. LÓGICA ATUALIZADA PARA MÚLTIPLOS VÍDEOS ***
         function populateVideosUI(analysisData) {
             const container = document.getElementById("video-container");
-            container.innerHTML = ''; // Limpa o placeholder
+            container.innerHTML = '';
 
-            const createVideoCard = (plane, data) => {
+            const createVideoCard = (plane, data, type) => {
                 if (!data) return '';
-                const originalUrl = `${backendBaseUrl}/api/video/${data.video_original}`;
-                const processedUrl = data.video_processed ? `${backendBaseUrl}/api/video/${data.video_processed}` : null;
+                const title = `Plano ${plane} (${type})`;
+                const url = type === 'Original' ? data.video_original : data.video_processed;
                 const confidence = (data.confidence_score * 100).toFixed(1);
-
-                let cardHTML = `
-                    <div class="bg-white p-4 rounded-xl shadow-sm">
-                        <h3 class="font-bold mb-2">Plano ${plane} (Original)</h3>
-                        <div class="media-box"><video controls muted class="media-content rounded-lg" src="${originalUrl}"></video></div>
-                    </div>
+                
+                if (!url) {
+                    return `<div class="bg-white p-4 rounded-xl shadow-sm">
+                                <h3 class="font-bold mb-2">${title}</h3>
+                                <div class="media-box flex items-center justify-center bg-red-100 text-red-700">Indisponível</div>
+                            </div>`;
+                }
+                
+                const videoUrl = `${backendBaseUrl}/api/video/${url}`;
+                
+                return `
                     <div class="bg-white p-4 rounded-xl shadow-sm">
                         <div class="flex justify-between items-center mb-2">
-                           <h3 class="font-bold">Plano ${plane} (Landmarks)</h3>
-                           <span class="text-xs font-semibold px-2 py-1 rounded-full ${confidence > 70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">Confiança: ${confidence}%</span>
+                           <h3 class="font-bold">${title}</h3>
+                           ${type === 'Landmarks' ? `<span class="text-xs font-semibold px-2 py-1 rounded-full ${confidence > 70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">Confiança: ${confidence}%</span>` : ''}
                         </div>
-                        <div class="media-box">`;
-                
-                if (processedUrl) {
-                    cardHTML += `<video controls muted class="media-content rounded-lg"><source src="${processedUrl}" type="video/webm"></video>`;
-                } else {
-                    cardHTML += `<div class="media-content rounded-lg flex items-center justify-center bg-red-100 text-red-700">Vídeo de landmarks indisponível</div>`;
-                }
-                cardHTML += '</div></div>';
-                return cardHTML;
+                        <div class="media-box">
+                            <video controls muted class="media-content"><source src="${videoUrl}" type="${url.endsWith('.webm') ? 'video/webm' : 'video/mp4'}"></video>
+                        </div>
+                    </div>`;
             };
-
-            container.innerHTML += createVideoCard('Coronal', analysisData.coronal);
-            container.innerHTML += createVideoCard('Transversal', analysisData.transversal);
+            
+            let videoHTML = '';
+            if (analysisData.coronal) {
+                videoHTML += createVideoCard('Coronal', analysisData.coronal, 'Original');
+                videoHTML += createVideoCard('Coronal', analysisData.coronal, 'Landmarks');
+            }
+            if (analysisData.transversal) {
+                videoHTML += createVideoCard('Transversal', analysisData.transversal, 'Original');
+                videoHTML += createVideoCard('Transversal', analysisData.transversal, 'Landmarks');
+            }
+            container.innerHTML = videoHTML;
         }
 
-        // *** 3. LÓGICA DE PLOTAGEM ATUALIZADA COM MATRIZ E PADRONIZAÇÃO ***
         function setupAllCharts(finalChartsData) {
-            const grid = document.getElementById('charts-grid');
-            grid.innerHTML = ''; // Limpa para nova plotagem
+            // Limpa containers de gráficos
+            Object.values(CHART_CONFIG).forEach(config => {
+                const container = document.getElementById(`${config.category}-content`);
+                if (container) container.innerHTML = '';
+            });
 
             if (!finalChartsData || Object.keys(finalChartsData).length === 0) {
-                 grid.innerHTML = `<p class="text-red-500 lg:col-span-2">Não foi possível gerar os gráficos. Verifique os dados da análise.</p>`;
+                 document.getElementById('angulos-content').innerHTML = `<p class="text-red-500 lg:col-span-2">Não foi possível gerar os gráficos.</p>`;
                  return;
             }
 
@@ -165,7 +176,9 @@
 
                 if (!chartConfig || !chartData) continue;
                 
-                // Cria o card do gráfico
+                const container = document.getElementById(`${chartConfig.category}-content`);
+                if (!container) continue;
+
                 const card = document.createElement('div');
                 card.className = 'bg-white p-6 rounded-xl shadow-sm';
                 card.innerHTML = `
@@ -176,41 +189,30 @@
                         </span>
                     </div>
                     <div class="chart-container"><canvas id="chart-${metricKey}"></canvas></div>`;
-                grid.appendChild(card);
+                container.appendChild(card);
                 
-                // Prepara os dados para o Chart.js
                 const timestamps = chartData.data.map(d => (d.tempo_segundos || 0).toFixed(1));
                 const datasets = chartConfig.datasets.map(dsConfig => ({
                     label: dsConfig.label,
                     data: chartData.data.map(d => d[dsConfig.key]),
-                    tension: 0.1,
-                    borderWidth: 2,
-                    pointRadius: 0
+                    tension: 0.1, borderWidth: 2, pointRadius: 0
                 }));
 
-                // Cria o gráfico usando a configuração padronizada
                 new Chart(`chart-${metricKey}`, {
                     type: 'line',
                     data: { labels: timestamps, datasets: datasets },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                        responsive: true, maintainAspectRatio: false,
                         scales: {
-                            y: {
-                                title: { display: true, text: chartConfig.yLabel },
-                                min: chartConfig.yMin,
-                                max: chartConfig.yMax
-                            },
-                            x: {
-                                title: { display: true, text: chartConfig.xLabel }
-                            }
+                            y: { title: { display: true, text: chartConfig.yLabel }, min: chartConfig.yMin, max: chartConfig.yMax },
+                            x: { title: { display: true, text: chartConfig.xLabel } }
                         }
                     }
                 });
             }
         }
 
-        // --- LÓGICA DE CARREGAMENTO INICIAL ---
+        // LÓGICA DE CARREGAMENTO INICIAL E ABAS
         window.addEventListener('load', async () => {
             const loadingIndicator = document.getElementById('loading-indicator');
             const chartsSection = document.getElementById('charts-section');
@@ -225,6 +227,7 @@
 
             try {
                 const response = await fetch(`${backendBaseUrl}/api/analysis/${analysisId}`);
+                if (!response.ok) throw new Error(`Erro de rede: ${response.status}`);
                 const result = await response.json();
 
                 if (!result.success || !result.data) throw new Error(result.error || 'Estrutura de dados inválida.');
@@ -236,16 +239,24 @@
                 loadingIndicator.style.display = 'none';
                 chartsSection.classList.remove('hidden');
                 
-                // Ativa a renderização de ícones se houver
-                if (typeof lucide !== 'undefined' && lucide.createIcons) {
-                    lucide.createIcons();
-                }
+                // Adiciona listeners para as abas
+                document.querySelectorAll('.tab-button').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+                        document.getElementById(`${tab.dataset.tab}-content`).classList.remove('hidden');
+                    });
+                });
+                
+                if (typeof lucide !== 'undefined') lucide.createIcons();
 
             } catch (error) {
                 console.error("Falha ao carregar a análise:", error);
-                loadingIndicator.innerHTML = `<h2 class="text-xl font-semibold text-red-500">Falha ao carregar dados da análise: ${error.message}</h2>`;
+                loadingIndicator.innerHTML = `<h2 class="text-xl font-semibold text-red-500">Falha ao carregar dados: ${error.message}</h2>`;
             }
         });
     </script>
 </body>
 </html>
+
