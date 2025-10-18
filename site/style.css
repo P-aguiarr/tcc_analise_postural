@@ -901,17 +901,18 @@
 /* ---------------------------------------------------------------------- */
 /* -- DEFINIÇÃO CONSOLIDADA E CORRIGIDA PARA CENTRALIZAÇÃO DA NAVBAR -- */
 /* ---------------------------------------------------------------------- */
+
 .navbar {
-  /* Ocupa a largura total da tela (o pai do frame-16) */
+  /* CRÍTICO: Ocupa a largura total da tela, garantindo que o frame-16 tenha espaço para centralizar */
   width: 100%; 
-  padding: 20px 0;
+  padding: 20px 0; /* Padding vertical (em cima e embaixo) */
   background-color: #ffffff;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  /* Use fixed para garantir que fique sempre no topo */
+  /* Use fixed para que fique no topo e não scroll */
   position: fixed; 
   top: 0;
   z-index: 1000;
-  /* Margens zeradas para não haver deslocamento */
+  /* Garante que não haja margem lateral ou superior do navegador */
   margin: 0;
   left: 0;
   right: 0;
@@ -919,19 +920,18 @@
 
 .frame-16 {
   /* CRÍTICO: Estas 3 propriedades centralizam o CONTEÚDO DENTRO da barra */
-  max-width: 1200px;
-  width: 100%; /* Garante que ele ocupe 100% do espaço até o limite de 1200px */
-  margin: 0 auto; /* CRÍTICO: Centraliza o bloco frame-16 dentro do navbar */
+  max-width: 1200px; /* Limite máximo do conteúdo */
+  width: 100%;       /* Ocupa 100% da largura do .navbar até o limite de 1200px */
+  margin: 0 auto;    /* CRÍTICO: Centraliza o bloco frame-16 dentro do navbar */
   
   /* Estas 3 propriedades organizam o conteúdo interno (Logo e Links) */
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* CRÍTICO: Empurra a logo para a esquerda e os links para a direita */
   align-items: center;
   
   /* Garante um respiro nas laterais em telas pequenas */
-  padding: 0 20px;
+  padding: 0 20px; 
 }
-/* ---------------------------------------------------------------------- */
 
 
 .text-wrapper {
