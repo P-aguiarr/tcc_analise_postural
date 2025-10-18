@@ -157,20 +157,20 @@
                 datasets: [{ key: 'angulo_coluna', label: 'Coluna', borderColor: '#8b5cf6' }]
             },
             
-            // SIMETRIA CORPORAL
+            // SIMETRIA CORPORAL - LIMITES CORRIGIDOS
             'Assimetria_Ombros': {
                 title: 'Assimetria Vertical dos Ombros', category: 'simetria',
-                yLabel: 'Diferença de Altura (Proporcional)', yMin: 0, yMax: 0.2, xLabel: 'Tempo (s)',
+                yLabel: 'Diferença de Altura (Proporcional)', yMin: 0, yMax: null, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'assimetria_ombros_vertical', label: 'Diferença', borderColor: '#f59e0b' }]
             },
             'Assimetria_Quadris': {
                 title: 'Assimetria Vertical dos Quadris', category: 'simetria',
-                yLabel: 'Diferença de Altura (Proporcional)', yMin: 0, yMax: 0.2, xLabel: 'Tempo (s)',
+                yLabel: 'Diferença de Altura (Proporcional)', yMin: 0, yMax: null, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'assimetria_quadris_vertical', label: 'Diferença', borderColor: '#f59e0b' }]
             },
             'Comparacao_Lados': {
                 title: 'Comparação Lado Esquerdo vs Direito', category: 'simetria',
-                yLabel: 'Valor Normalizado', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                yLabel: 'Valor Normalizado', yMin: 0, yMax: null, xLabel: 'Tempo (s)',
                 datasets: [ 
                     { key: 'lado_esquerdo', label: 'Lado Esquerdo', borderColor: '#3b82f6' },
                     { key: 'lado_direito', label: 'Lado Direito', borderColor: '#ef4444' }
@@ -178,27 +178,27 @@
             },
             'Distribuicao_Carga': {
                 title: 'Distribuição de Carga', category: 'simetria',
-                yLabel: 'Proporção de Carga', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                yLabel: 'Proporção de Carga', yMin: 0, yMax: null, xLabel: 'Tempo (s)',
                 datasets: [ 
                     { key: 'carga_esquerda', label: 'Membro Esquerdo', borderColor: '#3b82f6' },
                     { key: 'carga_direita', label: 'Membro Direito', borderColor: '#ef4444' }
                 ]
             },
             
-            // ANÁLISE TEMPORAL
+            // ANÁLISE TEMPORAL - LIMITES CORRIGIDOS
             'Oscilacao_Vertical_Quadril': {
                 title: 'Oscilação Vertical do Quadril', category: 'temporal',
-                yLabel: 'Posição Vertical (Proporcional)', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                yLabel: 'Posição Vertical (Proporcional)', yMin: null, yMax: null, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'oscilacao_vertical_quadril', label: 'Posição Y', borderColor: '#10b981' }]
             },
             'Oscilacao_Horizontal_Quadril': {
                 title: 'Oscilação Horizontal do Quadril', category: 'temporal',
-                yLabel: 'Posição Horizontal (Proporcional)', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                yLabel: 'Posição Horizontal (Proporcional)', yMin: null, yMax: null, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'oscilacao_horizontal_quadril', label: 'Posição X', borderColor: '#10b981' }]
             },
             'Padrao_Marcha': {
                 title: 'Padrão de Marcha - Ciclo de Passada', category: 'temporal',
-                yLabel: 'Fase do Ciclo', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                yLabel: 'Fase do Ciclo', yMin: 0, yMax: null, xLabel: 'Tempo (s)',
                 datasets: [ 
                     { key: 'fase_marcha_esquerda', label: 'Membro Esquerdo', borderColor: '#3b82f6' },
                     { key: 'fase_marcha_direita', label: 'Membro Direito', borderColor: '#ef4444' }
@@ -339,7 +339,7 @@
                                 chartData.data.some(frame => {
                                     const firstKey = chartConfig.datasets[0].key;
                                     const value = frame[firstKey];
-                                    return value !== undefined && value !== null && !isNaN(value) && value > 0;
+                                    return value !== undefined && value !== null && !isNaN(value);
                                 });
             
             if (!hasValidData) {
@@ -379,7 +379,7 @@
             const datasets = chartConfig.datasets.map(dsConfig => {
                 const dataValues = chartData.data.map(d => {
                     const value = d[dsConfig.key];
-                    // Garante que o valor seja numérico e dentro de limites razoáveis
+                    // Garante que o valor seja numérico
                     return (value !== undefined && value !== null && !isNaN(value)) ? Number(value) : 0;
                 });
                 
@@ -394,19 +394,15 @@
                 };
             });
 
-            // Configuração dinâmica dos limites do eixo Y
-            const allValues = datasets.flatMap(ds => ds.data).filter(val => val > 0);
-            const maxValue = allValues.length > 0 ? Math.max(...allValues) : 180;
-            const minValue = allValues.length > 0 ? Math.min(...allValues) : 0;
+            // CONFIGURAÇÃO DINÂMICA CORRIGIDA DOS LIMITES
+            const allValues = datasets.flatMap(ds => ds.data).filter(val => !isNaN(val));
             
-            const chartOptions = {
+            let chartOptions = {
                 responsive: true, 
                 maintainAspectRatio: false,
                 scales: {
                     y: { 
-                        title: { display: true, text: chartConfig.yLabel }, 
-                        min: Math.max(0, minValue - 10),
-                        max: Math.min(180, maxValue + 10)
+                        title: { display: true, text: chartConfig.yLabel }
                     },
                     x: { 
                         title: { display: true, text: chartConfig.xLabel } 
@@ -420,15 +416,44 @@
                 }
             };
 
+            // Aplica limites apenas se houver dados válidos
+            if (allValues.length > 0) {
+                const maxValue = Math.max(...allValues);
+                const minValue = Math.min(...allValues);
+                
+                // Para ângulos, mantemos limites fixos 0-180
+                if (chartConfig.category === 'angulos') {
+                    chartOptions.scales.y.min = 0;
+                    chartOptions.scales.y.max = 180;
+                } 
+                // Para simetria e temporal, usa limites dinâmicos com margem
+                else {
+                    const range = maxValue - minValue;
+                    const margin = range * 0.1; // 10% de margem
+                    
+                    chartOptions.scales.y.min = minValue - margin;
+                    chartOptions.scales.y.max = maxValue + margin;
+                    
+                    // Garante que valores não fiquem negativos para métricas de simetria
+                    if (chartConfig.category === 'simetria' && chartOptions.scales.y.min < 0) {
+                        chartOptions.scales.y.min = 0;
+                    }
+                }
+            }
+
             // Aguarda o DOM estar pronto antes de criar o gráfico
             setTimeout(() => {
                 const ctx = document.getElementById(`chart-${metricKey}`);
                 if (ctx) {
-                    new Chart(ctx, {
-                        type: 'line', 
-                        data: { labels: timestamps, datasets: datasets },
-                        options: chartOptions
-                    });
+                    try {
+                        new Chart(ctx, {
+                            type: 'line', 
+                            data: { labels: timestamps, datasets: datasets },
+                            options: chartOptions
+                        });
+                    } catch (error) {
+                        console.error(`Erro ao criar gráfico ${metricKey}:`, error);
+                    }
                 }
             }, 100);
         }
@@ -458,32 +483,36 @@
                 }
 
                 setTimeout(() => {
-                    new Chart('chart-distribuicao-angulos', {
-                        type: 'bar',
-                        data: {
-                            labels: binCenters.map(bin => bin.toFixed(1) + '°'),
-                            datasets: [{
-                                label: 'Frequência',
-                                data: data.histogram,
-                                backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                                borderColor: 'rgba(59, 130, 246, 1)',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    title: { display: true, text: 'Frequência' },
-                                    beginAtZero: true
-                                },
-                                x: {
-                                    title: { display: true, text: 'Ângulo (°)' }
+                    try {
+                        new Chart('chart-distribuicao-angulos', {
+                            type: 'bar',
+                            data: {
+                                labels: binCenters.map(bin => bin.toFixed(1) + '°'),
+                                datasets: [{
+                                    label: 'Frequência',
+                                    data: data.histogram,
+                                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                                    borderColor: 'rgba(59, 130, 246, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        title: { display: true, text: 'Frequência' },
+                                        beginAtZero: true
+                                    },
+                                    x: {
+                                        title: { display: true, text: 'Ângulo (°)' }
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    } catch (error) {
+                        console.error('Erro ao criar histograma de ângulos:', error);
+                    }
                 }, 100);
             }
 
@@ -508,32 +537,36 @@
                 }
 
                 setTimeout(() => {
-                    new Chart('chart-histograma-assimetrias', {
-                        type: 'bar',
-                        data: {
-                            labels: binCenters.map(bin => bin.toFixed(3)),
-                            datasets: [{
-                                label: 'Frequência',
-                                data: data.histogram,
-                                backgroundColor: 'rgba(245, 158, 11, 0.6)',
-                                borderColor: 'rgba(245, 158, 11, 1)',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    title: { display: true, text: 'Frequência' },
-                                    beginAtZero: true
-                                },
-                                x: {
-                                    title: { display: true, text: 'Grau de Assimetria' }
+                    try {
+                        new Chart('chart-histograma-assimetrias', {
+                            type: 'bar',
+                            data: {
+                                labels: binCenters.map(bin => bin.toFixed(3)),
+                                datasets: [{
+                                    label: 'Frequência',
+                                    data: data.histogram,
+                                    backgroundColor: 'rgba(245, 158, 11, 0.6)',
+                                    borderColor: 'rgba(245, 158, 11, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        title: { display: true, text: 'Frequência' },
+                                        beginAtZero: true
+                                    },
+                                    x: {
+                                        title: { display: true, text: 'Grau de Assimetria' }
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    } catch (error) {
+                        console.error('Erro ao criar histograma de assimetrias:', error);
+                    }
                 }, 100);
             }
         }
