@@ -75,8 +75,9 @@
 
     <script>
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
+        let fullAnalysisData = null; // Variável global para armazenar os dados da análise
 
-        // CONFIGURAÇÃO DOS GRÁFICOS COM CATEGORIAS RESTAURADAS
+        // CONFIGURAÇÃO DOS GRÁFICOS
         const CHART_CONFIG = {
             'Angulos_Ombros': { 
                 title: 'Ângulos dos Ombros (Flexão/Extensão)', category: 'angulos',
@@ -115,10 +116,33 @@
             }
         };
 
+        // FUNÇÃO PARA EXPORTAR DADOS PARA CSV
+        function exportToCSV(data, filename) {
+            if (!data || data.length === 0) {
+                console.error("Não há dados para exportar.");
+                return;
+            }
+            const headers = Object.keys(data[0]);
+            const csvRows = [headers.join(',')];
+            for (const row of data) {
+                const values = headers.map(header => {
+                    const escaped = ('' + (row[header] ?? '')).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(','));
+            }
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function populateVideosUI(analysisData) {
             const container = document.getElementById("video-container");
             container.innerHTML = '';
-
             const createVideoCard = (plane, data, type) => {
                 if (!data) return '';
                 const title = `Plano ${plane} (${type})`;
@@ -126,23 +150,16 @@
                 const confidence = (data.confidence_score * 100).toFixed(1);
                 
                 if (!url) {
-                    return `<div class="bg-white p-4 rounded-xl shadow-sm">
-                                <h3 class="font-bold mb-2">${title}</h3>
-                                <div class="media-box flex items-center justify-center bg-red-100 text-red-700">Indisponível</div>
-                            </div>`;
+                    return `<div class="bg-white p-4 rounded-xl shadow-sm"><h3 class="font-bold mb-2">${title}</h3><div class="media-box flex items-center justify-center bg-red-100 text-red-700">Indisponível</div></div>`;
                 }
                 
                 const videoUrl = `${backendBaseUrl}/api/video/${url}`;
-                
-                return `
-                    <div class="bg-white p-4 rounded-xl shadow-sm">
+                return `<div class="bg-white p-4 rounded-xl shadow-sm">
                         <div class="flex justify-between items-center mb-2">
                            <h3 class="font-bold">${title}</h3>
                            ${type === 'Landmarks' ? `<span class="text-xs font-semibold px-2 py-1 rounded-full ${confidence > 70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">Confiança: ${confidence}%</span>` : ''}
                         </div>
-                        <div class="media-box">
-                            <video controls muted class="media-content"><source src="${videoUrl}" type="${url.endsWith('.webm') ? 'video/webm' : 'video/mp4'}"></video>
-                        </div>
+                        <div class="media-box"><video controls muted class="media-content"><source src="${videoUrl}" type="${url.endsWith('.webm') ? 'video/webm' : 'video/mp4'}"></video></div>
                     </div>`;
             };
             
@@ -159,7 +176,6 @@
         }
 
         function setupAllCharts(finalChartsData) {
-            // Limpa containers de gráficos
             Object.values(CHART_CONFIG).forEach(config => {
                 const container = document.getElementById(`${config.category}-content`);
                 if (container) container.innerHTML = '';
@@ -173,34 +189,37 @@
             for (const metricKey in finalChartsData) {
                 const chartConfig = CHART_CONFIG[metricKey];
                 const chartData = finalChartsData[metricKey];
-
                 if (!chartConfig || !chartData) continue;
                 
                 const container = document.getElementById(`${chartConfig.category}-content`);
                 if (!container) continue;
 
+                // INCLUSÃO DO BOTÃO DE DOWNLOAD
                 const card = document.createElement('div');
                 card.className = 'bg-white p-6 rounded-xl shadow-sm';
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                        <h2 class="text-lg font-bold text-gray-800">${chartConfig.title}</h2>
-                        <span class="mt-1 sm:mt-0 text-xs font-semibold px-2 py-1 rounded-full ${chartData.source === 'coronal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
-                            Fonte: Plano ${chartData.source.charAt(0).toUpperCase() + chartData.source.slice(1)}
-                        </span>
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">${chartConfig.title}</h2>
+                            <span class="mt-1 text-xs font-semibold px-2 py-1 rounded-full ${chartData.source === 'coronal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
+                                Fonte: Plano ${chartData.source.charAt(0).toUpperCase() + chartData.source.slice(1)}
+                            </span>
+                        </div>
+                        <button data-metric-key="${metricKey}" class="export-button mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
+                            <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
+                        </button>
                     </div>
                     <div class="chart-container"><canvas id="chart-${metricKey}"></canvas></div>`;
                 container.appendChild(card);
                 
                 const timestamps = chartData.data.map(d => (d.tempo_segundos || 0).toFixed(1));
                 const datasets = chartConfig.datasets.map(dsConfig => ({
-                    label: dsConfig.label,
-                    data: chartData.data.map(d => d[dsConfig.key]),
+                    label: dsConfig.label, data: chartData.data.map(d => d[dsConfig.key]),
                     tension: 0.1, borderWidth: 2, pointRadius: 0
                 }));
 
                 new Chart(`chart-${metricKey}`, {
-                    type: 'line',
-                    data: { labels: timestamps, datasets: datasets },
+                    type: 'line', data: { labels: timestamps, datasets: datasets },
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         scales: {
@@ -212,7 +231,7 @@
             }
         }
 
-        // LÓGICA DE CARREGAMENTO INICIAL E ABAS
+        // LÓGICA DE CARREGAMENTO E EVENTOS
         window.addEventListener('load', async () => {
             const loadingIndicator = document.getElementById('loading-indicator');
             const chartsSection = document.getElementById('charts-section');
@@ -220,8 +239,7 @@
             const analysisId = params.get('analysis_id');
             
             if (!analysisId) {
-                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado.</h2>';
-                return;
+                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado.</h2>'; return;
             }
             document.getElementById('analysisSubtitle').textContent = `Carregando Análise ID: ${analysisId}`;
 
@@ -232,14 +250,13 @@
 
                 if (!result.success || !result.data) throw new Error(result.error || 'Estrutura de dados inválida.');
                 
-                const analysisData = result.data;
-                populateVideosUI(analysisData.analyzed_data);
-                setupAllCharts(analysisData.final_charts);
+                fullAnalysisData = result.data; // Armazena os dados globalmente
+                populateVideosUI(fullAnalysisData.analyzed_data);
+                setupAllCharts(fullAnalysisData.final_charts);
 
                 loadingIndicator.style.display = 'none';
                 chartsSection.classList.remove('hidden');
                 
-                // Adiciona listeners para as abas
                 document.querySelectorAll('.tab-button').forEach(tab => {
                     tab.addEventListener('click', () => {
                         document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
@@ -256,7 +273,30 @@
                 loadingIndicator.innerHTML = `<h2 class="text-xl font-semibold text-red-500">Falha ao carregar dados: ${error.message}</h2>`;
             }
         });
+
+        // LISTENER PARA OS BOTÕES DE EXPORTAÇÃO
+        document.getElementById('charts-section').addEventListener('click', function(event) {
+            const exportButton = event.target.closest('.export-button');
+            if (!exportButton || !fullAnalysisData || !fullAnalysisData.final_charts) return;
+
+            const metricKey = exportButton.dataset.metricKey;
+            const chartConfig = CHART_CONFIG[metricKey];
+            const chartData = fullAnalysisData.final_charts[metricKey];
+
+            if (!chartConfig || !chartData) return;
+
+            const dataToExport = chartData.data.map(frameData => {
+                const row = { tempo_s: (frameData.tempo_segundos || 0).toFixed(2) };
+                chartConfig.datasets.forEach(ds => {
+                    const header = ds.key; // Usa a chave original como cabeçalho
+                    row[header] = frameData[ds.key];
+                });
+                return row;
+            });
+            
+            const fileName = `${metricKey.toLowerCase()}.csv`;
+            exportToCSV(dataToExport, fileName);
+        });
     </script>
 </body>
 </html>
-
