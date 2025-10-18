@@ -17,17 +17,34 @@
         .tab-button { transition: all 0.2s ease-in-out; }
         .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
         .tab-pane.hidden { display: none; }
-        .media-box { position: relative; width: 100%; padding-top: 56.25%; background-color: #e5e7eb; border-radius: 0.5rem; }
-        .media-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 0.5rem;}
         
-        /* Adicionado para garantir a mesma altura nos cards de vídeo */
+        /* CORREÇÃO PARA VÍDEOS COM MESMO TAMANHO */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
         .video-card {
             display: flex;
             flex-direction: column;
             height: 100%;
         }
-        .video-card-content {
-            flex-grow: 1;
+        .video-media-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* Proporção 16:9 */
+            background-color: #e5e7eb;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .video-media-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.5rem;
         }
     </style>
 </head>
@@ -53,8 +70,8 @@
 
         <section id="video-section" class="mb-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Vídeos da Análise</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="video-container">
-                 <div class="bg-white p-4 rounded-xl shadow-sm md:col-span-2 lg:col-span-4">
+            <div class="video-grid" id="video-container">
+                 <div class="bg-white p-4 rounded-xl shadow-sm">
                     <div class="w-full h-48 bg-gray-200 rounded-lg animate-pulse flex items-center justify-center">
                         <p class="text-gray-500">Carregando vídeos...</p>
                     </div>
@@ -72,6 +89,7 @@
                     <button data-tab="angulos" class="tab-button active font-semibold py-3 px-4 border-b-2 border-transparent">Ângulos Articulares</button>
                     <button data-tab="simetria" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Simetria Corporal</button>
                     <button data-tab="temporal" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Análise Temporal</button>
+                    <button data-tab="distribuicoes" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Distribuições</button>
                 </nav>
             </div>
             
@@ -79,50 +97,117 @@
                 <div id="angulos-content" class="tab-pane grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
                 <div id="simetria-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
                 <div id="temporal-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
+                <div id="distribuicoes-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
             </div>
         </main>
     </div>
 
     <script>
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
-        let fullAnalysisData = null; // Variável global para armazenar os dados da análise
+        let fullAnalysisData = null;
 
-        // CONFIGURAÇÃO DOS GRÁFICOS
+        // CONFIGURAÇÃO EXPANDIDA DOS GRÁFICOS
         const CHART_CONFIG = {
+            // ÂNGULOS ARTICULARES
             'Angulos_Ombros': { 
                 title: 'Ângulos dos Ombros (Flexão/Extensão)', category: 'angulos',
                 yLabel: 'Ângulo (°)', yMin: 0, yMax: 180, xLabel: 'Tempo (s)',
-                datasets: [ { key: 'angulo_ombro_esquerdo', label: 'Esquerdo' }, { key: 'angulo_ombro_direito', label: 'Direito' } ]
+                datasets: [ 
+                    { key: 'angulo_ombro_esquerdo', label: 'Esquerdo', borderColor: '#3b82f6' }, 
+                    { key: 'angulo_ombro_direito', label: 'Direito', borderColor: '#ef4444' } 
+                ]
             },
             'Angulos_Quadris': { 
                 title: 'Ângulos dos Quadris (Flexão/Extensão)', category: 'angulos',
                 yLabel: 'Ângulo (°)', yMin: -15, yMax: 120, xLabel: 'Tempo (s)',
-                datasets: [ { key: 'angulo_quadril_esquerdo', label: 'Esquerdo' }, { key: 'angulo_quadril_direito', label: 'Direito' } ]
+                datasets: [ 
+                    { key: 'angulo_quadril_esquerdo', label: 'Esquerdo', borderColor: '#3b82f6' }, 
+                    { key: 'angulo_quadril_direito', label: 'Direito', borderColor: '#ef4444' } 
+                ]
             },
             'Angulos_Joelhos': { 
                 title: 'Ângulos dos Joelhos (Flexão/Extensão)', category: 'angulos',
                 yLabel: 'Ângulo (°)', yMin: 0, yMax: 140, xLabel: 'Tempo (s)',
-                datasets: [ { key: 'angulo_joelho_esquerdo', label: 'Esquerdo' }, { key: 'angulo_joelho_direito', label: 'Direito' } ]
+                datasets: [ 
+                    { key: 'angulo_joelho_esquerdo', label: 'Esquerdo', borderColor: '#3b82f6' }, 
+                    { key: 'angulo_joelho_direito', label: 'Direito', borderColor: '#ef4444' } 
+                ]
             },
             'Angulo_Coluna': {
                 title: 'Ângulo da Coluna (Inclinação)', category: 'angulos',
                 yLabel: 'Ângulo (°)', yMin: 0, yMax: 80, xLabel: 'Tempo (s)',
-                datasets: [{ key: 'angulo_coluna', label: 'Coluna' }]
+                datasets: [{ key: 'angulo_coluna', label: 'Coluna', borderColor: '#8b5cf6' }]
             },
+            
+            // SIMETRIA CORPORAL
             'Assimetria_Ombros': {
                 title: 'Assimetria Vertical dos Ombros', category: 'simetria',
                 yLabel: 'Diferença de Altura (Proporcional)', yMin: 0, yMax: 0.2, xLabel: 'Tempo (s)',
-                datasets: [{ key: 'assimetria_ombros_vertical', label: 'Diferença' }]
+                datasets: [{ key: 'assimetria_ombros_vertical', label: 'Diferença', borderColor: '#f59e0b' }]
             },
+            'Assimetria_Quadris': {
+                title: 'Assimetria Vertical dos Quadris', category: 'simetria',
+                yLabel: 'Diferença de Altura (Proporcional)', yMin: 0, yMax: 0.2, xLabel: 'Tempo (s)',
+                datasets: [{ key: 'assimetria_quadris_vertical', label: 'Diferença', borderColor: '#f59e0b' }]
+            },
+            'Comparacao_Lados': {
+                title: 'Comparação Lado Esquerdo vs Direito', category: 'simetria',
+                yLabel: 'Valor Normalizado', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                datasets: [ 
+                    { key: 'lado_esquerdo', label: 'Lado Esquerdo', borderColor: '#3b82f6' },
+                    { key: 'lado_direito', label: 'Lado Direito', borderColor: '#ef4444' }
+                ]
+            },
+            'Distribuicao_Carga': {
+                title: 'Distribuição de Carga', category: 'simetria',
+                yLabel: 'Proporção de Carga', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                datasets: [ 
+                    { key: 'carga_esquerda', label: 'Membro Esquerdo', borderColor: '#3b82f6' },
+                    { key: 'carga_direita', label: 'Membro Direito', borderColor: '#ef4444' }
+                ]
+            },
+            
+            // ANÁLISE TEMPORAL
             'Oscilacao_Vertical_Quadril': {
                 title: 'Oscilação Vertical do Quadril', category: 'temporal',
                 yLabel: 'Posição Vertical (Proporcional)', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
-                datasets: [{ key: 'oscilacao_vertical_quadril', label: 'Posição Y'}]
+                datasets: [{ key: 'oscilacao_vertical_quadril', label: 'Posição Y', borderColor: '#10b981' }]
             },
             'Oscilacao_Horizontal_Quadril': {
                 title: 'Oscilação Horizontal do Quadril', category: 'temporal',
                 yLabel: 'Posição Horizontal (Proporcional)', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
-                datasets: [{ key: 'oscilacao_horizontal_quadril', label: 'Posição X'}]
+                datasets: [{ key: 'oscilacao_horizontal_quadril', label: 'Posição X', borderColor: '#10b981' }]
+            },
+            'Padrao_Marcha': {
+                title: 'Padrão de Marcha - Ciclo de Passada', category: 'temporal',
+                yLabel: 'Fase do Ciclo', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                datasets: [ 
+                    { key: 'fase_marcha_esquerda', label: 'Membro Esquerdo', borderColor: '#3b82f6' },
+                    { key: 'fase_marcha_direita', label: 'Membro Direito', borderColor: '#ef4444' }
+                ]
+            },
+            
+            // DISTRIBUIÇÕES
+            'Distribuicao_Angulos': {
+                title: 'Distribuição de Ângulos Articulares', category: 'distribuicoes',
+                yLabel: 'Frequência', xLabel: 'Ângulo (°)', type: 'histogram',
+                datasets: [ 
+                    { key: 'distribuicao_angulos', label: 'Frequência', backgroundColor: 'rgba(59, 130, 246, 0.6)' }
+                ]
+            },
+            'Histograma_Assimetrias': {
+                title: 'Histograma de Assimetrias', category: 'distribuicoes',
+                yLabel: 'Frequência', xLabel: 'Grau de Assimetria', type: 'histogram',
+                datasets: [ 
+                    { key: 'histograma_assimetrias', label: 'Frequência', backgroundColor: 'rgba(245, 158, 11, 0.6)' }
+                ]
+            },
+            'BoxPlot_Articular': {
+                title: 'Box Plot - Variação Angular Articular', category: 'distribuicoes',
+                yLabel: 'Ângulo (°)', xLabel: 'Articulações', type: 'boxplot',
+                datasets: [ 
+                    { key: 'boxplot_articular', label: 'Variação', backgroundColor: 'rgba(139, 92, 246, 0.6)' }
+                ]
             }
         };
 
@@ -153,6 +238,7 @@
         function populateVideosUI(analysisData) {
             const container = document.getElementById("video-container");
             container.innerHTML = '';
+            
             const createVideoCard = (plane, data, type) => {
                 if (!data) return '';
                 const title = `Plano ${plane} (${type})`;
@@ -161,10 +247,14 @@
                 
                 let contentHTML;
                 if (!url) {
-                    contentHTML = `<div class="media-box flex items-center justify-center bg-red-100 text-red-700">Indisponível</div>`;
+                    contentHTML = `<div class="video-media-container flex items-center justify-center bg-red-100 text-red-700">Indisponível</div>`;
                 } else {
                     const videoUrl = `${backendBaseUrl}/api/video/${url}`;
-                    contentHTML = `<div class="media-box"><video controls muted class="media-content"><source src="${videoUrl}" type="${url.endsWith('.webm') ? 'video/webm' : 'video/mp4'}"></video></div>`;
+                    contentHTML = `<div class="video-media-container">
+                        <video controls muted class="video-media-content">
+                            <source src="${videoUrl}" type="${url.endsWith('.webm') ? 'video/webm' : 'video/mp4'}">
+                        </video>
+                    </div>`;
                 }
 
                 return `<div class="bg-white p-4 rounded-xl shadow-sm video-card">
@@ -190,8 +280,8 @@
             container.innerHTML = videoHTML;
         }
 
-
         function setupAllCharts(finalChartsData) {
+            // Limpar containers
             Object.values(CHART_CONFIG).forEach(config => {
                 const container = document.getElementById(`${config.category}-content`);
                 if (container) container.innerHTML = '';
@@ -210,7 +300,6 @@
                 const container = document.getElementById(`${chartConfig.category}-content`);
                 if (!container) continue;
 
-                // INCLUSÃO DO BOTÃO DE DOWNLOAD
                 const card = document.createElement('div');
                 card.className = 'bg-white p-6 rounded-xl shadow-sm';
                 card.innerHTML = `
@@ -218,7 +307,7 @@
                         <div>
                             <h2 class="text-lg font-bold text-gray-800">${chartConfig.title}</h2>
                             <span class="mt-1 text-xs font-semibold px-2 py-1 rounded-full ${chartData.source === 'coronal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
-                                Fonte: Plano ${chartData.source.charAt(0).toUpperCase() + chartData.source.slice(1)}
+                                Fonte: Plano ${chartData.source ? chartData.source.charAt(0).toUpperCase() + chartData.source.slice(1) : 'N/A'}
                             </span>
                         </div>
                         <button data-metric-key="${metricKey}" class="export-button mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
@@ -230,19 +319,49 @@
                 
                 const timestamps = chartData.data.map(d => (d.tempo_segundos || 0).toFixed(1));
                 const datasets = chartConfig.datasets.map(dsConfig => ({
-                    label: dsConfig.label, data: chartData.data.map(d => d[dsConfig.key]),
-                    tension: 0.1, borderWidth: 2, pointRadius: 0
+                    label: dsConfig.label, 
+                    data: chartData.data.map(d => d[dsConfig.key]),
+                    borderColor: dsConfig.borderColor || '#4f46e5',
+                    backgroundColor: dsConfig.borderColor ? `${dsConfig.borderColor}20` : '#4f46e520',
+                    tension: 0.1, 
+                    borderWidth: 2, 
+                    pointRadius: 0
                 }));
 
-                new Chart(`chart-${metricKey}`, {
-                    type: 'line', data: { labels: timestamps, datasets: datasets },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        scales: {
-                            y: { title: { display: true, text: chartConfig.yLabel }, min: chartConfig.yMin, max: chartConfig.yMax },
-                            x: { title: { display: true, text: chartConfig.xLabel } }
+                // Configuração específica para tipos de gráfico
+                let chartType = 'line';
+                let chartOptions = {
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            title: { display: true, text: chartConfig.yLabel }, 
+                            min: chartConfig.yMin, 
+                            max: chartConfig.yMax 
+                        },
+                        x: { 
+                            title: { display: true, text: chartConfig.xLabel } 
                         }
                     }
+                };
+
+                // Ajustes para histogramas
+                if (chartConfig.type === 'histogram') {
+                    chartType = 'bar';
+                    datasets[0].barPercentage = 0.8;
+                    datasets[0].categoryPercentage = 0.9;
+                }
+
+                // Ajustes para boxplot
+                if (chartConfig.type === 'boxplot') {
+                    // Implementação simplificada do boxplot
+                    chartOptions.scales.y.min = 0;
+                }
+
+                new Chart(`chart-${metricKey}`, {
+                    type: chartType, 
+                    data: { labels: timestamps, datasets: datasets },
+                    options: chartOptions
                 });
             }
         }
@@ -266,13 +385,14 @@
 
                 if (!result.success || !result.data) throw new Error(result.error || 'Estrutura de dados inválida.');
                 
-                fullAnalysisData = result.data; // Armazena os dados globalmente
+                fullAnalysisData = result.data;
                 populateVideosUI(fullAnalysisData.analyzed_data);
                 setupAllCharts(fullAnalysisData.final_charts);
 
                 loadingIndicator.style.display = 'none';
                 chartsSection.classList.remove('hidden');
                 
+                // Configurar tabs
                 document.querySelectorAll('.tab-button').forEach(tab => {
                     tab.addEventListener('click', () => {
                         document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
@@ -304,7 +424,7 @@
             const dataToExport = chartData.data.map(frameData => {
                 const row = { tempo_s: (frameData.tempo_segundos || 0).toFixed(2) };
                 chartConfig.datasets.forEach(ds => {
-                    const header = ds.key; // Usa a chave original como cabeçalho
+                    const header = ds.key;
                     row[header] = frameData[ds.key];
                 });
                 return row;
@@ -316,4 +436,3 @@
     </script>
 </body>
 </html>
-
