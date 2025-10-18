@@ -8,6 +8,7 @@ import traceback
 import numpy as np
 import cv2
 import mediapipe as mp
+from collections import defaultdict
 
 # Importações de Flask
 from flask import Flask, request, jsonify, send_from_directory, abort
@@ -29,6 +30,7 @@ print(f"✅ Backend iniciado. Resultados em: {RESULT_DIR}, Vídeos em: {VIDEO_DI
 # Instâncias do MediaPipe
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
 
 # --- CONFIGURAÇÃO DE VÍDEO ---
 VIDEO_FOURCC = 'VP80' 
@@ -151,10 +153,41 @@ def apply_precision_matrix(analysis_data):
 
 def calculate_angle(a, b, c):
     """Calcula o ângulo entre 3 pontos (em graus)."""
-    a, b, c = np.array(a), np.array(b), np.array(c)
-    radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
-    angle = np.abs(radians * 180.0 / np.pi)
-    return 360 - angle if angle > 180.0 else angle
+    try:
+        a, b, c = np.array(a), np.array(b), np.array(c)
+        
+        # Verifica se os pontos são válidos
+        if np.any(np.isnan(a)) or np.any(np.isnan(b)) or np.any(np.isnan(c)):
+            return 0.0
+            
+        # Vetores BA e BC
+        ba = a - b
+        bc = c - b
+        
+        # Produto escalar
+        dot_product = np.dot(ba, bc)
+        
+        # Magnitudes
+        mag_ba = np.linalg.norm(ba)
+        mag_bc = np.linalg.norm(bc)
+        
+        # Evita divisão por zero
+        if mag_ba == 0 or mag_bc == 0:
+            return 0.0
+            
+        # Cosseno do ângulo
+        cosine_angle = dot_product / (mag_ba * mag_bc)
+        
+        # Limita o valor entre -1 e 1 para evitar erros numéricos
+        cosine_angle = np.clip(cosine_angle, -1.0, 1.0)
+        
+        # Ângulo em graus
+        angle = np.degrees(np.arccos(cosine_angle))
+        
+        return float(angle)
+    except Exception as e:
+        print(f"Erro no cálculo do ângulo: {e}")
+        return 0.0
 
 def analyze_video(video_path, output_video_path):
     """
@@ -175,58 +208,163 @@ def analyze_video(video_path, output_video_path):
     temporal_data, confidence_scores = [], []
     frame_count = 0
     
-    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+    with mp_pose.Pose(
+        min_detection_confidence=0.5, 
+        min_tracking_confidence=0.5,
+        model_complexity=1
+    ) as pose:
+        
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret: break
 
+            # Converte BGR para RGB
             image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image_rgb.flags.writeable = False
+            
+            # Processa a imagem com MediaPipe
             results = pose.process(image_rgb)
             
+            # Prepara dados do frame
             frame_data = {"frame": frame_count, "tempo_segundos": frame_count / fps}
 
+            # Converte de volta para BGR para desenho
+            image_rgb.flags.writeable = True
+            image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
+            
             if results.pose_landmarks:
                 landmarks = results.pose_landmarks.landmark
                 
-                key_points = {
-                    'l_shoulder': (landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y),
-                    'r_shoulder': (landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y),
-                    'l_hip': (landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y),
-                    'r_hip': (landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y),
-                    'l_knee': (landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y),
-                    'r_knee': (landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y),
-                    'l_ankle': (landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y),
-                    'r_ankle': (landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y),
-                    'nose': (landmarks[mp_pose.PoseLandmark.NOSE.value].x, landmarks[mp_pose.PoseLandmark.NOSE.value].y)
-                }
-                
-                frame_data['angulo_ombro_esquerdo'] = calculate_angle(key_points['l_hip'], key_points['l_shoulder'], key_points['nose'])
-                frame_data['angulo_ombro_direito'] = calculate_angle(key_points['r_hip'], key_points['r_shoulder'], key_points['nose'])
-                frame_data['angulo_quadril_esquerdo'] = calculate_angle(key_points['l_shoulder'], key_points['l_hip'], key_points['l_knee'])
-                frame_data['angulo_quadril_direito'] = calculate_angle(key_points['r_shoulder'], key_points['r_hip'], key_points['r_knee'])
-                frame_data['angulo_joelho_esquerdo'] = calculate_angle(key_points['l_hip'], key_points['l_knee'], key_points['l_ankle'])
-                frame_data['angulo_joelho_direito'] = calculate_angle(key_points['r_hip'], key_points['r_knee'], key_points['r_ankle'])
-                mid_shoulder = np.mean([key_points['l_shoulder'], key_points['r_shoulder']], axis=0)
-                mid_hip = np.mean([key_points['l_hip'], key_points['r_hip']], axis=0)
-                frame_data['angulo_coluna'] = calculate_angle(mid_hip, mid_shoulder, key_points['nose'])
-                frame_data['assimetria_ombros_vertical'] = abs(key_points['l_shoulder'][1] - key_points['r_shoulder'][1])
-                frame_data['oscilacao_vertical_quadril'] = mid_hip[1]
-                frame_data['oscilacao_horizontal_quadril'] = mid_hip[0]
+                # Extrai coordenadas normalizadas
+                try:
+                    # Ombros
+                    l_shoulder = (landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, 
+                                 landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y)
+                    r_shoulder = (landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, 
+                                 landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y)
+                    
+                    # Quadris
+                    l_hip = (landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, 
+                            landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y)
+                    r_hip = (landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, 
+                            landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y)
+                    
+                    # Joelhos
+                    l_knee = (landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, 
+                             landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y)
+                    r_knee = (landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, 
+                             landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y)
+                    
+                    # Tornozelos
+                    l_ankle = (landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, 
+                              landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y)
+                    r_ankle = (landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, 
+                              landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y)
+                    
+                    # Nariz
+                    nose = (landmarks[mp_pose.PoseLandmark.NOSE.value].x, 
+                           landmarks[mp_pose.PoseLandmark.NOSE.value].y)
+                    
+                    # Cotovelos (para melhor cálculo de ângulos)
+                    l_elbow = (landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, 
+                              landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y)
+                    r_elbow = (landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x, 
+                              landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y)
+                    
+                    # Pontos médios
+                    mid_shoulder = ((l_shoulder[0] + r_shoulder[0]) / 2, 
+                                   (l_shoulder[1] + r_shoulder[1]) / 2)
+                    mid_hip = ((l_hip[0] + r_hip[0]) / 2, 
+                              (l_hip[1] + r_hip[1]) / 2)
+                    
+                    # CÁLCULO DOS ÂNGULOS CORRIGIDOS:
+                    
+                    # Ângulos dos Ombros (cotovelo - ombro - quadril)
+                    frame_data['angulo_ombro_esquerdo'] = calculate_angle(l_elbow, l_shoulder, l_hip)
+                    frame_data['angulo_ombro_direito'] = calculate_angle(r_elbow, r_shoulder, r_hip)
+                    
+                    # Ângulos dos Quadris (ombro - quadril - joelho)
+                    frame_data['angulo_quadril_esquerdo'] = calculate_angle(l_shoulder, l_hip, l_knee)
+                    frame_data['angulo_quadril_direito'] = calculate_angle(r_shoulder, r_hip, r_knee)
+                    
+                    # Ângulos dos Joelhos (quadril - joelho - tornozelo)
+                    frame_data['angulo_joelho_esquerdo'] = calculate_angle(l_hip, l_knee, l_ankle)
+                    frame_data['angulo_joelho_direito'] = calculate_angle(r_hip, r_knee, r_ankle)
+                    
+                    # Ângulo da Coluna (quadril médio - ombro médio - nariz)
+                    frame_data['angulo_coluna'] = calculate_angle(mid_hip, mid_shoulder, nose)
+                    
+                    # Assimetrias e Oscilações
+                    frame_data['assimetria_ombros_vertical'] = abs(l_shoulder[1] - r_shoulder[1])
+                    frame_data['oscilacao_vertical_quadril'] = mid_hip[1]
+                    frame_data['oscilacao_horizontal_quadril'] = mid_hip[0]
+                    
+                except Exception as e:
+                    print(f"Erro no processamento dos landmarks do frame {frame_count}: {e}")
+                    # Valores padrão em caso de erro
+                    frame_data.update({
+                        'angulo_ombro_esquerdo': 0, 'angulo_ombro_direito': 0,
+                        'angulo_quadril_esquerdo': 0, 'angulo_quadril_direito': 0,
+                        'angulo_joelho_esquerdo': 0, 'angulo_joelho_direito': 0,
+                        'angulo_coluna': 0,
+                        'assimetria_ombros_vertical': 0,
+                        'oscilacao_vertical_quadril': 0,
+                        'oscilacao_horizontal_quadril': 0
+                    })
                 
                 temporal_data.append(frame_data)
                 
+                # Calcula confiança média
                 visibilities = [landmarks[i].visibility for i in range(len(landmarks))]
                 confidence_scores.append(np.mean(visibilities))
                 
-                mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+                # Desenha landmarks no frame com cores e estilos melhorados
+                mp_drawing.draw_landmarks(
+                    image_bgr,
+                    results.pose_landmarks,
+                    mp_pose.POSE_CONNECTIONS,
+                    landmark_drawing_spec=mp_drawing.DrawingSpec(
+                        color=(0, 255, 0), thickness=3, circle_radius=3
+                    ),
+                    connection_drawing_spec=mp_drawing.DrawingSpec(
+                        color=(255, 0, 0), thickness=2, circle_radius=2
+                    )
+                )
+                
+                # Adiciona texto com informações do frame
+                cv2.putText(image_bgr, f"Frame: {frame_count}", (10, 30), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                cv2.putText(image_bgr, f"Tempo: {frame_count/fps:.1f}s", (10, 60), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             
-            out.write(frame)
+            else:
+                # Frame sem landmarks detectados
+                frame_data.update({
+                    'angulo_ombro_esquerdo': 0, 'angulo_ombro_direito': 0,
+                    'angulo_quadril_esquerdo': 0, 'angulo_quadril_direito': 0,
+                    'angulo_joelho_esquerdo': 0, 'angulo_joelho_direito': 0,
+                    'angulo_coluna': 0,
+                    'assimetria_ombros_vertical': 0,
+                    'oscilacao_vertical_quadril': 0,
+                    'oscilacao_horizontal_quadril': 0
+                })
+                temporal_data.append(frame_data)
+                confidence_scores.append(0)
+                
+                # Mensagem de nenhum landmark detectado
+                cv2.putText(image_bgr, "Nenhum landmark detectado", (10, 30), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            
+            # Escreve o frame processado no vídeo de saída
+            out.write(image_bgr)
             frame_count += 1
             
     cap.release()
     out.release()
     
     avg_confidence = np.mean(confidence_scores) if confidence_scores else 0
+    
+    print(f"✅ Vídeo processado: {frame_count} frames, confiança média: {avg_confidence:.3f}")
     
     return {"temporal_data": temporal_data, "confidence_score": float(avg_confidence)}
 
@@ -252,6 +390,7 @@ def process_analysis_route():
 
     try:
         # Processa Plano Coronal (Obrigatório)
+        print("📹 Processando vídeo coronal...")
         coronal_original_path = os.path.join(VIDEO_DIR, f"{analysis_id}_coronal_original.mp4")
         video_coronal.save(coronal_original_path)
         coronal_processed_filename = f"{analysis_id}_coronal{VIDEO_EXTENSION}"
@@ -262,9 +401,11 @@ def process_analysis_route():
             "video_original": os.path.basename(coronal_original_path),
             "video_processed": coronal_processed_filename if os.path.exists(coronal_processed_path) and os.path.getsize(coronal_processed_path) > VIDEO_MIN_SIZE_BYTES else None
         }
+        print(f"✅ Coronal processado - Confiança: {coronal_analysis['confidence_score']:.3f}")
 
         # Processa Plano Transversal (Opcional)
         if video_transversal:
+            print("📹 Processando vídeo transversal...")
             transversal_original_path = os.path.join(VIDEO_DIR, f"{analysis_id}_transversal_original.mp4")
             video_transversal.save(transversal_original_path)
             transversal_processed_filename = f"{analysis_id}_transversal{VIDEO_EXTENSION}"
@@ -275,8 +416,12 @@ def process_analysis_route():
                 "video_original": os.path.basename(transversal_original_path),
                 "video_processed": transversal_processed_filename if os.path.exists(transversal_processed_path) and os.path.getsize(transversal_processed_path) > VIDEO_MIN_SIZE_BYTES else None
             }
+            print(f"✅ Transversal processado - Confiança: {transversal_analysis['confidence_score']:.3f}")
+        else:
+            print("ℹ️  Nenhum vídeo transversal fornecido")
 
         # Aplica a matriz de decisão para gráficos temporais
+        print("📊 Aplicando matriz de precisão...")
         analysis_results["final_charts"] = apply_precision_matrix(analysis_results["analyzed_data"])
         
         # Calcula dados de distribuição a partir do melhor plano
@@ -284,6 +429,7 @@ def process_analysis_route():
         if analysis_results["analyzed_data"].get('transversal') and analysis_results["analyzed_data"]['transversal'].get('confidence_score', 0) > analysis_results["analyzed_data"]['coronal'].get('confidence_score', 0):
             best_source = 'transversal'
         
+        print(f"📈 Calculando distribuições do plano {best_source}...")
         best_temporal_data = analysis_results["analyzed_data"][best_source]['temporal_data']
         analysis_results["distribution_data"] = calculate_distribution_data(best_temporal_data)
         
@@ -292,7 +438,7 @@ def process_analysis_route():
         with open(result_filepath, 'w') as f:
             json.dump({"success": True, "data": analysis_results}, f)
         
-        print(f"✅ Análise {analysis_id} concluída.")
+        print(f"✅ Análise {analysis_id} concluída com sucesso!")
         return jsonify({"success": True, "analysis_id": analysis_id})
         
     except Exception as e:
