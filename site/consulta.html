@@ -19,6 +19,16 @@
         .tab-pane.hidden { display: none; }
         .media-box { position: relative; width: 100%; padding-top: 56.25%; background-color: #e5e7eb; border-radius: 0.5rem; }
         .media-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 0.5rem;}
+        
+        /* Adicionado para garantir a mesma altura nos cards de vídeo */
+        .video-card {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .video-card-content {
+            flex-grow: 1;
+        }
     </style>
 </head>
 <body>
@@ -149,17 +159,22 @@
                 const url = type === 'Original' ? data.video_original : data.video_processed;
                 const confidence = (data.confidence_score * 100).toFixed(1);
                 
+                let contentHTML;
                 if (!url) {
-                    return `<div class="bg-white p-4 rounded-xl shadow-sm"><h3 class="font-bold mb-2">${title}</h3><div class="media-box flex items-center justify-center bg-red-100 text-red-700">Indisponível</div></div>`;
+                    contentHTML = `<div class="media-box flex items-center justify-center bg-red-100 text-red-700">Indisponível</div>`;
+                } else {
+                    const videoUrl = `${backendBaseUrl}/api/video/${url}`;
+                    contentHTML = `<div class="media-box"><video controls muted class="media-content"><source src="${videoUrl}" type="${url.endsWith('.webm') ? 'video/webm' : 'video/mp4'}"></video></div>`;
                 }
-                
-                const videoUrl = `${backendBaseUrl}/api/video/${url}`;
-                return `<div class="bg-white p-4 rounded-xl shadow-sm">
-                        <div class="flex justify-between items-center mb-2">
-                           <h3 class="font-bold">${title}</h3>
-                           ${type === 'Landmarks' ? `<span class="text-xs font-semibold px-2 py-1 rounded-full ${confidence > 70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">Confiança: ${confidence}%</span>` : ''}
+
+                return `<div class="bg-white p-4 rounded-xl shadow-sm video-card">
+                        <div class="video-card-content">
+                            <div class="flex justify-between items-center mb-2">
+                               <h3 class="font-bold">${title}</h3>
+                               ${type === 'Landmarks' ? `<span class="text-xs font-semibold px-2 py-1 rounded-full ${confidence > 70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">Confiança: ${confidence}%</span>` : ''}
+                            </div>
+                            ${contentHTML}
                         </div>
-                        <div class="media-box"><video controls muted class="media-content"><source src="${videoUrl}" type="${url.endsWith('.webm') ? 'video/webm' : 'video/mp4'}"></video></div>
                     </div>`;
             };
             
@@ -174,6 +189,7 @@
             }
             container.innerHTML = videoHTML;
         }
+
 
         function setupAllCharts(finalChartsData) {
             Object.values(CHART_CONFIG).forEach(config => {
@@ -300,3 +316,4 @@
     </script>
 </body>
 </html>
+
