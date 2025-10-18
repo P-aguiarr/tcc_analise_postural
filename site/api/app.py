@@ -50,6 +50,58 @@ BIOMECHANICAL_PRIORITY_MATRIX = {
 
 CONFIDENCE_THRESHOLD = 0.7 # Limite mínimo de confiança
 
+def calculate_distribution_data(temporal_data):
+    """
+    Calcula dados agregados para gráficos de distribuição a partir dos dados temporais.
+    """
+    distribution_data = {}
+    
+    if not temporal_data:
+        return distribution_data
+    
+    # Coleta todos os valores de cada métrica
+    metrics_data = {}
+    for frame in temporal_data:
+        for key, value in frame.items():
+            if key not in ['frame', 'tempo_segundos'] and isinstance(value, (int, float)):
+                if key not in metrics_data:
+                    metrics_data[key] = []
+                metrics_data[key].append(value)
+    
+    # Distribuição de Ângulos (histograma)
+    angle_metrics = ['angulo_ombro_esquerdo', 'angulo_ombro_direito', 
+                    'angulo_quadril_esquerdo', 'angulo_quadril_direito',
+                    'angulo_joelho_esquerdo', 'angulo_joelho_direito', 'angulo_coluna']
+    
+    all_angles = []
+    for metric in angle_metrics:
+        if metric in metrics_data:
+            all_angles.extend(metrics_data[metric])
+    
+    if all_angles:
+        hist, bins = np.histogram(all_angles, bins=20, range=(0, 180))
+        distribution_data['distribuicao_angulos'] = {
+            'histogram': hist.tolist(),
+            'bins': bins.tolist()
+        }
+    
+    # Histograma de Assimetrias
+    asymmetry_metrics = ['assimetria_ombros_vertical']
+    all_asymmetries = []
+    for metric in asymmetry_metrics:
+        if metric in metrics_data:
+            all_asymmetries.extend(metrics_data[metric])
+    
+    if all_asymmetries:
+        max_val = max(all_asymmetries) if all_asymmetries else 0.2
+        hist, bins = np.histogram(all_asymmetries, bins=15, range=(0, max_val))
+        distribution_data['histograma_assimetrias'] = {
+            'histogram': hist.tolist(),
+            'bins': bins.tolist()
+        }
+    
+    return distribution_data
+
 def apply_precision_matrix(analysis_data):
     """
     Seleciona a melhor fonte de dados (coronal ou transversal) para cada métrica
@@ -224,8 +276,16 @@ def process_analysis_route():
                 "video_processed": transversal_processed_filename if os.path.exists(transversal_processed_path) and os.path.getsize(transversal_processed_path) > VIDEO_MIN_SIZE_BYTES else None
             }
 
-        # Aplica a matriz de decisão
+        # Aplica a matriz de decisão para gráficos temporais
         analysis_results["final_charts"] = apply_precision_matrix(analysis_results["analyzed_data"])
+        
+        # Calcula dados de distribuição a partir do melhor plano
+        best_source = 'coronal'
+        if analysis_results["analyzed_data"].get('transversal') and analysis_results["analyzed_data"]['transversal'].get('confidence_score', 0) > analysis_results["analyzed_data"]['coronal'].get('confidence_score', 0):
+            best_source = 'transversal'
+        
+        best_temporal_data = analysis_results["analyzed_data"][best_source]['temporal_data']
+        analysis_results["distribution_data"] = calculate_distribution_data(best_temporal_data)
         
         # Salva o resultado final
         result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
@@ -273,4 +333,3 @@ def get_video_route(video_filename):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
-
