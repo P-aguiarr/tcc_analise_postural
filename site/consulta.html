@@ -64,18 +64,83 @@
             flex-shrink: 0;
             white-space: nowrap;
         }
+
+        /* ESTILOS DO NAVBAR E RODAPÉ */
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+        .frame-16 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        .the-posture-lab {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .text-wrapper {
+            color: #000;
+        }
+        .span {
+            color: #4f46e5;
+        }
+        .frame-17 {
+            display: flex;
+            gap: 1.5rem;
+        }
+        .frame-17 a {
+            text-decoration: none;
+            color: #374151;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .frame-17 a:hover {
+            color: #4f46e5;
+        }
+        
+        /* ESTILOS DO RODAPÉ */
+        .footer {
+            background-color: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+        .footer-links {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .footer-links a {
+            color: #6b7280;
+            text-decoration: none;
+            margin: 0 0.5rem;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover {
+            color: #4f46e5;
+        }
+        .copyright {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
-    <!-- NAVBAR -->
-     <div class="navbar" style="background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <div class="frame-16" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem;">
-        <p class="the-posture-lab" style="font-size: 1.5rem; font-weight: bold;">
-          <span class="text-wrapper">The Posture </span> <span class="span" style="color: #4f46e5;">Lab</span>
+    <!-- NAVBAR MELHORADO -->
+    <div class="navbar">
+      <div class="frame-16">
+        <p class="the-posture-lab">
+          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
         </p>
-        <div class="frame-17" style="display: flex; gap: 1.5rem;">
-          <a href="/" style="text-decoration: none; color: #374151; font-weight: 500;">Home</a>
-          <a href="/nova-analise" style="text-decoration: none; color: #374151; font-weight: 500;">Nova Análise</a>
+        <div class="frame-17">
+          <a href="/">Home</a>
+          <a href="/nova-analise">Nova Análise</a>
+          <a href="/configuracoes">Configurações</a>
         </div>
       </div>
     </div>
@@ -119,6 +184,18 @@
             </div>
         </main>
     </div>
+
+    <!-- RODAPÉ MELHORADO -->
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="#">Careers</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms & Conditions</a>
+      </div>
+      <div class="copyright">
+        © 2025 Analíse Postural 
+      </div>
+    </footer>
 
     <script>
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
