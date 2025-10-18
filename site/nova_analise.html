@@ -7,6 +7,12 @@
   <!-- LINK PARA O CSS GLOBAL -->
   <link rel="stylesheet" href="style.css">
   <style>
+    /* CORREÇÃO PARA O CONTEÚDO NÃO FICAR ATRÁS DA NAVBAR */
+    body {
+      padding-top: 80px !important;
+      margin: 0;
+    }
+
     /* APENAS ESTILOS ESPECÍFICOS DESTA PÁGINA */
     .upload-container { 
       max-width: 1000px; 
@@ -181,6 +187,10 @@
 
     /* RESPONSIVIDADE ESPECÍFICA */
     @media (max-width: 768px) {
+      body {
+        padding-top: 70px !important;
+      }
+      
       .upload-grid {
         grid-template-columns: 1fr;
         gap: 15px;
