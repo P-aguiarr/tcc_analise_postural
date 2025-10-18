@@ -35,7 +35,7 @@ VIDEO_FOURCC = 'VP80'
 VIDEO_EXTENSION = '.webm'
 VIDEO_MIN_SIZE_BYTES = 1000
 
-# --- MATRIZ DE PRECISÃO E LÓGICA DE DECISÃO (NOVO) ---
+# --- MATRIZ DE PRECISÃO E LÓGICA DE DECISÃO ---
 
 # Define qual plano é otimizado (P1) para cada métrica
 BIOMECHANICAL_PRIORITY_MATRIX = {
@@ -95,7 +95,7 @@ def apply_precision_matrix(analysis_data):
             
     return final_charts
 
-# --- FUNÇÕES DE ANÁLISE (MODIFICADAS) ---
+# --- FUNÇÕES DE ANÁLISE ---
 
 def calculate_angle(a, b, c):
     """Calcula o ângulo entre 3 pontos (em graus)."""
@@ -136,7 +136,6 @@ def analyze_video(video_path, output_video_path):
             if results.pose_landmarks:
                 landmarks = results.pose_landmarks.landmark
                 
-                # Extrai pontos chave e visibilidade
                 key_points = {
                     'l_shoulder': (landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y),
                     'r_shoulder': (landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y),
@@ -149,7 +148,6 @@ def analyze_video(video_path, output_video_path):
                     'nose': (landmarks[mp_pose.PoseLandmark.NOSE.value].x, landmarks[mp_pose.PoseLandmark.NOSE.value].y)
                 }
                 
-                # Calcula métricas
                 frame_data['angulo_ombro_esquerdo'] = calculate_angle(key_points['l_hip'], key_points['l_shoulder'], key_points['nose'])
                 frame_data['angulo_ombro_direito'] = calculate_angle(key_points['r_hip'], key_points['r_shoulder'], key_points['nose'])
                 frame_data['angulo_quadril_esquerdo'] = calculate_angle(key_points['l_shoulder'], key_points['l_hip'], key_points['l_knee'])
@@ -165,7 +163,6 @@ def analyze_video(video_path, output_video_path):
                 
                 temporal_data.append(frame_data)
                 
-                # Calcula confiança do frame
                 visibilities = [landmarks[i].visibility for i in range(len(landmarks))]
                 confidence_scores.append(np.mean(visibilities))
                 
@@ -181,7 +178,12 @@ def analyze_video(video_path, output_video_path):
     
     return {"temporal_data": temporal_data, "confidence_score": float(avg_confidence)}
 
-# --- ROTAS DA API (MODIFICADAS) ---
+# --- ROTAS DA API ---
+
+@app.route('/api/health', methods=['GET'])
+def api_health_check():
+    """Endpoint simples para verificação de saúde (health check)."""
+    return jsonify({"status": "ok", "message": "Servidor de análise no ar."})
 
 @app.route('/api/process-analysis', methods=['POST'])
 def process_analysis_route():
@@ -256,7 +258,7 @@ def get_video_route(video_filename):
     """Serve os arquivos de vídeo com o Content-Type correto."""
     try:
         if not os.path.normpath(os.path.join(VIDEO_DIR, video_filename)).startswith(os.path.realpath(VIDEO_DIR)):
-            abort(403) # Proibe acesso a diretórios pais
+            abort(403)
 
         mimetype = 'video/webm' if video_filename.endswith('.webm') else 'video/mp4'
         response = send_from_directory(VIDEO_DIR, video_filename, mimetype=mimetype, as_attachment=False)
@@ -271,3 +273,4 @@ def get_video_route(video_filename):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
