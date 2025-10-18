@@ -6,8 +6,9 @@
 
 .landing-page .div {
   background-color: #ffffff;
-  /* CORREÇÃO CRÍTICA 1: Remove a altura fixa para o container se expandir */
-  width: 1440px;
+  width: 100%; 
+  max-width: 1440px; 
+  margin: 0 auto;
   height: auto; 
   position: relative;
   min-height: 100vh;
