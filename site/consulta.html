@@ -46,6 +46,24 @@
             object-fit: cover;
             border-radius: 0.5rem;
         }
+        
+        /* CORREÇÃO PARA ALINHAMENTO DO HEADER DO CARD */
+        .video-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            min-height: 2rem; /* Altura mínima para manter alinhamento */
+        }
+        .video-title {
+            font-weight: bold;
+            flex: 1;
+            margin-right: 0.5rem;
+        }
+        .confidence-badge {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -185,29 +203,6 @@
                     { key: 'fase_marcha_esquerda', label: 'Membro Esquerdo', borderColor: '#3b82f6' },
                     { key: 'fase_marcha_direita', label: 'Membro Direito', borderColor: '#ef4444' }
                 ]
-            },
-            
-            // DISTRIBUIÇÕES
-            'Distribuicao_Angulos': {
-                title: 'Distribuição de Ângulos Articulares', category: 'distribuicoes',
-                yLabel: 'Frequência', xLabel: 'Ângulo (°)', type: 'histogram',
-                datasets: [ 
-                    { key: 'distribuicao_angulos', label: 'Frequência', backgroundColor: 'rgba(59, 130, 246, 0.6)' }
-                ]
-            },
-            'Histograma_Assimetrias': {
-                title: 'Histograma de Assimetrias', category: 'distribuicoes',
-                yLabel: 'Frequência', xLabel: 'Grau de Assimetria', type: 'histogram',
-                datasets: [ 
-                    { key: 'histograma_assimetrias', label: 'Frequência', backgroundColor: 'rgba(245, 158, 11, 0.6)' }
-                ]
-            },
-            'BoxPlot_Articular': {
-                title: 'Box Plot - Variação Angular Articular', category: 'distribuicoes',
-                yLabel: 'Ângulo (°)', xLabel: 'Articulações', type: 'boxplot',
-                datasets: [ 
-                    { key: 'boxplot_articular', label: 'Variação', backgroundColor: 'rgba(139, 92, 246, 0.6)' }
-                ]
             }
         };
 
@@ -257,12 +252,21 @@
                     </div>`;
                 }
 
+                // CORREÇÃO: Header com título e badge na mesma linha
+                const headerHTML = `
+                    <div class="video-card-header">
+                        <h3 class="video-title">${title}</h3>
+                        ${type === 'Landmarks' ? 
+                            `<span class="confidence-badge text-xs font-semibold px-2 py-1 rounded-full ${confidence > 70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                Confiança: ${confidence}%
+                            </span>` 
+                            : '<div class="confidence-badge"></div>' /* Espaço vazio para manter alinhamento */}
+                    </div>
+                `;
+
                 return `<div class="bg-white p-4 rounded-xl shadow-sm video-card">
                         <div class="video-card-content">
-                            <div class="flex justify-between items-center mb-2">
-                               <h3 class="font-bold">${title}</h3>
-                               ${type === 'Landmarks' ? `<span class="text-xs font-semibold px-2 py-1 rounded-full ${confidence > 70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">Confiança: ${confidence}%</span>` : ''}
-                            </div>
+                            ${headerHTML}
                             ${contentHTML}
                         </div>
                     </div>`;
@@ -280,18 +284,20 @@
             container.innerHTML = videoHTML;
         }
 
-        function setupAllCharts(finalChartsData) {
+        function setupAllCharts(finalChartsData, distributionData) {
             // Limpar containers
             Object.values(CHART_CONFIG).forEach(config => {
                 const container = document.getElementById(`${config.category}-content`);
                 if (container) container.innerHTML = '';
             });
 
-            if (!finalChartsData || Object.keys(finalChartsData).length === 0) {
-                 document.getElementById('angulos-content').innerHTML = `<p class="text-red-500 lg:col-span-2">Não foi possível gerar os gráficos.</p>`;
-                 return;
+            if ((!finalChartsData || Object.keys(finalChartsData).length === 0) && 
+                (!distributionData || Object.keys(distributionData).length === 0)) {
+                document.getElementById('angulos-content').innerHTML = `<p class="text-red-500 lg:col-span-2">Não foi possível gerar os gráficos.</p>`;
+                return;
             }
 
+            // Processar gráficos temporais
             for (const metricKey in finalChartsData) {
                 const chartConfig = CHART_CONFIG[metricKey];
                 const chartData = finalChartsData[metricKey];
@@ -300,37 +306,48 @@
                 const container = document.getElementById(`${chartConfig.category}-content`);
                 if (!container) continue;
 
-                const card = document.createElement('div');
-                card.className = 'bg-white p-6 rounded-xl shadow-sm';
-                card.innerHTML = `
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                        <div>
-                            <h2 class="text-lg font-bold text-gray-800">${chartConfig.title}</h2>
-                            <span class="mt-1 text-xs font-semibold px-2 py-1 rounded-full ${chartData.source === 'coronal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
-                                Fonte: Plano ${chartData.source ? chartData.source.charAt(0).toUpperCase() + chartData.source.slice(1) : 'N/A'}
-                            </span>
-                        </div>
-                        <button data-metric-key="${metricKey}" class="export-button mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
-                            <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
-                        </button>
-                    </div>
-                    <div class="chart-container"><canvas id="chart-${metricKey}"></canvas></div>`;
-                container.appendChild(card);
-                
-                const timestamps = chartData.data.map(d => (d.tempo_segundos || 0).toFixed(1));
-                const datasets = chartConfig.datasets.map(dsConfig => ({
-                    label: dsConfig.label, 
-                    data: chartData.data.map(d => d[dsConfig.key]),
-                    borderColor: dsConfig.borderColor || '#4f46e5',
-                    backgroundColor: dsConfig.borderColor ? `${dsConfig.borderColor}20` : '#4f46e520',
-                    tension: 0.1, 
-                    borderWidth: 2, 
-                    pointRadius: 0
-                }));
+                createTemporalChart(container, metricKey, chartConfig, chartData);
+            }
 
-                // Configuração específica para tipos de gráfico
-                let chartType = 'line';
-                let chartOptions = {
+            // Processar gráficos de distribuição
+            if (distributionData) {
+                createDistributionCharts(distributionData);
+            }
+        }
+
+        function createTemporalChart(container, metricKey, chartConfig, chartData) {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-6 rounded-xl shadow-sm';
+            card.innerHTML = `
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">${chartConfig.title}</h2>
+                        <span class="mt-1 text-xs font-semibold px-2 py-1 rounded-full ${chartData.source === 'coronal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
+                            Fonte: Plano ${chartData.source ? chartData.source.charAt(0).toUpperCase() + chartData.source.slice(1) : 'N/A'}
+                        </span>
+                    </div>
+                    <button data-metric-key="${metricKey}" class="export-button mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
+                        <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
+                    </button>
+                </div>
+                <div class="chart-container"><canvas id="chart-${metricKey}"></canvas></div>`;
+            container.appendChild(card);
+            
+            const timestamps = chartData.data.map(d => (d.tempo_segundos || 0).toFixed(1));
+            const datasets = chartConfig.datasets.map(dsConfig => ({
+                label: dsConfig.label, 
+                data: chartData.data.map(d => d[dsConfig.key]),
+                borderColor: dsConfig.borderColor || '#4f46e5',
+                backgroundColor: dsConfig.borderColor ? `${dsConfig.borderColor}20` : '#4f46e520',
+                tension: 0.1, 
+                borderWidth: 2, 
+                pointRadius: 0
+            }));
+
+            new Chart(`chart-${metricKey}`, {
+                type: 'line', 
+                data: { labels: timestamps, datasets: datasets },
+                options: {
                     responsive: true, 
                     maintainAspectRatio: false,
                     scales: {
@@ -343,25 +360,107 @@
                             title: { display: true, text: chartConfig.xLabel } 
                         }
                     }
-                };
+                }
+            });
+        }
 
-                // Ajustes para histogramas
-                if (chartConfig.type === 'histogram') {
-                    chartType = 'bar';
-                    datasets[0].barPercentage = 0.8;
-                    datasets[0].categoryPercentage = 0.9;
+        function createDistributionCharts(distributionData) {
+            const container = document.getElementById('distribuicoes-content');
+            if (!container) return;
+
+            // Distribuição de Ângulos (Histograma)
+            if (distributionData.distribuicao_angulos) {
+                const data = distributionData.distribuicao_angulos;
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-xl shadow-sm';
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">Distribuição de Ângulos Articulares</h2>
+                        <button data-distribution="angulos" class="export-distribution mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
+                            <i data-lucide="download" class="w-4 h-4"></i> Exportar Dados
+                        </button>
+                    </div>
+                    <div class="chart-container"><canvas id="chart-distribuicao-angulos"></canvas></div>`;
+                container.appendChild(card);
+
+                const binCenters = [];
+                for (let i = 0; i < data.bins.length - 1; i++) {
+                    binCenters.push((data.bins[i] + data.bins[i + 1]) / 2);
                 }
 
-                // Ajustes para boxplot
-                if (chartConfig.type === 'boxplot') {
-                    // Implementação simplificada do boxplot
-                    chartOptions.scales.y.min = 0;
+                new Chart('chart-distribuicao-angulos', {
+                    type: 'bar',
+                    data: {
+                        labels: binCenters.map(bin => bin.toFixed(1) + '°'),
+                        datasets: [{
+                            label: 'Frequência',
+                            data: data.histogram,
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                title: { display: true, text: 'Frequência' },
+                                beginAtZero: true
+                            },
+                            x: {
+                                title: { display: true, text: 'Ângulo (°)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Histograma de Assimetrias
+            if (distributionData.histograma_assimetrias) {
+                const data = distributionData.histograma_assimetrias;
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-xl shadow-sm';
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">Histograma de Assimetrias</h2>
+                        <button data-distribution="assimetrias" class="export-distribution mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
+                            <i data-lucide="download" class="w-4 h-4"></i> Exportar Dados
+                        </button>
+                    </div>
+                    <div class="chart-container"><canvas id="chart-histograma-assimetrias"></canvas></div>`;
+                container.appendChild(card);
+
+                const binCenters = [];
+                for (let i = 0; i < data.bins.length - 1; i++) {
+                    binCenters.push((data.bins[i] + data.bins[i + 1]) / 2);
                 }
 
-                new Chart(`chart-${metricKey}`, {
-                    type: chartType, 
-                    data: { labels: timestamps, datasets: datasets },
-                    options: chartOptions
+                new Chart('chart-histograma-assimetrias', {
+                    type: 'bar',
+                    data: {
+                        labels: binCenters.map(bin => bin.toFixed(3)),
+                        datasets: [{
+                            label: 'Frequência',
+                            data: data.histogram,
+                            backgroundColor: 'rgba(245, 158, 11, 0.6)',
+                            borderColor: 'rgba(245, 158, 11, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                title: { display: true, text: 'Frequência' },
+                                beginAtZero: true
+                            },
+                            x: {
+                                title: { display: true, text: 'Grau de Assimetria' }
+                            }
+                        }
+                    }
                 });
             }
         }
@@ -387,7 +486,7 @@
                 
                 fullAnalysisData = result.data;
                 populateVideosUI(fullAnalysisData.analyzed_data);
-                setupAllCharts(fullAnalysisData.final_charts);
+                setupAllCharts(fullAnalysisData.final_charts, fullAnalysisData.distribution_data);
 
                 loadingIndicator.style.display = 'none';
                 chartsSection.classList.remove('hidden');
@@ -412,26 +511,71 @@
 
         // LISTENER PARA OS BOTÕES DE EXPORTAÇÃO
         document.getElementById('charts-section').addEventListener('click', function(event) {
+            // Exportação de gráficos temporais
             const exportButton = event.target.closest('.export-button');
-            if (!exportButton || !fullAnalysisData || !fullAnalysisData.final_charts) return;
+            if (exportButton && fullAnalysisData && fullAnalysisData.final_charts) {
+                const metricKey = exportButton.dataset.metricKey;
+                const chartConfig = CHART_CONFIG[metricKey];
+                const chartData = fullAnalysisData.final_charts[metricKey];
 
-            const metricKey = exportButton.dataset.metricKey;
-            const chartConfig = CHART_CONFIG[metricKey];
-            const chartData = fullAnalysisData.final_charts[metricKey];
+                if (!chartConfig || !chartData) return;
 
-            if (!chartConfig || !chartData) return;
-
-            const dataToExport = chartData.data.map(frameData => {
-                const row = { tempo_s: (frameData.tempo_segundos || 0).toFixed(2) };
-                chartConfig.datasets.forEach(ds => {
-                    const header = ds.key;
-                    row[header] = frameData[ds.key];
+                const dataToExport = chartData.data.map(frameData => {
+                    const row = { tempo_s: (frameData.tempo_segundos || 0).toFixed(2) };
+                    chartConfig.datasets.forEach(ds => {
+                        const header = ds.key;
+                        row[header] = frameData[ds.key];
+                    });
+                    return row;
                 });
-                return row;
-            });
-            
-            const fileName = `${metricKey.toLowerCase()}.csv`;
-            exportToCSV(dataToExport, fileName);
+                
+                const fileName = `${metricKey.toLowerCase()}.csv`;
+                exportToCSV(dataToExport, fileName);
+            }
+
+            // Exportação de dados de distribuição
+            const exportDistributionButton = event.target.closest('.export-distribution');
+            if (exportDistributionButton && fullAnalysisData && fullAnalysisData.distribution_data) {
+                const distributionType = exportDistributionButton.dataset.distribution;
+                const distributionData = fullAnalysisData.distribution_data;
+
+                let dataToExport = [];
+                let fileName = '';
+
+                switch (distributionType) {
+                    case 'angulos':
+                        if (distributionData.distribuicao_angulos) {
+                            const data = distributionData.distribuicao_angulos;
+                            for (let i = 0; i < data.histogram.length; i++) {
+                                dataToExport.push({
+                                    bin_start: data.bins[i],
+                                    bin_end: data.bins[i + 1],
+                                    frequency: data.histogram[i]
+                                });
+                            }
+                            fileName = 'distribuicao_angulos.csv';
+                        }
+                        break;
+                    
+                    case 'assimetrias':
+                        if (distributionData.histograma_assimetrias) {
+                            const data = distributionData.histograma_assimetrias;
+                            for (let i = 0; i < data.histogram.length; i++) {
+                                dataToExport.push({
+                                    bin_start: data.bins[i],
+                                    bin_end: data.bins[i + 1],
+                                    frequency: data.histogram[i]
+                                });
+                            }
+                            fileName = 'histograma_assimetrias.csv';
+                        }
+                        break;
+                }
+
+                if (dataToExport.length > 0) {
+                    exportToCSV(dataToExport, fileName);
+                }
+            }
         });
     </script>
 </body>
