@@ -1,49 +1,34 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
+<head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="/style.css" />
-    <title>Dashboard de Análise - The Posture Lab</title>
+    <title>Dashboard Multi-Plano - The Posture Lab</title>
     
-    <!-- Dependências essenciais -->
+    <!-- Dependências -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        :root { --primary: #4f46e5; --light: #f3f4f6; }
+        :root { --primary: #4f46e5; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .chart-container { position: relative; height: 350px; width: 100%; }
         .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
-        .hidden { display: none; }
-        .media-box { position: relative; width: 100%; padding-top: 56.25%; /* 16:9 Aspect Ratio */ }
+        .media-box { position: relative; width: 100%; padding-top: 56.25%; }
         .media-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
-        .video-placeholder { 
-            background-color: #fce7e7;
-            border: 1px dashed #ef4444; 
-        }
-        
-        /* Estilos do cabeçalho */
-        .navbar { background-color: white; padding: 1rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .the-posture-lab { font-size: 1.5rem; font-weight: bold; }
-        .span { color: #4f46e5; }
-        .frame-16 { display: flex; justify-content: space-between; align-items: center; }
-        .frame-17 { display: flex; gap: 1.5rem; }
-        .text-wrapper-26 { text-decoration: none; color: #374151; font-weight: 500; }
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
     </style>
-  </head>
-  <body>
-    <!-- NAVBAR -->
-    <div class="navbar">
-      <div class="frame-16">
-        <p class="the-posture-lab">
-          <span class="text-wrapper">The Posture </span> <span class="span">Lab</span>
+</head>
+<body>
+    <!-- NAVBAR (sem alterações) -->
+     <div class="navbar" style="background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <div class="frame-16" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem;">
+        <p class="the-posture-lab" style="font-size: 1.5rem; font-weight: bold;">
+          <span class="text-wrapper">The Posture </span> <span class="span" style="color: #4f46e5;">Lab</span>
         </p>
-        <div class="frame-17">
-          <a href="/" class="text-wrapper-26">Home</a>
-          <a href="/" class="text-wrapper-26">Configurações</a>
-          <a href="/nova-analise" class="text-wrapper-26">Nova Análise</a>
+        <div class="frame-17" style="display: flex; gap: 1.5rem;">
+          <a href="/" style="text-decoration: none; color: #374151; font-weight: 500;">Home</a>
+          <a href="/nova-analise.html" style="text-decoration: none; color: #374151; font-weight: 500;">Nova Análise</a>
         </div>
       </div>
     </div>
@@ -56,343 +41,211 @@
 
         <section id="video-section" class="mb-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Vídeos da Análise</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="video-container">
-                 <!-- Placeholder inicial de carregamento de vídeo -->
-                 <div class="bg-white p-4 rounded-xl shadow-sm md:col-span-2">
-                    <div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="video-container">
+                 <div class="bg-white p-4 rounded-xl shadow-sm md:col-span-2 lg:col-span-4">
+                    <div class="w-full h-48 bg-gray-200 rounded-lg animate-pulse flex items-center justify-center">
                         <p class="text-gray-500">Carregando vídeos...</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <div class="bg-white rounded-xl shadow-sm p-2 mb-8">
-            <nav id="tabs" class="flex flex-wrap items-center justify-start space-x-2 sm:space-x-4">
-                <button data-tab="angulos" class="tab-button active font-semibold py-3 px-4 border-b-2 border-transparent">Ângulos Articulares</button>
-                <button data-tab="simetria" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Simetria Corporal</button>
-                <button data-tab="temporal" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Análise Temporal</button>
-                <button data-tab="distribuicoes" class="tab-button font-semibold py-3 px-4 border-b-2 border-transparent">Distribuições</button>
-            </nav>
-        </div>
-
-        <div id="loading-indicator" class="text-center p-10">
-            <h2 id="loading-title" class="text-xl font-semibold text-gray-700">Carregando e processando dados...</h2>
-            <p class="text-gray-500">Isso pode demorar um pouco.</p>
-        </div>
-
-        <main id="tab-content" class="hidden">
-            <div id="angulos-content" class="tab-pane grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
-            <div id="simetria-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
-            <div id="temporal-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
-            <div id="distribuicoes-content" class="tab-pane hidden grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
+        <main id="charts-section" class="hidden">
+             <div class="bg-white rounded-xl shadow-sm p-2 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 p-4">Resultados da Análise Biomecânica</h2>
+            </div>
+            <div id="charts-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
         </main>
+        
+        <div id="loading-indicator" class="text-center p-10">
+            <h2 class="text-xl font-semibold text-gray-700">Carregando e processando dados...</h2>
+        </div>
     </div>
 
     <script>
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
-        let currentAnalysisData = null;
-        let currentAnalysisId = null;
 
-        /**
-         * Lida com o erro de carregamento de vídeo sem exibir nada para o usuário.
-         * @param {HTMLVideoElement} videoElement - O elemento <video> que falhou.
-         * @param {string} type - Tipo de vídeo (Original ou Landmarks).
-         */
-        function handleVideoError(videoElement, type) {
-            // Se o vídeo original falhar, algo deu muito errado na rede ou no upload.
-            if (type === 'Original') {
-                console.error(`[FRONTEND ERRO CRÍTICO] Falha ao carregar o vídeo Original. URL: ${videoElement.src}`);
-            } else {
-                // Para o vídeo de landmarks, o erro é esperado devido à codificação
-                console.error(`[FRONTEND ERRO] Falha ao carregar o vídeo Landmarks. URL: ${videoElement.src}`);
+        // *** 1. ESTRUTURA DE CONFIGURAÇÃO CENTRALIZADA PARA GRÁFICOS ***
+        const CHART_CONFIG = {
+            'Angulos_Ombros': { 
+                title: 'Ângulos dos Ombros (Flexão/Extensão)',
+                yLabel: 'Ângulo (°)', yMin: 0, yMax: 180, xLabel: 'Tempo (s)',
+                datasets: [
+                    { key: 'angulo_ombro_esquerdo', label: 'Esquerdo' },
+                    { key: 'angulo_ombro_direito', label: 'Direito' }
+                ]
+            },
+            'Angulos_Quadris': { 
+                title: 'Ângulos dos Quadris (Flexão/Extensão)',
+                yLabel: 'Ângulo (°)', yMin: -15, yMax: 120, xLabel: 'Tempo (s)',
+                datasets: [
+                    { key: 'angulo_quadril_esquerdo', label: 'Esquerdo' },
+                    { key: 'angulo_quadril_direito', label: 'Direito' }
+                ]
+            },
+            'Angulos_Joelhos': { 
+                title: 'Ângulos dos Joelhos (Flexão/Extensão)',
+                yLabel: 'Ângulo (°)', yMin: 0, yMax: 140, xLabel: 'Tempo (s)',
+                datasets: [
+                    { key: 'angulo_joelho_esquerdo', label: 'Esquerdo' },
+                    { key: 'angulo_joelho_direito', label: 'Direito' }
+                ]
+            },
+            'Angulo_Coluna': {
+                title: 'Ângulo da Coluna (Inclinação)',
+                yLabel: 'Ângulo (°)', yMin: 0, yMax: 80, xLabel: 'Tempo (s)',
+                datasets: [{ key: 'angulo_coluna', label: 'Coluna' }]
+            },
+            'Assimetria_Ombros': {
+                title: 'Assimetria Vertical dos Ombros',
+                yLabel: 'Diferença de Altura (Proporcional)', yMin: 0, yMax: 0.2, xLabel: 'Tempo (s)',
+                datasets: [{ key: 'assimetria_ombros_vertical', label: 'Diferença' }]
+            },
+            'Oscilacao_Vertical_Quadril': {
+                title: 'Oscilação Vertical do Quadril',
+                yLabel: 'Posição Vertical (Proporcional)', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                datasets: [{ key: 'oscilacao_vertical_quadril', label: 'Posição Y'}]
+            },
+            'Oscilacao_Horizontal_Quadril': {
+                title: 'Oscilação Horizontal do Quadril',
+                yLabel: 'Posição Horizontal (Proporcional)', yMin: 0, yMax: 1, xLabel: 'Tempo (s)',
+                datasets: [{ key: 'oscilacao_horizontal_quadril', label: 'Posição X'}]
             }
-            
-            const parentDiv = videoElement.closest('.video-card');
-            if (parentDiv) {
-                // Substitui a tag <video> por um placeholder de erro discreto
-                const mediaBox = parentDiv.querySelector('.media-box');
-                if (mediaBox) {
-                    mediaBox.innerHTML = `
-                        <div class="media-content rounded-lg flex flex-col items-center justify-center video-placeholder">
-                            <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 mb-2"></i>
-                            <p class="text-sm text-red-600 font-semibold">${type} indisponível.</p>
-                            <p class="text-xs text-red-400">O servidor falhou ao codificar o vídeo (WebM).</p>
-                        </div>`;
-                    if(typeof lucide !== 'undefined' && lucide.createIcons) {
-                        lucide.createIcons(); 
-                    }
-                }
-            }
-        }
+        };
 
-        function populateVideosUI(analysisId, apiResponse) {
-            const videoContainer = document.getElementById("video-container");
-            videoContainer.innerHTML = '';
-            
-            if (apiResponse.data.temporal_data_frontal) {
-                const videoUrlOriginal = `${backendBaseUrl}/api/video/${analysisId}_frontal_original.mp4`;
-                
-                // O nome do arquivo processado é retornado pelo backend (deve ser .webm)
-                const processedFilename = apiResponse.data.video_processed_filename;
-                const videoUrlLandmarks = processedFilename 
-                    ? `${backendBaseUrl}/api/video/${processedFilename}` 
-                    : null;
-                
-                console.log(`[FRONTEND DEBUG] Carregando Original: ${videoUrlOriginal}`);
-                console.log(`[FRONTEND DEBUG] Carregando Landmarks: ${videoUrlLandmarks || 'NÃO DISPONÍVEL'}`);
-                
-                // --- Vídeo Original ---
-                videoContainer.innerHTML += `
-                    <div class="bg-white p-4 rounded-xl shadow-sm video-card">
-                        <h3 class="font-bold mb-2">Plano Coronal (Original)</h3>
-                        <div class="media-box">
-                            <video controls muted preload="auto" class="media-content rounded-lg" 
-                                   src="${videoUrlOriginal}" 
-                                   onerror="handleVideoError(this, 'Original')">
-                            </video>
+        // *** 2. LÓGICA ATUALIZADA PARA MÚLTIPLOS VÍDEOS ***
+        function populateVideosUI(analysisData) {
+            const container = document.getElementById("video-container");
+            container.innerHTML = ''; // Limpa o placeholder
+
+            const createVideoCard = (plane, data) => {
+                if (!data) return '';
+                const originalUrl = `${backendBaseUrl}/api/video/${data.video_original}`;
+                const processedUrl = data.video_processed ? `${backendBaseUrl}/api/video/${data.video_processed}` : null;
+                const confidence = (data.confidence_score * 100).toFixed(1);
+
+                let cardHTML = `
+                    <div class="bg-white p-4 rounded-xl shadow-sm">
+                        <h3 class="font-bold mb-2">Plano ${plane} (Original)</h3>
+                        <div class="media-box"><video controls muted class="media-content rounded-lg" src="${originalUrl}"></video></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-center mb-2">
+                           <h3 class="font-bold">Plano ${plane} (Landmarks)</h3>
+                           <span class="text-xs font-semibold px-2 py-1 rounded-full ${confidence > 70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">Confiança: ${confidence}%</span>
                         </div>
-                    </div>`;
-
-                // --- Vídeo de Landmarks ---
-                if (videoUrlLandmarks) {
-                    videoContainer.innerHTML += `
-                        <div class="bg-white p-4 rounded-xl shadow-sm video-card">
-                            <h3 class="font-bold mb-2">Plano Coronal (Landmarks - Processado)</h3>
-                            <div class="media-box">
-                                <video controls muted preload="auto" class="media-content rounded-lg" 
-                                       onerror="handleVideoError(this, 'Landmarks')">
-                                    <!-- CRÍTICO: Usando tag <source> para forçar o tipo MIME video/webm -->
-                                    <source src="${videoUrlLandmarks}" type="video/webm">
-                                    Seu navegador não suporta vídeos WebM.
-                                </video>
-                            </div>
-                        </div>`;
+                        <div class="media-box">`;
+                
+                if (processedUrl) {
+                    cardHTML += `<video controls muted class="media-content rounded-lg"><source src="${processedUrl}" type="video/webm"></video>`;
                 } else {
-                     // Exibe o placeholder de erro se o backend não conseguiu gerar o arquivo
-                     videoContainer.innerHTML += `
-                        <div class="bg-white p-4 rounded-xl shadow-sm video-card">
-                            <h3 class="font-bold mb-2">Plano Coronal (Landmarks - Processado)</h3>
-                            <div class="media-box">
-                                <div class="media-content rounded-lg flex flex-col items-center justify-center video-placeholder">
-                                    <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 mb-2"></i>
-                                    <p class="text-sm text-red-600 font-semibold">Landmarks indisponível.</p>
-                                    <p class="text-xs text-red-400">O servidor falhou ao codificar o vídeo (WebM).</p>
-                                </div>
-                            </div>
-                        </div>`;
+                    cardHTML += `<div class="media-content rounded-lg flex items-center justify-center bg-red-100 text-red-700">Vídeo de landmarks indisponível</div>`;
                 }
-            } else {
-                 // Caso falhe ao buscar os dados da análise (sem temporal_data)
-                 videoContainer.innerHTML = '<div class="bg-white p-4 rounded-xl shadow-sm md:col-span-2"><p class="text-red-500">Falha ao carregar dados temporais para análise.</p></div>';
-            }
-            document.getElementById('analysisSubtitle').textContent = `Resultados da Análise ID: ${analysisId}`;
+                cardHTML += '</div></div>';
+                return cardHTML;
+            };
+
+            container.innerHTML += createVideoCard('Coronal', analysisData.coronal);
+            container.innerHTML += createVideoCard('Transversal', analysisData.transversal);
         }
 
-        async function fetchAnalysisData(analysisId) {
-            try {
-                if (!analysisId) throw new Error("ID da análise não foi encontrado na URL.");
-                const apiUrl = `${backendBaseUrl}/api/analysis/${analysisId}`;
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error(`Erro na rede: ${response.status}`);
-                const apiResponse = await response.json();
-                if (!apiResponse.success) throw new Error(`Erro no backend: ${apiResponse.error}`);
-                return apiResponse;
-            } catch (error) {
-                console.error(`[FRONTEND ERRO CRÍTICO] Falha ao buscar análise: ${error.message}`);
-                document.getElementById('loading-indicator').innerHTML = `<h2 class="text-red-500 font-bold">Falha ao carregar dados da análise. (Consulte o console F12)</h2>`;
-                return null;
+        // *** 3. LÓGICA DE PLOTAGEM ATUALIZADA COM MATRIZ E PADRONIZAÇÃO ***
+        function setupAllCharts(finalChartsData) {
+            const grid = document.getElementById('charts-grid');
+            grid.innerHTML = ''; // Limpa para nova plotagem
+
+            if (!finalChartsData || Object.keys(finalChartsData).length === 0) {
+                 grid.innerHTML = `<p class="text-red-500 lg:col-span-2">Não foi possível gerar os gráficos. Verifique os dados da análise.</p>`;
+                 return;
+            }
+
+            for (const metricKey in finalChartsData) {
+                const chartConfig = CHART_CONFIG[metricKey];
+                const chartData = finalChartsData[metricKey];
+
+                if (!chartConfig || !chartData) continue;
+                
+                // Cria o card do gráfico
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-xl shadow-sm';
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">${chartConfig.title}</h2>
+                        <span class="mt-1 sm:mt-0 text-xs font-semibold px-2 py-1 rounded-full ${chartData.source === 'coronal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
+                            Fonte: Plano ${chartData.source.charAt(0).toUpperCase() + chartData.source.slice(1)}
+                        </span>
+                    </div>
+                    <div class="chart-container"><canvas id="chart-${metricKey}"></canvas></div>`;
+                grid.appendChild(card);
+                
+                // Prepara os dados para o Chart.js
+                const timestamps = chartData.data.map(d => (d.tempo_segundos || 0).toFixed(1));
+                const datasets = chartConfig.datasets.map(dsConfig => ({
+                    label: dsConfig.label,
+                    data: chartData.data.map(d => d[dsConfig.key]),
+                    tension: 0.1,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }));
+
+                // Cria o gráfico usando a configuração padronizada
+                new Chart(`chart-${metricKey}`, {
+                    type: 'line',
+                    data: { labels: timestamps, datasets: datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                title: { display: true, text: chartConfig.yLabel },
+                                min: chartConfig.yMin,
+                                max: chartConfig.yMax
+                            },
+                            x: {
+                                title: { display: true, text: chartConfig.xLabel }
+                            }
+                        }
+                    }
+                });
             }
         }
-        
-        function cleanupAnalysis(id) {
-            if (!id) return;
-            const deleteUrl = `${backendBaseUrl}/api/delete-analysis/${id}`;
-            const data = new Blob([''], {type : 'application/json'});
-            navigator.sendBeacon(deleteUrl, data);
-            console.log(`Cleanup request sent for analysis ID: ${id}`);
-        }
 
+        // --- LÓGICA DE CARREGAMENTO INICIAL ---
         window.addEventListener('load', async () => {
             const loadingIndicator = document.getElementById('loading-indicator');
-            const tabContent = document.getElementById('tab-content');
+            const chartsSection = document.getElementById('charts-section');
             const params = new URLSearchParams(window.location.search);
             const analysisId = params.get('analysis_id');
             
             if (!analysisId) {
-                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado na URL.</h2>';
+                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado.</h2>';
                 return;
             }
-            
-            currentAnalysisId = analysisId; 
+            document.getElementById('analysisSubtitle').textContent = `Carregando Análise ID: ${analysisId}`;
 
-            const apiResponse = await fetchAnalysisData(analysisId);
-            
-            if (apiResponse && apiResponse.data) {
-                populateVideosUI(analysisId, apiResponse);
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/analysis/${analysisId}`);
+                const result = await response.json();
+
+                if (!result.success || !result.data) throw new Error(result.error || 'Estrutura de dados inválida.');
                 
-                currentAnalysisData = apiResponse.data.temporal_data_frontal;
-                const validFrames = currentAnalysisData ? currentAnalysisData.filter(d => d.angulo_ombro_esquerdo != null).length : 0;
+                const analysisData = result.data;
+                populateVideosUI(analysisData.analyzed_data);
+                setupAllCharts(analysisData.final_charts);
 
-                if (currentAnalysisData && validFrames > 5) {
-                    loadingIndicator.style.display = 'none';
-                    tabContent.classList.remove('hidden');
-                    setupAllCharts(currentAnalysisData);
-                    if(typeof lucide !== 'undefined' && lucide.createIcons) {
-                        lucide.createIcons();
-                    }
-                } else {
-                     loadingIndicator.innerHTML = `<div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-xl">
-                        <h2 class="font-bold text-xl">Análise com Baixa Detecção</h2>
-                        <p>O sistema não detectou os pontos corporais na maior parte do vídeo ou o processamento foi interrompido.</p></div>`;
-                }
-            }
-            
-            document.querySelectorAll('.tab-button').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-                    document.getElementById(`${tab.dataset.tab}-content`).classList.remove('hidden');
-                });
-            });
-            
-            window.addEventListener('beforeunload', () => {
-                if (currentAnalysisId) {
-                    cleanupAnalysis(currentAnalysisId);
-                }
-            });
-            
-            // Funções de Chart e Exportar CSV (Mantidas do código anterior)
-            
-            function exportToCSV(data, filename) {
-                if (!data || data.length === 0) { console.error("Não há dados para exportar."); return; }
-                const headers = Object.keys(data[0]);
-                const csvRows = [headers.join(',')];
-                for (const row of data) {
-                    const values = headers.map(header => `"${String(row[header] ?? '').replace(/"/g, '""')}"`);
-                    csvRows.push(values.join(','));
-                }
-                const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.setAttribute('download', filename);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-            
-            document.getElementById('tab-content').addEventListener('click', function(event) {
-                const exportButton = event.target.closest('.export-button');
-                if (!exportButton || !currentAnalysisData) return;
-
-                const chartId = exportButton.dataset.exportTarget;
-                let dataToExport;
-                let fileName;
-
-                switch (chartId) {
-                    case 'chartOmbros':
-                        fileName = 'angulos_ombros.csv';
-                        dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, esquerdo_deg: d.angulo_ombro_esquerdo, direito_deg: d.angulo_ombro_direito }));
-                        break;
-                    case 'chartQuadris':
-                        fileName = 'angulos_quadris.csv';
-                        dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, esquerdo_deg: d.angulo_quadril_esquerdo, direito_deg: d.angulo_quadril_direito }));
-                        break;
-                    case 'chartColuna':
-                        fileName = 'angulo_coluna.csv';
-                        dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, cervical_deg: d.angulo_coluna_cervical }));
-                        break;
-                    case 'chartJoelhos':
-                        fileName = 'angulos_joelhos.csv';
-                        dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, esquerdo_deg: d.angulo_joelho_esquerdo, direito_deg: d.angulo_joelho_direito }));
-                        break;
-                    case 'chartAssimetriaOmbros':
-                        fileName = 'simetria_ombros.csv';
-                        dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, assimetria_vertical: d.assimetria_ombros_vertical }));
-                        break;
-                    case 'chartOscilacaoVertical':
-                        fileName = 'temporal_oscilacao_vertical.csv';
-                        dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, posicao_y_quadril: d.oscilacao_vertical_quadril }));
-                        break;
-                    case 'chartPosicaoHorizontal':
-                        fileName = 'temporal_posicao_horizontal.csv';
-                        dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, posicao_x_quadril: d.posicao_horizontal_quadril }));
-                        break;
-                    case 'chartDistribuicaoQuadris':
-                        fileName = 'distribuicao_vertical_quadril.csv';
-                        dataToExport = currentAnalysisData.map(d => ({ tempo_s: d.tempo_segundos, posicao_y_quadril: d.oscilacao_vertical_quadril }));
-                        break;
-                }
-
-                if (dataToExport) {
-                    exportToCSV(dataToExport, fileName);
-                }
-            });
-            
-            function createChartCard(id, title, category) {
-                const container = document.getElementById(`${category}-content`);
-                if (!container) return;
-                const cardHTML = `
-                    <div class="bg-white p-6 rounded-xl shadow-sm">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                            <h2 class="text-lg font-bold text-gray-800">${title}</h2>
-                            <button data-export-target="${id}" class="export-button mt-2 sm:mt-0 text-sm flex items-center gap-2 px-3 py-1.5 rounded-md font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200">
-                                <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
-                            </button>
-                        </div>
-                        <div class="chart-container"><canvas id="${id}"></canvas></div>
-                    </div>`;
-                container.insertAdjacentHTML('beforeend', cardHTML);
-            }
-
-            function setupAllCharts(analysisData) {
-                ['angulos', 'simetria', 'temporal', 'distribuicoes'].forEach(id => {
-                    const el = document.getElementById(`${id}-content`); if(el) el.innerHTML = '';
-                });
-
-                const timestamps = analysisData.map(d => (d.tempo_segundos || 0).toFixed(1));
-                const chartOptions = (yTitle, beginAtZero = false) => ({ 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    scales: { 
-                        y: { 
-                            title: { display: true, text: yTitle }, 
-                            beginAtZero: beginAtZero 
-                        } 
-                    } 
-                });
-
-                // Ângulos Articulares
-                createChartCard('chartOmbros', 'Ângulos dos Ombros', 'angulos');
-                new Chart('chartOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_ombro_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_ombro_direito) }] }, options: chartOptions('Ângulo (°)') });
+                loadingIndicator.style.display = 'none';
+                chartsSection.classList.remove('hidden');
                 
-                createChartCard('chartQuadris', 'Ângulos dos Quadris', 'angulos');
-                new Chart('chartQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_quadril_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_quadril_direito) }] }, options: chartOptions('Ângulo (°)') });
+                // Ativa a renderização de ícones se houver
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                }
 
-                createChartCard('chartColuna', 'Ângulos da Coluna', 'angulos');
-                new Chart('chartColuna', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Cervical', data: analysisData.map(d => d.angulo_coluna_cervical) }] }, options: chartOptions('Ângulo (°)') });
-
-                createChartCard('chartJoelhos', 'Ângulos dos Joelhos', 'angulos');
-                new Chart('chartJoelhos', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Esquerdo', data: analysisData.map(d => d.angulo_joelho_esquerdo) }, { label: 'Direito', data: analysisData.map(d => d.angulo_joelho_direito) }] }, options: chartOptions('Ângulo (°)') });
-
-                // Simetria Corporal
-                createChartCard('chartAssimetriaOmbros', 'Assimetria Vertical dos Ombros', 'simetria');
-                new Chart('chartAssimetriaOmbros', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Diferença Y', data: analysisData.map(d => d.assimetria_ombros_vertical) }] }, options: chartOptions('Distância (0-1)') });
-
-                // Análise Temporal
-                createChartCard('chartOscilacaoVertical', 'Oscilação Vertical do Quadril (Y)', 'temporal');
-                new Chart('chartOscilacaoVertical', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Posição Y (Quadril)', data: analysisData.map(d => d.oscilacao_vertical_quadril) }] }, options: chartOptions('Posição (0-1)') });
-
-                createChartCard('chartPosicaoHorizontal', 'Posição Horizontal do Quadril (X)', 'temporal');
-                new Chart('chartPosicaoHorizontal', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Posição X (Quadril)', data: analysisData.map(d => d.posicao_horizontal_quadril) }] }, options: chartOptions('Posição (0-1)') });
-
-                // Distribuições
-                createChartCard('chartDistribuicaoQuadris', 'Distribuição Vertical do Quadril (Y)', 'distribuicoes');
-                new Chart('chartDistribuicaoQuadris', { type: 'line', data: { labels: timestamps, datasets: [{ label: 'Distribuição Y', data: analysisData.map(d => d.oscilacao_vertical_quadril), showLine: false, pointRadius: 3 }] }, options: chartOptions('Posição (0-1)') });
+            } catch (error) {
+                console.error("Falha ao carregar a análise:", error);
+                loadingIndicator.innerHTML = `<h2 class="text-xl font-semibold text-red-500">Falha ao carregar dados da análise: ${error.message}</h2>`;
             }
         });
-
-        window.handleVideoError = handleVideoError;
     </script>
 </body>
 </html>
