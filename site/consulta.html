@@ -124,7 +124,7 @@
         const backendBaseUrl = "https://tccanalisepostural-production.up.railway.app";
         let fullAnalysisData = null;
 
-        // CONFIGURAÇÃO EXPANDIDA DOS GRÁFICOS
+        // CONFIGURAÇÃO CORRIGIDA DOS GRÁFICOS
         const CHART_CONFIG = {
             // ÂNGULOS ARTICULARES
             'Angulos_Ombros': { 
@@ -137,7 +137,7 @@
             },
             'Angulos_Quadris': { 
                 title: 'Ângulos dos Quadris (Flexão/Extensão)', category: 'angulos',
-                yLabel: 'Ângulo (°)', yMin: -15, yMax: 120, xLabel: 'Tempo (s)',
+                yLabel: 'Ângulo (°)', yMin: 0, yMax: 180, xLabel: 'Tempo (s)',
                 datasets: [ 
                     { key: 'angulo_quadril_esquerdo', label: 'Esquerdo', borderColor: '#3b82f6' }, 
                     { key: 'angulo_quadril_direito', label: 'Direito', borderColor: '#ef4444' } 
@@ -145,7 +145,7 @@
             },
             'Angulos_Joelhos': { 
                 title: 'Ângulos dos Joelhos (Flexão/Extensão)', category: 'angulos',
-                yLabel: 'Ângulo (°)', yMin: 0, yMax: 140, xLabel: 'Tempo (s)',
+                yLabel: 'Ângulo (°)', yMin: 0, yMax: 180, xLabel: 'Tempo (s)',
                 datasets: [ 
                     { key: 'angulo_joelho_esquerdo', label: 'Esquerdo', borderColor: '#3b82f6' }, 
                     { key: 'angulo_joelho_direito', label: 'Direito', borderColor: '#ef4444' } 
@@ -153,7 +153,7 @@
             },
             'Angulo_Coluna': {
                 title: 'Ângulo da Coluna (Inclinação)', category: 'angulos',
-                yLabel: 'Ângulo (°)', yMin: 0, yMax: 80, xLabel: 'Tempo (s)',
+                yLabel: 'Ângulo (°)', yMin: 0, yMax: 180, xLabel: 'Tempo (s)',
                 datasets: [{ key: 'angulo_coluna', label: 'Coluna', borderColor: '#8b5cf6' }]
             },
             
@@ -293,11 +293,16 @@
 
             if ((!finalChartsData || Object.keys(finalChartsData).length === 0) && 
                 (!distributionData || Object.keys(distributionData).length === 0)) {
-                document.getElementById('angulos-content').innerHTML = `<p class="text-red-500 lg:col-span-2">Não foi possível gerar os gráficos.</p>`;
+                document.getElementById('angulos-content').innerHTML = `
+                    <div class="lg:col-span-2 bg-yellow-50 p-6 rounded-xl border border-yellow-200">
+                        <h3 class="text-lg font-semibold text-yellow-800">Dados Insuficientes</h3>
+                        <p class="text-yellow-600 mt-2">Não foi possível gerar gráficos com os dados disponíveis.</p>
+                    </div>`;
                 return;
             }
 
             // Processar gráficos temporais
+            let chartsCreated = 0;
             for (const metricKey in finalChartsData) {
                 const chartConfig = CHART_CONFIG[metricKey];
                 const chartData = finalChartsData[metricKey];
@@ -307,6 +312,16 @@
                 if (!container) continue;
 
                 createTemporalChart(container, metricKey, chartConfig, chartData);
+                chartsCreated++;
+            }
+
+            // Se nenhum gráfico foi criado, mostra mensagem
+            if (chartsCreated === 0) {
+                document.getElementById('angulos-content').innerHTML = `
+                    <div class="lg:col-span-2 bg-red-50 p-6 rounded-xl border border-red-200">
+                        <h3 class="text-lg font-semibold text-red-800">Erro nos Dados</h3>
+                        <p class="text-red-600 mt-2">Os dados recebidos não são compatíveis com os gráficos esperados.</p>
+                    </div>`;
             }
 
             // Processar gráficos de distribuição
@@ -318,6 +333,32 @@
         function createTemporalChart(container, metricKey, chartConfig, chartData) {
             const card = document.createElement('div');
             card.className = 'bg-white p-6 rounded-xl shadow-sm';
+            
+            // Verifica se há dados válidos
+            const hasValidData = chartData.data && chartData.data.length > 0 && 
+                                chartData.data.some(frame => {
+                                    const firstKey = chartConfig.datasets[0].key;
+                                    const value = frame[firstKey];
+                                    return value !== undefined && value !== null && !isNaN(value) && value > 0;
+                                });
+            
+            if (!hasValidData) {
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">${chartConfig.title}</h2>
+                            <span class="mt-1 text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-800">
+                                Dados indisponíveis
+                            </span>
+                        </div>
+                    </div>
+                    <div class="chart-container flex items-center justify-center bg-gray-100 rounded-lg">
+                        <p class="text-gray-500">Não há dados válidos para exibir este gráfico</p>
+                    </div>`;
+                container.appendChild(card);
+                return;
+            }
+            
             card.innerHTML = `
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                     <div>
@@ -334,34 +375,62 @@
             container.appendChild(card);
             
             const timestamps = chartData.data.map(d => (d.tempo_segundos || 0).toFixed(1));
-            const datasets = chartConfig.datasets.map(dsConfig => ({
-                label: dsConfig.label, 
-                data: chartData.data.map(d => d[dsConfig.key]),
-                borderColor: dsConfig.borderColor || '#4f46e5',
-                backgroundColor: dsConfig.borderColor ? `${dsConfig.borderColor}20` : '#4f46e520',
-                tension: 0.1, 
-                borderWidth: 2, 
-                pointRadius: 0
-            }));
+            
+            const datasets = chartConfig.datasets.map(dsConfig => {
+                const dataValues = chartData.data.map(d => {
+                    const value = d[dsConfig.key];
+                    // Garante que o valor seja numérico e dentro de limites razoáveis
+                    return (value !== undefined && value !== null && !isNaN(value)) ? Number(value) : 0;
+                });
+                
+                return {
+                    label: dsConfig.label, 
+                    data: dataValues,
+                    borderColor: dsConfig.borderColor || '#4f46e5',
+                    backgroundColor: dsConfig.borderColor ? `${dsConfig.borderColor}20` : '#4f46e520',
+                    tension: 0.1, 
+                    borderWidth: 2, 
+                    pointRadius: 0
+                };
+            });
 
-            new Chart(`chart-${metricKey}`, {
-                type: 'line', 
-                data: { labels: timestamps, datasets: datasets },
-                options: {
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { 
-                            title: { display: true, text: chartConfig.yLabel }, 
-                            min: chartConfig.yMin, 
-                            max: chartConfig.yMax 
-                        },
-                        x: { 
-                            title: { display: true, text: chartConfig.xLabel } 
-                        }
+            // Configuração dinâmica dos limites do eixo Y
+            const allValues = datasets.flatMap(ds => ds.data).filter(val => val > 0);
+            const maxValue = allValues.length > 0 ? Math.max(...allValues) : 180;
+            const minValue = allValues.length > 0 ? Math.min(...allValues) : 0;
+            
+            const chartOptions = {
+                responsive: true, 
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        title: { display: true, text: chartConfig.yLabel }, 
+                        min: Math.max(0, minValue - 10),
+                        max: Math.min(180, maxValue + 10)
+                    },
+                    x: { 
+                        title: { display: true, text: chartConfig.xLabel } 
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
                     }
                 }
-            });
+            };
+
+            // Aguarda o DOM estar pronto antes de criar o gráfico
+            setTimeout(() => {
+                const ctx = document.getElementById(`chart-${metricKey}`);
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'line', 
+                        data: { labels: timestamps, datasets: datasets },
+                        options: chartOptions
+                    });
+                }
+            }, 100);
         }
 
         function createDistributionCharts(distributionData) {
@@ -388,32 +457,34 @@
                     binCenters.push((data.bins[i] + data.bins[i + 1]) / 2);
                 }
 
-                new Chart('chart-distribuicao-angulos', {
-                    type: 'bar',
-                    data: {
-                        labels: binCenters.map(bin => bin.toFixed(1) + '°'),
-                        datasets: [{
-                            label: 'Frequência',
-                            data: data.histogram,
-                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                title: { display: true, text: 'Frequência' },
-                                beginAtZero: true
-                            },
-                            x: {
-                                title: { display: true, text: 'Ângulo (°)' }
+                setTimeout(() => {
+                    new Chart('chart-distribuicao-angulos', {
+                        type: 'bar',
+                        data: {
+                            labels: binCenters.map(bin => bin.toFixed(1) + '°'),
+                            datasets: [{
+                                label: 'Frequência',
+                                data: data.histogram,
+                                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    title: { display: true, text: 'Frequência' },
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    title: { display: true, text: 'Ângulo (°)' }
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }, 100);
             }
 
             // Histograma de Assimetrias
@@ -436,32 +507,34 @@
                     binCenters.push((data.bins[i] + data.bins[i + 1]) / 2);
                 }
 
-                new Chart('chart-histograma-assimetrias', {
-                    type: 'bar',
-                    data: {
-                        labels: binCenters.map(bin => bin.toFixed(3)),
-                        datasets: [{
-                            label: 'Frequência',
-                            data: data.histogram,
-                            backgroundColor: 'rgba(245, 158, 11, 0.6)',
-                            borderColor: 'rgba(245, 158, 11, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                title: { display: true, text: 'Frequência' },
-                                beginAtZero: true
-                            },
-                            x: {
-                                title: { display: true, text: 'Grau de Assimetria' }
+                setTimeout(() => {
+                    new Chart('chart-histograma-assimetrias', {
+                        type: 'bar',
+                        data: {
+                            labels: binCenters.map(bin => bin.toFixed(3)),
+                            datasets: [{
+                                label: 'Frequência',
+                                data: data.histogram,
+                                backgroundColor: 'rgba(245, 158, 11, 0.6)',
+                                borderColor: 'rgba(245, 158, 11, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    title: { display: true, text: 'Frequência' },
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    title: { display: true, text: 'Grau de Assimetria' }
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }, 100);
             }
         }
 
@@ -473,8 +546,10 @@
             const analysisId = params.get('analysis_id');
             
             if (!analysisId) {
-                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado.</h2>'; return;
+                loadingIndicator.innerHTML = '<h2 class="text-xl font-semibold text-red-500">ID da Análise não encontrado.</h2>'; 
+                return;
             }
+            
             document.getElementById('analysisSubtitle').textContent = `Carregando Análise ID: ${analysisId}`;
 
             try {
@@ -482,9 +557,13 @@
                 if (!response.ok) throw new Error(`Erro de rede: ${response.status}`);
                 const result = await response.json();
 
-                if (!result.success || !result.data) throw new Error(result.error || 'Estrutura de dados inválida.');
+                if (!result.success || !result.data) {
+                    throw new Error(result.error || 'Estrutura de dados inválida.');
+                }
                 
                 fullAnalysisData = result.data;
+                console.log('Dados recebidos:', fullAnalysisData);
+                
                 populateVideosUI(fullAnalysisData.analyzed_data);
                 setupAllCharts(fullAnalysisData.final_charts, fullAnalysisData.distribution_data);
 
@@ -501,11 +580,17 @@
                     });
                 });
                 
-                if (typeof lucide !== 'undefined') lucide.createIcons();
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
 
             } catch (error) {
                 console.error("Falha ao carregar a análise:", error);
-                loadingIndicator.innerHTML = `<h2 class="text-xl font-semibold text-red-500">Falha ao carregar dados: ${error.message}</h2>`;
+                loadingIndicator.innerHTML = `
+                    <div class="bg-red-50 p-6 rounded-xl border border-red-200">
+                        <h2 class="text-xl font-semibold text-red-800 mb-2">Falha ao carregar dados</h2>
+                        <p class="text-red-600">${error.message}</p>
+                    </div>`;
             }
         });
 
@@ -524,7 +609,7 @@
                     const row = { tempo_s: (frameData.tempo_segundos || 0).toFixed(2) };
                     chartConfig.datasets.forEach(ds => {
                         const header = ds.key;
-                        row[header] = frameData[ds.key];
+                        row[header] = frameData[ds.key] || 0;
                     });
                     return row;
                 });
