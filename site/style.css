@@ -6,6 +6,7 @@
 
 .landing-page .div {
   background-color: #ffffff;
+  /* CORREÇÃO CRÍTICA 1: Centralização do Container Principal */
   width: 100%; 
   max-width: 1440px; 
   margin: 0 auto;
@@ -862,13 +863,6 @@
   border-radius: 10px;
 }
 
-.navbar {
-  background: #fff;
-  padding: 15px 30px;
-  border-bottom: 1px solid #ddd;
-}
-
-
 .landing-page .frame-16 {
   display: inline-flex;
   align-items: center;
@@ -901,23 +895,15 @@
   line-height: 20px;
   white-space: nowrap;
 }
-/* Estilos globais para a navbar */
-.navbar {
-  width: 100%;
-  padding: 20px 0;
-  background-color: #ffffff;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  position: fixed;
-  top: 0;
-  z-index: 1000;
-}
 
+
+/* CORREÇÃO DO FRAME-16: Centraliza o CONTEÚDO DENTRO da barra */
 .frame-16 {
   display: flex;
   justify-content: space-between;
   align-items: center;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 auto; /* CRÍTICO: Centraliza o bloco frame-16 dentro do navbar */
   padding: 0 20px;
 }
 
@@ -1014,12 +1000,13 @@ body {
   transform: scale(1.05);
 }
 
+/* INSTÂNCIA 3 - CONSOLIDADA E CORRIGIDA */
 .navbar {
   width: 100vw; 
   padding: 20px 0;
   background-color: #ffffff;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  position: sticky; 
+  position: sticky; /* Mantém a barra no topo durante o scroll */
   top: 0;
   z-index: 1000;
   left: 0; 
@@ -1787,4 +1774,3 @@ body {
     max-width: 100%;
   }
 }
-
