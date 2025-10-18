@@ -863,27 +863,6 @@
   border-radius: 10px;
 }
 
-
-.landing-page .frame-16 {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 50px;
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.frame-17 {
-  position: relative;
-  display: inline-flex;
-  margin-top: -5px;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 40px;
-  position: relative;
-  flex: 0 0 auto;
-}
-
 .landing-page .text-wrapper-26 {
   position: relative;
   width: fit-content;
@@ -897,18 +876,15 @@
   white-space: nowrap;
 }
 
-
 /* ---------------------------------------------------------------------- */
-/* -- BLOC COMRIGIDO E CONSOLIDADO PARA CENTRALIZAÇÃO DO NAVBAR -- */
+/* -- NAVBAR CORRIGIDA E CENTRALIZADA -- */
 /* ---------------------------------------------------------------------- */
 
 .navbar {
-  /* CRÍTICO: Ocupa a largura total da tela, ignorando margens do body. */
   width: 100%; 
   padding: 20px 0;
   background-color: #ffffff;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  /* Garante que ele fique colado nas extremidades da viewport */
   position: fixed; 
   top: 0;
   left: 0;
@@ -916,45 +892,37 @@
   z-index: 1000;
 }
 
-.frame-16 {
-  /* CRÍTICO: Estas 3 propriedades centralizam o CONTEÚDO DENTRO da barra */
-  max-width: 1200px; /* Largura máxima do conteúdo */
-  width: 100%;       /* Ocupa 100% da largura do .navbar até o limite de 1200px */
-  margin: 0 auto;    /* CRÍTICO: Centraliza o bloco frame-16 */
-  
-  /* Estas 3 propriedades organizam o conteúdo interno (Logo e Links) */
+.navbar .frame-16 {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
   display: flex;
-  justify-content: space-between; /* Empurra a logo para a esquerda e os links para a direita */
+  justify-content: space-between;
   align-items: center;
-  
-  /* Garante um respiro nas laterais em telas pequenas */
-  padding: 0 20px; 
+  padding: 0 20px;
 }
 
-
-.text-wrapper {
-  color: #121212;
-}
-
-.span {
-  color: #4d77ff;
-}
-
-.frame-17 {
+.navbar .frame-17 {
   display: flex;
   gap: 30px;
 }
 
-.text-wrapper-26 {
+.navbar .text-wrapper-26 {
   color: #333;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s;
+  font-family: "Manrope-Medium", Helvetica;
+  font-size: 14px;
+  letter-spacing: 0.42px;
+  line-height: 20px;
+  white-space: nowrap;
 }
 
-.text-wrapper-26:hover {
+.navbar .text-wrapper-26:hover {
   color: #4d77ff;
 }
+
 
 /* Botões */
 .btn-primary {
