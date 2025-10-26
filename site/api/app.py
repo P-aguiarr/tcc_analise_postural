@@ -97,12 +97,14 @@ def configuracoes_page():
 # ==========================================================
 
 @app.route('/ping', methods=['GET'], strict_slashes=False)
-def ping():
-    """Endpoint de health check."""
+@app.route('/api/health', methods=['GET'], strict_slashes=False)
+def health_check():
+    """Endpoint de health check para Vercel (via ping) e Railway (via /api/health)."""
     return jsonify({
         "status": "ok",
-        "message": "API está no ar! (Rota direta)"
+        "message": "Servidor de Análise no ar! (Health Check OK)"
     })
+
 
 @app.route('/config', methods=['GET'], strict_slashes=False)
 def get_config():
@@ -134,7 +136,6 @@ def auth_callback():
         token = data.get('id_token') or data.get('token') 
             
         if not token:
-            # Esta é a causa mais provável do erro 400 se a rota estiver correta.
             return jsonify({"success": False, "error": "Token de credencial do Google ausente na requisição."}), 400
             
         if not GOOGLE_CLIENT_ID:
