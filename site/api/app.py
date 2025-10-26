@@ -58,6 +58,7 @@ else:
 # Inicialização do MediaPipe
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles # Adicionando styles para evitar erros
 
 print("✅ Backend Railway - Análise Postural Avançado Iniciado!")
 
@@ -101,7 +102,7 @@ def configuracoes_page():
 @app.route('/ping', methods=['GET'], strict_slashes=False)
 @app.route('/api/health', methods=['GET'], strict_slashes=False)
 def health_check():
-    """Endpoint de health check para Vercel (via ping) e Railway (via /api/health)."""
+    """Endpoint de health check."""
     return jsonify({
         "status": "ok",
         "message": "Servidor de Análise no ar! (Health Check OK)"
@@ -160,7 +161,6 @@ def auth_callback():
         print(f"✅ Usuário autenticado: {user_email} (ID: {user_id})")
             
         # 3. Retorno ao Frontend - CHAVE CORRIGIDA DE 'user_info' PARA 'user'
-        # O frontend espera a chave 'user' para salvar no localStorage
         return jsonify({
             "success": True, 
             "message": "Autenticação e validação do token bem-sucedidas.", 
