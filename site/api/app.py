@@ -1,522 +1,444 @@
-# site/api/app.py
+# backend_app.py 
 
-import os
+from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask_cors import CORS
 import uuid
-import json
+from datetime import datetime
+import base64
+import os
 import tempfile
-import traceback
-import numpy as np
+import math
+
+# Imports de Visão Computacional e Análise
 import cv2
 import mediapipe as mp
-from collections import defaultdict
+import matplotlib
+matplotlib.use('Agg') 
+import numpy as np 
 
-# Importações de Flask
-from flask import Flask, request, jsonify, send_from_directory, abort
-from flask_cors import CORS
+# Imports necessários para a validação do token Google
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
-# --- CONFIGURAÇÃO INICIAL ---
-app = Flask(__name__)
-# Esta linha habilita o CORS. Agora ela funcionará para /api/callback
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# ==========================================================
+# CONFIGURAÇÃO DA APLICAÇÃO FLASK (CRUCIAL)
+# ==========================================================
+app = Flask(__name__, template_folder='site', static_folder='site')
 
-# Diretórios para armazenamento temporário de vídeos e resultados
-BASE_DIR = tempfile.gettempdir()
-RESULT_DIR = os.path.join(BASE_DIR, "analysis_results")
-VIDEO_DIR = os.path.join(BASE_DIR, "analysis_videos")
-if not os.path.exists(RESULT_DIR): os.makedirs(RESULT_DIR)
-if not os.path.exists(VIDEO_DIR): os.makedirs(VIDEO_DIR)
+# --- CONFIGURAÇÃO EXPLÍCITA DO CORS (CORREÇÃO DE BLOQUEIO) ---
+# Origem do Frontend Vercel (Lida do ambiente, com fallback)
+VERCEL_ORIGIN = os.environ.get('VERCEL_ORIGIN', "https://ttc-analise-postural.vercel.app")
+# Adicionamos a própria URL de produção do Railway à lista de origens permitidas
+RAILWAY_ORIGIN = "https://tccanalisepostural-production.up.railway.app"
 
-print(f"✅ Backend iniciado. Resultados em: {RESULT_DIR}, Vídeos em: {VIDEO_DIR}")
+# Lista de origens permitidas
+ALLOWED_ORIGINS = [
+    VERCEL_ORIGIN, 
+    RAILWAY_ORIGIN, 
+    "http://localhost:3000",
+    "http://localhost:8080"
+]
 
-# Instâncias do MediaPipe
+CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}})
+print(f"✅ CORS configurado para permitir as origens: {ALLOWED_ORIGINS}")
+
+
+# ==========================================================
+# CONFIGURAÇÕES DE AMBIENTE E VARIÁVEIS DO RAILWAY
+# ==========================================================
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+
+if not GOOGLE_CLIENT_ID:
+    print("❌ ERRO: A variável de ambiente GOOGLE_CLIENT_ID deve ser definida no Railway.")
+else:
+    print("✅ Configurações de Google Auth carregadas com sucesso.")
+
+# Inicialização do MediaPipe
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
 
-# --- CONFIGURAÇÃO DE VÍDEO ---
-VIDEO_FOURCC = 'VP80' 
-VIDEO_EXTENSION = '.webm'
-VIDEO_MIN_SIZE_BYTES = 1000
+print("✅ Backend Railway - Análise Postural Avançado Iniciado!")
 
-# --- MATRIZ DE PRECISÃO E LÓGICA DE DECISÃO ---
+# ==========================================================
+# ROTAS DE SERVIÇO DE ARQUIVOS HTML (Templates na pasta 'site')
+# ==========================================================
 
-# Define qual plano é otimizado (P1) para cada métrica
-BIOMECHANICAL_PRIORITY_MATRIX = {
-    'Angulos_Ombros': 'transversal',
-    'Angulos_Quadris': 'transversal',
-    'Angulos_Joelhos': 'transversal',
-    'Angulo_Coluna': 'transversal',
-    'Assimetria_Ombros': 'coronal',
-    'Oscilacao_Vertical_Quadril': 'coronal',
-    'Oscilacao_Horizontal_Quadril': 'coronal'
-}
+@app.route('/')
+def home_page():
+    """Rota padrão que redireciona ou serve a página de login."""
+    return login_page()
 
-CONFIDENCE_THRESHOLD = 0.7 # Limite mínimo de confiança
-
-def calculate_distribution_data(temporal_data):
-    """
-    Calcula dados agregados para gráficos de distribuição a partir dos dados temporais.
-    """
-    distribution_data = {}
-    
-    if not temporal_data:
-        return distribution_data
-    
-    # Coleta todos os valores de cada métrica
-    metrics_data = {}
-    for frame in temporal_data:
-        for key, value in frame.items():
-            if key not in ['frame', 'tempo_segundos'] and isinstance(value, (int, float)):
-                if key not in metrics_data:
-                    if key not in metrics_data:
-                        metrics_data[key] = []
-                    metrics_data[key].append(value)
-    
-    # Distribuição de Ângulos (histograma)
-    angle_metrics = ['angulo_ombro_esquerdo', 'angulo_ombro_direito', 
-                    'angulo_quadril_esquerdo', 'angulo_quadril_direito',
-                    'angulo_joelho_esquerdo', 'angulo_joelho_direito', 'angulo_coluna']
-    
-    all_angles = []
-    for metric in angle_metrics:
-        if metric in metrics_data:
-            all_angles.extend(metrics_data[metric])
-    
-    if all_angles:
-        hist, bins = np.histogram(all_angles, bins=20, range=(0, 180))
-        distribution_data['distribuicao_angulos'] = {
-            'histogram': hist.tolist(),
-            'bins': bins.tolist()
-        }
-    
-    # Histograma de Assimetrias
-    asymmetry_metrics = ['assimetria_ombros_vertical']
-    all_asymmetries = []
-    for metric in asymmetry_metrics:
-        if metric in metrics_data:
-            all_asymmetries.extend(metrics_data[metric])
-    
-    if all_asymmetries:
-        max_val = max(all_asymmetries) if all_asymmetries else 0.2
-        hist, bins = np.histogram(all_asymmetries, bins=15, range=(0, max_val))
-        distribution_data['histograma_assimetrias'] = {
-            'histogram': hist.tolist(),
-            'bins': bins.tolist()
-        }
-    
-    return distribution_data
-
-def apply_precision_matrix(analysis_data):
-    """
-    Seleciona a melhor fonte de dados (coronal ou transversal) para cada métrica
-    baseado na matriz de prioridade e na confiança da detecção.
-    """
-    final_charts = {}
-    coronal_data = analysis_data.get('coronal')
-    transversal_data = analysis_data.get('transversal')
-    
-    coronal_confidence = coronal_data.get('confidence_score', 0) if coronal_data else 0
-    transversal_confidence = transversal_data.get('confidence_score', 0) if transversal_data else 0
-
-    available_sources = {}
-    if coronal_data: available_sources['coronal'] = coronal_confidence
-    if transversal_data: available_sources['transversal'] = transversal_confidence
-
-    if not available_sources:
-        return {} # Nenhum dado para processar
-
-    # Determina a melhor fonte geral, caso a P1 falhe
-    best_overall_source = max(available_sources, key=available_sources.get)
-
-    for metric, p1_source in BIOMECHANICAL_PRIORITY_MATRIX.items():
-        chosen_source = None
-        
-        # 1. Verifica se o plano otimizado (P1) está disponível e tem confiança suficiente
-        if p1_source in available_sources and available_sources[p1_source] >= CONFIDENCE_THRESHOLD:
-            chosen_source = p1_source
-        # 2. Caso contrário, usa a melhor fonte disponível geral
-        else:
-            chosen_source = best_overall_source
-
-        # Monta o objeto final para o gráfico
-        if chosen_source:
-            source_data_key = 'temporal_data'
-            source_data_list = analysis_data[chosen_source][source_data_key]
-            
-            final_charts[metric] = {
-                "source": chosen_source,
-                "confidence": available_sources[chosen_source],
-                "data": source_data_list
-            }
-            
-    return final_charts
-
-# --- FUNÇÕES DE ANÁLISE ---
-
-def calculate_angle(a, b, c):
-    """Calcula o ângulo entre 3 pontos (em graus)."""
+@app.route('/login')
+def login_page():
+    """Rota explícita para o arquivo login.html."""
     try:
-        a, b, c = np.array(a), np.array(b), np.array(c)
-        
-        # Verifica se os pontos são válidos
-        if np.any(np.isnan(a)) or np.any(np.isnan(b)) or np.any(np.isnan(c)):
-            return 0.0
-            
-        # Vetores BA e BC
-        ba = a - b
-        bc = c - b
-        
-        # Produto escalar
-        dot_product = np.dot(ba, bc)
-        
-        # Magnitudes
-        mag_ba = np.linalg.norm(ba)
-        mag_bc = np.linalg.norm(bc)
-        
-        # Evita divisão por zero
-        if mag_ba == 0 or mag_bc == 0:
-            return 0.0
-            
-        # Cosseno do ângulo
-        cosine_angle = dot_product / (mag_ba * mag_bc)
-        
-        # Limita o valor entre -1 e 1 para evitar erros numéricos
-        cosine_angle = np.clip(cosine_angle, -1.0, 1.0)
-        
-        # Ângulo em graus
-        angle = np.degrees(np.arccos(cosine_angle))
-        
-        return float(angle)
+        return render_template('login.html') 
     except Exception as e:
-        print(f"Erro no cálculo do ângulo: {e}")
-        return 0.0
+        return f"Erro ao renderizar 'login.html'. Verifique se ele está na pasta 'site'. Detalhe: {str(e)}", 500
 
-def analyze_video(video_path, output_video_path):
-    """
-    Processa um vídeo, extrai dados de postura e retorna os dados temporais
-    junto com uma pontuação de confiança média.
-    """
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        raise IOError(f"Não foi possível abrir o vídeo: {video_path}")
+@app.route('/poslogin')
+def poslogin_page():
+    """Rota para a página pós-login."""
+    try:
+        return render_template('poslogin.html')
+    except Exception as e:
+        return f"Erro ao renderizar 'poslogin.html'. Verifique se ele está na pasta 'site'.", 500
 
-    fourcc = cv2.VideoWriter_fourcc(*VIDEO_FOURCC)
-    fps = cap.get(cv2.CAP_PROP_FPS) or 30
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
-    out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
-    
-    temporal_data, confidence_scores = [], []
-    frame_count = 0
-    
-    with mp_pose.Pose(
-        min_detection_confidence=0.5, 
-        min_tracking_confidence=0.5,
-        model_complexity=1
-    ) as pose:
+@app.route('/configuracoes')
+def configuracoes_page():
+    """Rota para a página de configurações."""
+    try:
+        return render_template('configuracoes.html')
+    except Exception as e:
+        return f"Erro ao renderizar 'configuracoes.html'. Verifique se ele está na pasta 'site'.", 500
+
+# ==========================================================
+# ENDPOINTS DE AUTENTICAÇÃO E CONFIGURAÇÃO
+# ==========================================================
+
+@app.route('/ping', methods=['GET'], strict_slashes=False)
+def ping():
+    """Endpoint de health check."""
+    return jsonify({
+        "status": "ok",
+        "message": "API está no ar! (Rota direta)"
+    })
+
+@app.route('/config', methods=['GET'], strict_slashes=False)
+def get_config():
+    """Endpoint para fornecer o GOOGLE_CLIENT_ID ao frontend."""
+    if not GOOGLE_CLIENT_ID:
+        return jsonify({
+            "success": False,
+            "error": "GOOGLE_CLIENT_ID não encontrado nas variáveis de ambiente."
+        }), 500
         
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret: break
+    return jsonify({
+        "success": True,
+        "client_id": GOOGLE_CLIENT_ID # O frontend espera esta chave
+    })
 
-            # Converte BGR para RGB
-            image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image_rgb.flags.writeable = False
-            
-            # Processa a imagem com MediaPipe
-            results = pose.process(image_rgb)
-            
-            # Prepara dados do frame
-            frame_data = {"frame": frame_count, "tempo_segundos": frame_count / fps}
-
-            # Converte de volta para BGR para desenho
-            image_rgb.flags.writeable = True
-            image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
-            
-            if results.pose_landmarks:
-                landmarks = results.pose_landmarks.landmark
-                
-                # Extrai coordenadas normalizadas
-                try:
-                    # Ombros
-                    l_shoulder = (landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, 
-                                 landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y)
-                    r_shoulder = (landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, 
-                                 landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y)
-                    
-                    # Quadris
-                    l_hip = (landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, 
-                            landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y)
-                    r_hip = (landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, 
-                            landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y)
-                    
-                    # Joelhos
-                    l_knee = (landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, 
-                             landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y)
-                    r_knee = (landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, 
-                             landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y)
-                    
-                    # Tornozelos
-                    l_ankle = (landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, 
-                              landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y)
-                    r_ankle = (landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, 
-                              landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y)
-                    
-                    # Nariz
-                    nose = (landmarks[mp_pose.PoseLandmark.NOSE.value].x, 
-                           landmarks[mp_pose.PoseLandmark.NOSE.value].y)
-                    
-                    # Cotovelos (para melhor cálculo de ângulos)
-                    l_elbow = (landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, 
-                              landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y)
-                    r_elbow = (landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x, 
-                              landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y)
-                    
-                    # Pontos médios
-                    mid_shoulder = ((l_shoulder[0] + r_shoulder[0]) / 2, 
-                                   (l_shoulder[1] + r_shoulder[1]) / 2)
-                    mid_hip = ((l_hip[0] + r_hip[0]) / 2, 
-                              (l_hip[1] + r_hip[1]) / 2)
-                    
-                    # CÁLCULO DOS ÂNGULOS CORRIGIDOS:
-                    
-                    # Ângulos dos Ombros (cotovelo - ombro - quadril)
-                    frame_data['angulo_ombro_esquerdo'] = calculate_angle(l_elbow, l_shoulder, l_hip)
-                    frame_data['angulo_ombro_direito'] = calculate_angle(r_elbow, r_shoulder, r_hip)
-                    
-                    # Ângulos dos Quadris (ombro - quadril - joelho)
-                    frame_data['angulo_quadril_esquerdo'] = calculate_angle(l_shoulder, l_hip, l_knee)
-                    frame_data['angulo_quadril_direito'] = calculate_angle(r_shoulder, r_hip, r_knee)
-                    
-                    # Ângulos dos Joelhos (quadril - joelho - tornozelo)
-                    frame_data['angulo_joelho_esquerdo'] = calculate_angle(l_hip, l_knee, l_ankle)
-                    frame_data['angulo_joelho_direito'] = calculate_angle(r_hip, r_knee, r_ankle)
-                    
-                    # Ângulo da Coluna (quadril médio - ombro médio - nariz)
-                    frame_data['angulo_coluna'] = calculate_angle(mid_hip, mid_shoulder, nose)
-                    
-                    # Assimetrias e Oscilações
-                    frame_data['assimetria_ombros_vertical'] = abs(l_shoulder[1] - r_shoulder[1])
-                    frame_data['oscilacao_vertical_quadril'] = mid_hip[1]
-                    frame_data['oscilacao_horizontal_quadril'] = mid_hip[0]
-                    
-                except Exception as e:
-                    print(f"Erro no processamento dos landmarks do frame {frame_count}: {e}")
-                    # Valores padrão em caso de erro
-                    frame_data.update({
-                        'angulo_ombro_esquerdo': 0, 'angulo_ombro_direito': 0,
-                        'angulo_quadril_esquerdo': 0, 'angulo_quadril_direito': 0,
-                        'angulo_joelho_esquerdo': 0, 'angulo_joelho_direito': 0,
-                        'angulo_coluna': 0,
-                        'assimetria_ombros_vertical': 0,
-                        'oscilacao_vertical_quadril': 0,
-                        'oscilacao_horizontal_quadril': 0
-                    })
-                
-                temporal_data.append(frame_data)
-                
-                # Calcula confiança média
-                visibilities = [landmarks[i].visibility for i in range(len(landmarks))]
-                confidence_scores.append(np.mean(visibilities))
-                
-                # Desenha landmarks no frame com cores e estilos melhorados
-                mp_drawing.draw_landmarks(
-                    image_bgr,
-                    results.pose_landmarks,
-                    mp_pose.POSE_CONNECTIONS,
-                    landmark_drawing_spec=mp_drawing.DrawingSpec(
-                        color=(0, 255, 0), thickness=3, circle_radius=3
-                    ),
-                    connection_drawing_spec=mp_drawing.DrawingSpec(
-                        color=(255, 0, 0), thickness=2, circle_radius=2
-                    )
-                )
-                
-                # Adiciona texto com informações do frame
-                cv2.putText(image_bgr, f"Frame: {frame_count}", (10, 30), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-                cv2.putText(image_bgr, f"Tempo: {frame_count/fps:.1f}s", (10, 60), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-            
-            else:
-                # Frame sem landmarks detectados
-                frame_data.update({
-                    'angulo_ombro_esquerdo': 0, 'angulo_ombro_direito': 0,
-                    'angulo_quadril_esquerdo': 0, 'angulo_quadril_direito': 0,
-                    'angulo_joelho_esquerdo': 0, 'angulo_joelho_direito': 0,
-                    'angulo_coluna': 0,
-                    'assimetria_ombros_vertical': 0,
-                    'oscilacao_vertical_quadril': 0,
-                    'oscilacao_horizontal_quadril': 0
-                })
-                temporal_data.append(frame_data)
-                confidence_scores.append(0)
-                
-                # Mensagem de nenhum landmark detectado
-                cv2.putText(image_bgr, "Nenhum landmark detectado", (10, 30), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-            
-            # Escreve o frame processado no vídeo de saída
-            out.write(image_bgr)
-            frame_count += 1
-            
-    cap.release()
-    out.release()
-    
-    avg_confidence = np.mean(confidence_scores) if confidence_scores else 0
-    
-    print(f"✅ Vídeo processado: {frame_count} frames, confiança média: {avg_confidence:.3f}")
-    
-    return {"temporal_data": temporal_data, "confidence_score": float(avg_confidence)}
-
-# --- ROTAS DA API ---
-
-@app.route('/api/health', methods=['GET'])
-def api_health_check():
-    """Endpoint simples para verificação de saúde (health check)."""
-    return jsonify({"status": "ok", "message": "Servidor de análise no ar."})
-
-# --- CORREÇÃO DE SSO / ROTA DE CALLBACK (POST) ---
-# Esta rota estava faltando, e o navegador não recebia um 200 OK no pré-voo OPTIONS,
-# resultando no erro de CORS.
-
-@app.route('/api/callback', methods=['POST'])
-def google_sso_callback():
+@app.route('/auth/callback', methods=['POST'], strict_slashes=False)
+def auth_callback():
     """
-    Recebe o ID Token do Google One Tap e o processa (POST).
+    Endpoint chamado pelo frontend após o login do Google.
+    Recebe o 'id_token' e o valida.
     """
     try:
-        # Pega a credencial enviada pelo frontend (login.js)
-        credential_data = request.get_json() 
-        token = credential_data.get('credential')
+        data = request.get_json()
         
+        # 1. Verificação de dados e token
+        if data is None:
+             return jsonify({"success": False, "error": "Corpo da requisição JSON ausente ou inválido."}), 400
+             
+        token = data.get('id_token') or data.get('token') 
+            
         if not token:
-            return jsonify({"success": False, "error": "Token de credencial do Google ausente."}), 400
-        
-        # ----------------------------------------------------------------------
-        # TODO DE SEGURANÇA CRÍTICO: SUBSTITUIR ESTE BLOCO
-        # Você deve usar uma biblioteca como google-auth para:
-        # 1. Validar a assinatura do ID Token.
-        # 2. Verificar se o Audience (seu CLIENT_ID) está correto.
-        # 3. Extrair os dados do usuário (email, nome, etc.).
-        # 4. Criar uma sessão de login/JWT da sua aplicação e retornar.
-        # ----------------------------------------------------------------------
-        
-        # Resposta de exemplo que resolve o erro de CORS/Pré-Voo:
+            # Esta é a causa mais provável do erro 400 se a rota estiver correta.
+            return jsonify({"success": False, "error": "Token de credencial do Google ausente na requisição."}), 400
+            
+        if not GOOGLE_CLIENT_ID:
+            return jsonify({"success": False, "error": "Configuração de autenticação faltando no servidor (Client ID)."}), 500
+
+        # 2. Validação do ID Token com o Google
+        id_info = id_token.verify_oauth2_token(
+            token, 
+            google_requests.Request(), 
+            GOOGLE_CLIENT_ID 
+        )
+            
+        if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            raise ValueError('Token inválido: Emissor incorreto.')
+            
+        user_id = id_info['sub']
+        user_email = id_info['email']
+        user_name = id_info.get('name', 'Usuário')
+            
+        print(f"✅ Usuário autenticado: {user_email} (ID: {user_id})")
+            
+        # 3. Retorno ao Frontend - CHAVE CORRIGIDA DE 'user_info' PARA 'user'
         return jsonify({
             "success": True, 
-            "message": "Credencial recebida e rota funcional.",
-            "session_token": "TOKEN_DE_SESSAO_A_SER_GERADO_AQUI" 
+            "message": "Autenticação e validação do token bem-sucedidas.", 
+            "user": {
+                "id": user_id, 
+                "email": user_email, 
+                "name": user_name,
+                "picture": id_info.get('picture', None) # Incluir foto se disponível
+            },
+            "token": "JWT_TOKEN_PARA_USO_FUTURO" # Retorna um token de sessão (mockado)
         }), 200
 
+    except ValueError as e:
+        print(f"❌ Erro de validação do token: {str(e)}")
+        return jsonify({"success": False, "error": f"Falha na validação do token: {str(e)}"}), 401
     except Exception as e:
-        print(f"❌ Erro no callback do Google: {e}")
-        return jsonify({"success": False, "error": f"Erro interno do servidor no callback: {e}"}), 500
+        print(f"❌ Erro inesperado no callback de autenticação: {str(e)}")
+        return jsonify({"success": False, "error": "Erro interno do servidor durante a autenticação."}), 500
 
-# --- FIM DA CORREÇÃO ---
+# ==========================================================
+# FUNÇÕES DE ANÁLISE POSTURAL (MANTIDAS)
+# ==========================================================
 
-@app.route('/api/process-analysis', methods=['POST'])
-def process_analysis_route():
-    analysis_id = str(uuid.uuid4())
-    print(f"\nIniciando nova análise ID: {analysis_id}")
+def calcular_angulo(a, b, c):
+    """Calcula ângulo entre 3 pontos (em graus)."""
+    ba_x, ba_y = a[0]-b[0], a[1]-b[1]
+    bc_x, bc_y = c[0]-b[0], c[1]-b[1]
+    produto_escalar = ba_x*bc_x + ba_y*bc_y
+    mag_ba = math.sqrt(ba_x**2 + ba_y**2)
+    mag_bc = math.sqrt(bc_x**2 + bc_y**2)
+    if mag_ba * mag_bc == 0:
+        return 0
+    cos_angle = produto_escalar / (mag_ba * mag_bc)
+    cos_angle = max(min(cos_angle, 1), -1) 
+    angle = math.acos(cos_angle)
+    return math.degrees(angle)
+
+def draw_landmarks(image, results):
+    """Desenha os landmarks detectados na imagem."""
+    if results.pose_landmarks:
+        mp_drawing.draw_landmarks(
+            image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+            mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+            mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2)
+        )
+    return image
+
+def analyze_posture(image_path, view):
+    """Realiza a análise postural principal e retorna os ângulos e a imagem processada."""
     
-    video_coronal = request.files.get('video_coronal')
-    video_transversal = request.files.get('video_transversal')
+    cap = cv2.VideoCapture(image_path)
+    if not cap.isOpened():
+        frame = cv2.imread(image_path)
+        if frame is None:
+            raise IOError(f"Não foi possível abrir ou ler a imagem/vídeo: {image_path}")
+    else:
+        # Pega o primeiro frame do vídeo
+        ret, frame = cap.read()
+        cap.release()
+        if not ret or frame is None:
+            raise IOError("Não foi possível ler o primeiro frame do vídeo.")
+        
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        results = pose.process(frame_rgb)
+        
+        if not results.pose_landmarks:
+            raise ValueError("Não foi possível detectar landmarks na imagem.")
 
-    if not video_coronal:
-        return jsonify({"success": False, "error": "O vídeo do plano coronal é obrigatório."}), 400
+        landmarks = results.pose_landmarks.landmark
+        
+        H, W, _ = frame.shape
+        coords = {}
+        for i, lm in enumerate(landmarks):
+            coords[i] = (lm.x * W, lm.y * H)
 
-    analysis_results = {"analysis_id": analysis_id, "analyzed_data": {}}
+        angles = {}
+        
+        if view == 'frontal':
+            angles['shoulder_hip_L'] = calcular_angulo(coords[11], coords[23], (coords[23][0], 0))
+            angles['shoulder_hip_R'] = calcular_angulo(coords[12], coords[24], (coords[24][0], 0))
+            
+            angles['shoulder_level_diff'] = abs(coords[11][1] - coords[12][1])
+            angles['hip_level_diff'] = abs(coords[23][1] - coords[24][1])
 
+            mid_shoulder_x = (coords[11][0] + coords[12][0]) / 2
+            mid_shoulder_y = (coords[11][1] + coords[12][1]) / 2
+            angles['head_alignment'] = calcular_angulo(coords[0], (mid_shoulder_x, mid_shoulder_y), (mid_shoulder_x, 0))
+
+        elif view == 'lateral':
+            angles['trunk_hip_knee'] = calcular_angulo(coords[11], coords[23], coords[25])
+            angles['lumbar_proxy'] = calcular_angulo(coords[23], coords[25], coords[27])
+            angles['head_forward'] = calcular_angulo(coords[23], coords[11], coords[0])
+
+        
+        for key, value in angles.items():
+            if isinstance(value, (int, float)):
+                 angles[key] = round(value, 2)
+                 
+        marked_image = draw_landmarks(frame, results)
+        
+        _, buffer = cv2.imencode('.png', cv2.cvtColor(marked_image, cv2.COLOR_RGB2BGR))
+        image_base64 = base64.b64encode(buffer).decode('utf-8')
+        
+        return angles, image_base64
+
+
+def generate_analysis_data(angles, view):
+    """Gera um dicionário de análise e recomendações com base nos ângulos."""
+    analise = {}
+    recomendacoes = []
+    
+    if view == 'frontal':
+        if angles.get('shoulder_level_diff', 0) > 30: 
+            analise['shoulder_level'] = f"Desnível dos ombros detectado ({angles['shoulder_level_diff']}px)."
+            recomendacoes.append("Exercícios para fortalecimento dos músculos do pescoço e trapézio (laterais).")
+            
+        if angles.get('shoulder_hip_L', 0) < 85 or angles.get('shoulder_hip_R', 0) < 85: 
+             analise['trunk_lateral_deviation'] = "Desvio lateral de tronco (assimetria detectada)."
+             recomendacoes.append("Alongamentos e fortalecimento assimétrico do core (prancha lateral).")
+
+    elif view == 'lateral':
+        
+        if angles.get('trunk_hip_knee', 0) < 165: 
+            analise['thoracic_kyphosis'] = "Postura com ombros protraídos (cifose aumentada)."
+            recomendacoes.append("Fortalecimento da musculatura das costas (remadas) e alongamento peitoral.")
+
+        if angles.get('lumbar_proxy', 0) > 175: 
+            analise['lumbar_lordosis'] = "Possível aumento da Lordose Lombar (Tilt Pélvico Anterior)."
+            recomendacoes.append("Fortalecimento do core abdominal e alongamento dos flexores do quadril e isquiotibiais.")
+            
+        if angles.get('head_forward', 0) < 165: 
+            analise['head_forward_posture'] = "Protrusão de cabeça detectada."
+            recomendacoes.append("Exercícios de retração cervical e alinhamento de pescoço.")
+        
+    
+    if not analise:
+        analise['geral'] = "Nenhuma alteração postural significativa detectada nesta vista."
+        recomendacoes.append("Continue monitorando sua postura e pratique atividades físicas regularmente.")
+        
+    return {
+        "analise": analise,
+        "recomendacoes": list(set(recomendacoes)) 
+    }
+
+# ==========================================================
+# ENDPOINTS PRINCIPAIS DA APLICAÇÃO (Análise)
+# ==========================================================
+
+@app.route('/analyze', methods=['POST'], strict_slashes=False)
+def analyze_images():
+    """Endpoint principal para análise postural, agora recebendo arquivos."""
+    analysis_id = str(uuid.uuid4())
+    frontal_path = None
+    transversal_path = None
+    
     try:
-        # Processa Plano Coronal (Obrigatório)
-        print("📹 Processando vídeo coronal...")
-        coronal_original_path = os.path.join(VIDEO_DIR, f"{analysis_id}_coronal_original.mp4")
-        video_coronal.save(coronal_original_path)
-        coronal_processed_filename = f"{analysis_id}_coronal{VIDEO_EXTENSION}"
-        coronal_processed_path = os.path.join(VIDEO_DIR, coronal_processed_filename)
-        coronal_analysis = analyze_video(coronal_original_path, coronal_processed_path)
-        analysis_results["analyzed_data"]["coronal"] = {
-            **coronal_analysis,
-            "video_original": os.path.basename(coronal_original_path),
-            "video_processed": coronal_processed_filename if os.path.exists(coronal_processed_path) and os.path.getsize(coronal_processed_path) > VIDEO_MIN_SIZE_BYTES else None
+        # --- CORREÇÃO PRINCIPAL: MUDANÇA DE request.get_json() PARA request.files ---
+        
+        # 1. Validação dos arquivos recebidos
+        if 'frontalImage' not in request.files:
+            print("❌ Erro: 'frontalImage' não encontrado em request.files.")
+            return jsonify({"success": False, "error": "Arquivo de imagem frontal (frontalImage) é obrigatório."}), 400
+        
+        frontal_file = request.files['frontalImage']
+        transversal_file = request.files.get('transversalImage') # .get() para arquivo opcional
+
+        def save_file_to_temp(file_storage, prefix):
+            """Função utilitária para salvar um arquivo recebido pelo Flask em um local temporário."""
+            if not file_storage or not file_storage.filename:
+                return None
+            
+            # Garante uma extensão de arquivo para o OpenCV/MediaPipe
+            _, ext = os.path.splitext(file_storage.filename)
+            if not ext:
+                ext = '.mp4' # Define um padrão caso o nome do arquivo não tenha extensão
+                
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext, prefix=prefix)
+            file_storage.save(temp_file.name)
+            temp_file.close()
+            print(f"✅ Arquivo salvo temporariamente em: {temp_file.name}")
+            return temp_file.name
+
+        # 2. Salvar os arquivos temporariamente
+        frontal_path = save_file_to_temp(frontal_file, f"f_{analysis_id}")
+        transversal_path = save_file_to_temp(transversal_file, f"t_{analysis_id}") if transversal_file else None
+        
+        resultados = {
+            "id": analysis_id,
+            "timestamp": datetime.now().isoformat(),
+            "frontal": None,
+            "lateral": None,
+            "recomendacoes": [],
+            "analise_geral": {}
         }
-        print(f"✅ Coronal processado - Confiança: {coronal_analysis['confidence_score']:.3f}")
 
-        # Processa Plano Transversal (Opcional)
-        if video_transversal:
-            print("📹 Processando vídeo transversal...")
-            transversal_original_path = os.path.join(VIDEO_DIR, f"{analysis_id}_transversal_original.mp4")
-            video_transversal.save(transversal_original_path)
-            transversal_processed_filename = f"{analysis_id}_transversal{VIDEO_EXTENSION}"
-            transversal_processed_path = os.path.join(VIDEO_DIR, transversal_processed_filename)
-            transversal_analysis = analyze_video(transversal_original_path, transversal_processed_path)
-            analysis_results["analyzed_data"]["transversal"] = {
-                **transversal_analysis,
-                "video_original": os.path.basename(transversal_original_path),
-                "video_processed": transversal_processed_filename if os.path.exists(transversal_processed_path) and os.path.getsize(transversal_processed_path) > VIDEO_MIN_SIZE_BYTES else None
+        # 3. Análise da Vista Frontal
+        try:
+            angles_f, image_b64_f = analyze_posture(frontal_path, 'frontal')
+            analise_f = generate_analysis_data(angles_f, 'frontal')
+            
+            resultados['frontal'] = {
+                "angles": angles_f,
+                "analise": analise_f['analise'],
+                "image_b64": image_b64_f
             }
-            print(f"✅ Transversal processado - Confiança: {transversal_analysis['confidence_score']:.3f}")
-        else:
-            print("ℹ️  Nenhum vídeo transversal fornecido")
+            resultados['recomendacoes'].extend(analise_f['recomendacoes'])
+            resultados['analise_geral'].update(analise_f['analise'])
+            
+        except (IOError, ValueError) as e:
+            print(f"❌ Erro na análise frontal: {str(e)}")
+            resultados['frontal'] = {"error": str(e)}
 
-        # Aplica a matriz de decisão para gráficos temporais
-        print("📊 Aplicando matriz de precisão...")
-        analysis_results["final_charts"] = apply_precision_matrix(analysis_results["analyzed_data"])
+        # 4. Análise da Vista Lateral (se fornecida)
+        if transversal_path:
+            try:
+                angles_l, image_b64_l = analyze_posture(transversal_path, 'lateral')
+                analise_l = generate_analysis_data(angles_l, 'lateral')
+                
+                resultados['lateral'] = {
+                    "angles": angles_l,
+                    "analise": analise_l['analise'],
+                    "image_b64": image_b64_l
+                }
+                resultados['recomendacoes'].extend(analise_l['recomendacoes'])
+                resultados['analise_geral'].update(analise_l['analise'])
+                
+            except (IOError, ValueError) as e:
+                print(f"❌ Erro na análise lateral: {str(e)}")
+                resultados['lateral'] = {"error": str(e)}
         
-        # Calcula dados de distribuição a partir do melhor plano
-        best_source = 'coronal'
-        if analysis_results["analyzed_data"].get('transversal') and analysis_results["analyzed_data"]['transversal'].get('confidence_score', 0) > analysis_results["analyzed_data"]['coronal'].get('confidence_score', 0):
-            best_source = 'transversal'
+        # 5. Finalização e limpeza dos arquivos temporários
+        resultados['recomendacoes'] = list(set(resultados['recomendacoes']))
         
-        print(f"📈 Calculando distribuições do plano {best_source}...")
-        best_temporal_data = analysis_results["analyzed_data"][best_source]['temporal_data']
-        analysis_results["distribution_data"] = calculate_distribution_data(best_temporal_data)
+        if not resultados['recomendacoes']:
+            resultados['recomendacoes'] = [
+                "Os resultados preliminares são bons. Mantenha os hábitos posturais saudáveis e faça exercícios de fortalecimento do core abdominal."
+            ]
         
-        # Salva o resultado final
-        result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
-        with open(result_filepath, 'w') as f:
-            json.dump({"success": True, "data": analysis_results}, f)
+        try:
+            if frontal_path and os.path.exists(frontal_path):
+                os.unlink(frontal_path)
+                print(f"🗑️ Arquivo temporário removido: {frontal_path}")
+            if transversal_path and os.path.exists(transversal_path):
+                os.unlink(transversal_path)
+                print(f"🗑️ Arquivo temporário removido: {transversal_path}")
+        except Exception as e:
+            print(f"⚠️ Aviso: Não foi possível deletar arquivos temporários: {str(e)}")
+            pass
         
         print(f"✅ Análise {analysis_id} concluída com sucesso!")
-        return jsonify({"success": True, "analysis_id": analysis_id})
+        
+        return jsonify({
+            "success": True,
+            "message": "Análise postural concluída!",
+            "analysis_id": analysis_id,
+            "data": resultados
+        })
         
     except Exception as e:
-        error_trace = traceback.format_exc()
-        print(f"❌ Erro crítico na análise {analysis_id}: {e}\n{error_trace}")
-        return jsonify({"success": False, "error": f"Erro interno: {e}", "details": error_trace}), 500
+        print(f"❌ Erro crítico na rota /analyze: {str(e)}")
+        return jsonify({
+            "success": False, 
+            "error": f"Erro interno no processamento do servidor: {str(e)}"
+        }), 500
 
-@app.route('/api/analysis/<analysis_id>', methods=['GET'])
-def get_analysis_route(analysis_id):
-    """Serve o arquivo JSON com os dados da análise."""
-    try:
-        result_filepath = os.path.join(RESULT_DIR, f"{analysis_id}.json")
-        if not os.path.exists(result_filepath):
-            return jsonify({"success": False, "error": "Análise não encontrada."}), 404
-        with open(result_filepath, 'r') as f:
-            data = json.load(f)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+@app.route('/analysis/<analysis_id>', methods=['GET'], strict_slashes=False)
+def get_analysis(analysis_id):
+    """Endpoint para recuperar análise existente (simulado)."""
+    # Em uma aplicação real, aqui você buscaria os dados de um banco de dados usando o analysis_id
+    return jsonify({
+        "analysis_id": analysis_id,
+        "status": "completed",
+        "message": "Análise recuperada com sucesso (dados simulados)."
+    })
 
-@app.route('/api/video/<video_filename>', methods=['GET'])
-def get_video_route(video_filename):
-    """Serve os arquivos de vídeo com o Content-Type correto."""
-    try:
-        if not os.path.normpath(os.path.join(VIDEO_DIR, video_filename)).startswith(os.path.realpath(VIDEO_DIR)):
-            abort(403)
-
-        mimetype = 'video/webm' if video_filename.endswith('.webm') else 'video/mp4'
-        response = send_from_directory(VIDEO_DIR, video_filename, mimetype=mimetype, as_attachment=False)
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-        return response
-    except FileNotFoundError:
-        abort(404)
-    except Exception as e:
-        print(f"❌ Erro ao servir vídeo '{video_filename}': {e}")
-        abort(500)
+# ==========================================================
+# EXECUÇÃO DO FLASK (PYTHON PURO)
+# ==========================================================
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    print(f"🌐 Servidor Railway rodando na porta {port} (Modo Python Puro)")
+    app.run(host='0.0.0.0', port=port)
