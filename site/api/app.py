@@ -16,6 +16,7 @@ from flask_cors import CORS
 
 # --- CONFIGURAÇÃO INICIAL ---
 app = Flask(__name__)
+# Esta linha habilita o CORS. Agora ela funcionará para /api/callback
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Diretórios para armazenamento temporário de vídeos e resultados
@@ -67,8 +68,9 @@ def calculate_distribution_data(temporal_data):
         for key, value in frame.items():
             if key not in ['frame', 'tempo_segundos'] and isinstance(value, (int, float)):
                 if key not in metrics_data:
-                    metrics_data[key] = []
-                metrics_data[key].append(value)
+                    if key not in metrics_data:
+                        metrics_data[key] = []
+                    metrics_data[key].append(value)
     
     # Distribuição de Ângulos (histograma)
     angle_metrics = ['angulo_ombro_esquerdo', 'angulo_ombro_direito', 
@@ -374,6 +376,45 @@ def analyze_video(video_path, output_video_path):
 def api_health_check():
     """Endpoint simples para verificação de saúde (health check)."""
     return jsonify({"status": "ok", "message": "Servidor de análise no ar."})
+
+# --- CORREÇÃO DE SSO / ROTA DE CALLBACK (POST) ---
+# Esta rota estava faltando, e o navegador não recebia um 200 OK no pré-voo OPTIONS,
+# resultando no erro de CORS.
+
+@app.route('/api/callback', methods=['POST'])
+def google_sso_callback():
+    """
+    Recebe o ID Token do Google One Tap e o processa (POST).
+    """
+    try:
+        # Pega a credencial enviada pelo frontend (login.js)
+        credential_data = request.get_json() 
+        token = credential_data.get('credential')
+        
+        if not token:
+            return jsonify({"success": False, "error": "Token de credencial do Google ausente."}), 400
+        
+        # ----------------------------------------------------------------------
+        # TODO DE SEGURANÇA CRÍTICO: SUBSTITUIR ESTE BLOCO
+        # Você deve usar uma biblioteca como google-auth para:
+        # 1. Validar a assinatura do ID Token.
+        # 2. Verificar se o Audience (seu CLIENT_ID) está correto.
+        # 3. Extrair os dados do usuário (email, nome, etc.).
+        # 4. Criar uma sessão de login/JWT da sua aplicação e retornar.
+        # ----------------------------------------------------------------------
+        
+        # Resposta de exemplo que resolve o erro de CORS/Pré-Voo:
+        return jsonify({
+            "success": True, 
+            "message": "Credencial recebida e rota funcional.",
+            "session_token": "TOKEN_DE_SESSAO_A_SER_GERADO_AQUI" 
+        }), 200
+
+    except Exception as e:
+        print(f"❌ Erro no callback do Google: {e}")
+        return jsonify({"success": False, "error": f"Erro interno do servidor no callback: {e}"}), 500
+
+# --- FIM DA CORREÇÃO ---
 
 @app.route('/api/process-analysis', methods=['POST'])
 def process_analysis_route():
