@@ -23,7 +23,8 @@ from google.auth.transport import requests as google_requests
 # ==========================================================
 # CONFIGURAÇÃO DA APLICAÇÃO FLASK (CRUCIAL)
 # ==========================================================
-app = Flask(__name__, template_folder='site', static_folder='site')
+# O template_folder e static_folder apontam para a pasta 'site'
+app = Flask(__name__, template_folder='site', static_folder='site') 
 
 # --- CONFIGURAÇÃO EXPLÍCITA DO CORS (CORREÇÃO DE BLOQUEIO) ---
 # Origem do Frontend Vercel (Lida do ambiente, com fallback)
@@ -39,7 +40,8 @@ ALLOWED_ORIGINS = [
     "http://localhost:8080"
 ]
 
-CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}})
+# Configura o CORS para permitir requisições das origens listadas
+CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}}) 
 print(f"✅ CORS configurado para permitir as origens: {ALLOWED_ORIGINS}")
 
 
@@ -158,6 +160,7 @@ def auth_callback():
         print(f"✅ Usuário autenticado: {user_email} (ID: {user_id})")
             
         # 3. Retorno ao Frontend - CHAVE CORRIGIDA DE 'user_info' PARA 'user'
+        # O frontend espera a chave 'user' para salvar no localStorage
         return jsonify({
             "success": True, 
             "message": "Autenticação e validação do token bem-sucedidas.", 
@@ -165,7 +168,7 @@ def auth_callback():
                 "id": user_id, 
                 "email": user_email, 
                 "name": user_name,
-                "picture": id_info.get('picture', None) # Incluir foto se disponível
+                "picture": id_info.get('picture', None) 
             },
             "token": "JWT_TOKEN_PARA_USO_FUTURO" # Retorna um token de sessão (mockado)
         }), 200
@@ -316,8 +319,6 @@ def analyze_images():
     transversal_path = None
     
     try:
-        # --- CORREÇÃO PRINCIPAL: MUDANÇA DE request.get_json() PARA request.files ---
-        
         # 1. Validação dos arquivos recebidos
         if 'frontalImage' not in request.files:
             print("❌ Erro: 'frontalImage' não encontrado em request.files.")
