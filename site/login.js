@@ -121,7 +121,8 @@ async function handleCredentialResponse(response) {
 
   try {
     // PASSO 1: CHAMA O BACKEND RAILWAY PARA VALIDAÇÃO DO TOKEN
-    const apiResponse = await fetch(`${RAILWAY_API_BASE_URL}/api/callback`, {
+    // *** CORREÇÃO: /api/callback trocado por /auth/callback ***
+    const apiResponse = await fetch(`${RAILWAY_API_BASE_URL}/auth/callback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id_token: response.credential })
