@@ -10,6 +10,3 @@ nixPkgs = [
   "pkgs.libGL",
   "pkgs.glib"
 ]
-
-[start]
-cmd = "LD_LIBRARY_PATH=${pkgs.libGL}/lib:${pkgs.mesa}/lib:${pkgs.opencv}/lib:${pkgs.ffmpeg}/lib:${pkgs.stdenv.cc.lib}/lib:${pkgs.glib}/lib python site/api/app.py"
