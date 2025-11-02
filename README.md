@@ -223,8 +223,6 @@ O projeto é organizado em duas pastas principais: `site/` (toda a aplicação w
 ├── Dockerfile                  # Define a imagem de contêiner para deploy (ex: Railway).
 ├── Procfile                    # Define o comando para iniciar o servidor web (ex: Gunicorn).
 ├── README.md                   # Este arquivo.
-├── analise_completa.py         # (Script de teste ou versão antiga do app.py).
-├── backend_app.py              # (Script de teste ou versão antiga do app.py).
 ├── build.sh                    # Script de build para deploy (ex: Vercel).
 ├── nixpacks.toml               # Arquivo de configuração para o build (ex: Railway).
 ├── railway.json                # Configuração de deploy específica da plataforma Railway.
