@@ -10,3 +10,11 @@ nixPkgs = [
   "pkgs.libGL",
   "pkgs.glib"
 ]
+nixLibs = [
+  "pkgs.libGL",
+  "pkgs.mesa",
+  "pkgs.opencv",
+  "pkgs.ffmpeg",
+  "pkgs.stdenv.cc",
+  "pkgs.glib"
+]
