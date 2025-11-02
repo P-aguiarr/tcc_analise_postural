@@ -174,9 +174,15 @@ O frontend é composto por arquivos HTML estáticos. Estou utilizando o vercel p
 
 A aplicação frontend irá (por padrão) tentar se comunicar com a API backend que você acabou de iniciar.
 
-8. Estrutura do Repositório
-O projeto é organizado em duas pastas principais: site/ (toda a aplicação web e API) e Testes/ (todos os scripts e resultados de validação).
+Com certeza. Aqui está a estrutura completa do repositório, detalhada e comentada para o seu `README.md`.
 
+-----
+
+## 8\. Estrutura do Repositório
+
+O projeto é organizado em duas pastas principais: `site/` (toda a aplicação web e API) e `Testes/` (todos os scripts e resultados de validação).
+
+```
 .
 ├── Testes/
 │   ├── reliability_data.csv        # Dados brutos (min/max/mean) de cada teste de validação.
@@ -225,3 +231,4 @@ O projeto é organizado em duas pastas principais: site/ (toda a aplicação web
 ├── requirements.txt            # Lista de todas as dependências Python (pip).
 ├── runtime.txt                 # Especifica a versão do Python para o deploy.
 └── vercel.json                 # Configuração de deploy/rotas específica da plataforma Vercel.
+```
