@@ -1,6 +1,7 @@
 # nixpacks.toml
 
 [phases.setup]
+# Pacotes necessários para o Build (instalar o pip)
 nixPkgs = [
   "pkgs.python311", 
   "pkgs.opencv", 
@@ -9,4 +10,12 @@ nixPkgs = [
   "pkgs.ffmpeg",
   "pkgs.libGL",
   "pkgs.glib"
+]
+
+# Pacotes necessários para o Runtime (para o app.py rodar)
+# Isso adiciona eles ao LD_LIBRARY_PATH
+nixLibs = [
+  "pkgs.libGL",
+  "pkgs.glib",
+  "pkgs.stdenv.cc"
 ]
