@@ -104,8 +104,4 @@ Métricas de Distância (Ex: oscilacao_horizontal_quadril): Esta métrica (mid_h
 Resumo da Limitação (Importante)
 O meu app.py é uma excelente ferramenta para medir ângulos 2D e distâncias 2D normalizadas em um ambiente controlado, onde a distância da câmera ao sujeito é fixa (ex: um agachamento no lugar, ou uma caminhada em esteira).
 
-Os Cenários 1 e 2, como descritos aqui, introduzem a variável de mudança de profundidade (distância Z). O meu código atual não compensa a distorção de perspectiva causada por essa mudança.
-
 Portanto, para a validação do meu TCC, eu foquei na validação dos ângulos (que são robustos) e, para validar as métricas de oscilação/assimetria, eu utilizei vídeos onde a distância da câmera era fixa.
-
-Nota: A validação de confiabilidade (ICC=1.000) que eu rodei com sucesso só funcionou porque os vídeos de teste (teste 1 e teste 2) eram de um ambiente controlado (similar a uma esteira), e não os Cenários 1 e 2 descritos aqui. Estes cenários servem para definir os limites do projeto e as futuras melhorias necessárias (como compensação de profundidade).
