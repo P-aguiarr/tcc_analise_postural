@@ -7,8 +7,15 @@ nixPkgs = [
   "pkgs.mesa", 
   "pkgs.stdenv.cc", 
   "pkgs.ffmpeg",
-  "pkgs.libGL"
+  "pkgs.libGL",
+  "pkgs.glib"
 ]
 
-[env]
-LD_LIBRARY_PATH = "${pkgs.libGL}/lib"
+nixLibs = [
+  "pkgs.libGL",
+  "pkgs.mesa",
+  "pkgs.opencv",
+  "pkgs.ffmpeg",
+  "pkgs.stdenv.cc.lib",
+  "pkgs.glib"
+]
