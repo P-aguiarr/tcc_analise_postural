@@ -219,14 +219,10 @@ O projeto é organizado em duas pastas principais: `site/` (toda a aplicação w
 │   ├── upload.css                # CSS da página de upload.
 │   └── upload.js                 # JavaScript que controla o formulário de upload e chama a API.
 │
-├── .gitignore
-├── Dockerfile                  # Define a imagem de contêiner para deploy (ex: Railway).
-├── Procfile                    # Define o comando para iniciar o servidor web (ex: Gunicorn).
 ├── README.md                   # Este arquivo.
 ├── build.sh                    # Script de build para deploy (ex: Vercel).
 ├── nixpacks.toml               # Arquivo de configuração para o build (ex: Railway).
 ├── railway.json                # Configuração de deploy específica da plataforma Railway.
 ├── requirements.txt            # Lista de todas as dependências Python (pip).
-├── runtime.txt                 # Especifica a versão do Python para o deploy.
 └── vercel.json                 # Configuração de deploy/rotas específica da plataforma Vercel.
 ```
