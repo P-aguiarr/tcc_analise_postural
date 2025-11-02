@@ -9,3 +9,6 @@ nixPkgs = [
   "pkgs.ffmpeg",
   "pkgs.libGL"
 ]
+
+[env]
+LD_LIBRARY_PATH = "${pkgs.libGL}/lib"
