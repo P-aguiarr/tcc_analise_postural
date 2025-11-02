@@ -1,10 +1,11 @@
 [phases.setup]
 nixPkgs = [
-  "pkgs.python311", 
-  "pkgs.opencv", 
-  "pkgs.mesa", 
-  "pkgs.stdenv.cc", 
-  "pkgs.ffmpeg",
-  "pkgs.libGL",
-  "pkgs.glib"
+  "pkgs.python311",
+  "pkgs.ffmpeg",        # Dependência para opencv/mediapipe
+  "pkgs.mesa",          # Dependência gráfica
+  "pkgs.stdenv.cc",     # Necessário para compilar
+  "pkgs.libGL",         # Dependência gráfica
+  "pkgs.glib",          # Dependência do mediapipe
+  "pkgs.libSM",         # Equivalente Nix para libsm6 (do build.sh)
+  "pkgs.libXext"        # Equivalente Nix para libxext6 (do build.sh)
 ]
