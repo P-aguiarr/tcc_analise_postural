@@ -220,6 +220,7 @@ O projeto é organizado em duas pastas principais: `site/` (toda a aplicação w
 │   └── upload.js                 # JavaScript que controla o formulário de upload e chama a API.
 │
 ├── README.md                   # Este arquivo.
+├── nixpacks.toml               # Arquivo de configuração para o build (ex: Railway).
 ├── build.sh                    # Script de build para deploy (ex: Vercel).
 ├── nixpacks.toml               # Arquivo de configuração para o build (ex: Railway).
 ├── railway.json                # Configuração de deploy específica da plataforma Railway.
