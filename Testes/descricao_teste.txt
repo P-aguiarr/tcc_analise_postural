@@ -1,0 +1,111 @@
+TCC - Sistema de Análise Postural com Visão Computacional
+Este repositório contém o código-fonte do meu Trabalho de Conclusão de Curso (TCC), focado no desenvolvimento de um sistema para análise postural biomecânica. O projeto utiliza Python, OpenCV e MediaPipe para extrair pontos-chave do corpo a partir de vídeos e uma API em Flask para processar e exibir os resultados.
+
+Metodologia de Coleta e Análise de Limites
+Para validar o sistema e entender seus limites operacionais, eu defini dois cenários de coleta controlados. O setup de validação proposto é um sistema de captura de movimento markerless (sem marcadores) 2D, utilizando duas câmeras (celular/webcam) para capturar os planos Coronal (frontal) e Transversal (lateral/sagital) simultaneamente.
+
+Cenário 1: Trajeto de 3 Metros
+Este cenário simula uma análise de caminhada curta, focando na captura de dados em um espaço mais restrito.
+
+Plano Coronal (Frontal):
+
+Posição: Câmera a 1.2m de altura, apontada para o início do trajeto.
+
+Distância Z (Profundidade): O sujeito (eu) inicia a 3.5m da câmera.
+
+Movimento: Eu caminho 3 metros, me afastando da câmera.
+
+Distância Z Final: 3.5m (inicial) + 3.0m (trajeto) = 6.5m.
+
+Plano Transversal (Lateral):
+
+Posição: Câmera a 1.2m de altura, posicionada a 3.5m de distância lateral do centro do trajeto (marca de 1.5m).
+
+Movimento: Eu caminho através do campo de visão da câmera, primeiro me aproximando (do ponto 0m ao 1.5m) e depois me afastando (do ponto 1.5m ao 3.0m).
+
+Diagrama (Planta Baixa - Vista de Cima)
+          <-- Trajeto de 3m -->
+          [Início] . . . . . [Centro] . . . . . [Fim]
+    (0.0m)    (1.5m)          (3.0m)
+      ^
+      |
+      |
+      | (Pessoa)
+      |
+[Câmera Coronal]
+  (a 3.5m do Início)
+                                  [Câmera Transversal]
+                                    (a 3.5m do Centro)
+Cenário 2: Trajeto de 7 Metros
+Este cenário testa o sistema em um trajeto mais longo, avaliando o comportamento da detecção com uma variação maior de profundidade e escala.
+
+Plano Coronal (Frontal):
+
+Posição: Câmera a 1.4m de altura (levemente mais alta).
+
+Distância Z (Profundidade): O sujeito (eu) inicia a 3.5m da câmera.
+
+Movimento: Eu caminho 7 metros, me afastando da câmera.
+
+Distância Z Final: 3.5m (inicial) + 7.0m (trajeto) = 10.5m.
+
+Plano Transversal (Lateral):
+
+Posição: Câmera a 1.4m de altura, posicionada a 3.5m de distância lateral do centro do trajeto (marca de 3.5m).
+
+Movimento: Eu caminho através do campo de visão, me aproximando (0m a 3.5m) e depois me afastando (3.5m a 7.0m).
+
+Diagrama (Planta Baixa - Vista de Cima)
+          <------------- Trajeto de 7m ------------->
+          [Início] . . . . . . . . [Centro] . . . . . . . . [Fim]
+    (0.0m)             (3.5m)                     (7.0m)
+      ^
+      |
+      |
+      | (Pessoa)
+      |
+[Câmera Coronal]
+  (a 3.5m do Início)
+                                                  [Câmera Transversal]
+                                                    (a 3.5m do Centro)
+2. Análise de Impacto: Como Este Setup se Reflete no Código
+Esta análise é a parte mais importante. O meu app.py (e o MediaPipe por baixo dele) não é um sistema de captura 3D completo. Ele analisa imagens 2D e calcula métricas a partir de coordenadas 2D normalizadas (valores entre 0.0 e 1.0).
+
+O setup de "caminhar para longe" dos Cenários 1 e 2 introduz uma limitação crítica: Distorção de Perspectiva.
+
+1. No Plano Coronal (Frontal)
+O Problema: No Cenário 2, eu termino a 10.5m de distância. O meu corpo parecerá muito menor no vídeo no final do que no início.
+
+Reflexo no Código:
+
+Métricas de Ângulo (Ex: angulo_joelho): Minhas métricas angulares são relativamente robustas à distância. Um joelho a 90 graus parecerá 90 graus estando perto ou longe. Esta é a força do meu código.
+
+Métricas de Distância (Ex: assimetria_ombros_vertical): Esta métrica falha neste cenário.
+
+Meu código calcula: abs(l_shoulder[1] - r_shoulder[1]).
+
+O [1] é a coordenada y normalizada. Se eu estou a 3.5m, uma assimetria real de 2cm pode ter um valor normalizado de 0.015.
+
+Quando estou a 10.5m, eu ocupo 3x menos espaço na tela. A mesma assimetria real de 2cm agora terá um valor normalizado de 0.005.
+
+Conclusão: Meu código interpretará que a assimetria do ombro diminuiu, quando na verdade ela permaneceu a mesma. A métrica não é válida em um cenário com mudança de profundidade (distância Z).
+
+Confiança: A confiança de detecção do MediaPipe (confidence_score) quase certamente cairá à medida que eu me afasto, tornando os dados do final do trajeto menos confiáveis.
+
+2. No Plano Transversal (Lateral)
+O Problema: O mesmo problema de perspectiva acontece aqui, mas lateralmente. Eu não estou sempre a 3.5m de distância; eu apenas passo por esse ponto.
+
+Reflexo no Código:
+
+Métricas de Ângulo (Ex: angulo_joelho): Este é o melhor plano para medir ângulos sagitais (flexão/extensão). É por isso que minha BIOMECHANICAL_PRIORITY_MATRIX no app.py prioriza corretamente o plano transversal para joelhos e quadris. Eles serão a medição mais acurada.
+
+Métricas de Distância (Ex: oscilacao_horizontal_quadril): Esta métrica (mid_hip[0]) mede a posição x do quadril. Conforme eu me aproximo do centro e depois me afasto, a escala desse movimento muda, distorcendo o valor normalizado.
+
+Resumo da Limitação (Importante)
+O meu app.py é uma excelente ferramenta para medir ângulos 2D e distâncias 2D normalizadas em um ambiente controlado, onde a distância da câmera ao sujeito é fixa (ex: um agachamento no lugar, ou uma caminhada em esteira).
+
+Os Cenários 1 e 2, como descritos aqui, introduzem a variável de mudança de profundidade (distância Z). O meu código atual não compensa a distorção de perspectiva causada por essa mudança.
+
+Portanto, para a validação do meu TCC, eu foquei na validação dos ângulos (que são robustos) e, para validar as métricas de oscilação/assimetria, eu utilizei vídeos onde a distância da câmera era fixa.
+
+Nota: A validação de confiabilidade (ICC=1.000) que eu rodei com sucesso só funcionou porque os vídeos de teste (teste 1 e teste 2) eram de um ambiente controlado (similar a uma esteira), e não os Cenários 1 e 2 descritos aqui. Estes cenários servem para definir os limites do projeto e as futuras melhorias necessárias (como compensação de profundidade).
