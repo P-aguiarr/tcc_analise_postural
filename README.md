@@ -1,9 +1,3 @@
-Com certeza. Um TCC não é apenas o código, mas a *história* que você conta com ele. O seu `README.md` é a capa do seu projeto no GitHub.
-
-Com base em todo o seu repositório, no seu documento de TCC e, o mais importante, nos **resultados de validação que geramos**, aqui está um `README.md` super detalhado, escrito em primeira pessoa (como se fosse você), pronto para impressionar sua banca.
-
------
-
 # Sistema Integrado para Análise Postural Biomecânica (TCC)
 
 Este repositório contém o código-fonte e os resultados da validação do meu Trabalho de Conclusão de Curso (TCC), intitulado: **"Desenvolvimento de um Sistema Integrado para Análise Postural: otimização de seções via aprendizado de máquina e visualização de dados em um dashboard web"**.
