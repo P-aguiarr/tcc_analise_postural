@@ -1,0 +1,82 @@
+2025-11-02 14:26:11,956 [INFO] - --- INICIANDO SCRIPT DE VALIDA��O DE CONFIABILIDADE ---
+2025-11-02 14:26:11,957 [INFO] - 
+--- Processando Movimento: CAMINHADA ---
+2025-11-02 14:26:11,957 [INFO] - Encontrados 2 testes: ['1', '2']
+2025-11-02 14:26:11,957 [INFO] - Processando teste: caminhada_1
+2025-11-02 14:26:11,957 [INFO] - Processando v�deo coronal: C:\Users\pichau\Downloads\tcc_analise_postural-main-final\tcc_analise_postural-main\reliability_videos\caminhada\coronal_1.mp4
+2025-11-02 14:26:23,967 [INFO] - Coronal processado. Confian�a: 0.887
+2025-11-02 14:26:23,968 [INFO] - Processando v�deo transversal: C:\Users\pichau\Downloads\tcc_analise_postural-main-final\tcc_analise_postural-main\reliability_videos\caminhada\transversal_1.mp4
+2025-11-02 14:26:37,165 [INFO] - Transversal processado. Confian�a: 0.851
+2025-11-02 14:26:37,173 [INFO] - Processando teste: caminhada_2
+2025-11-02 14:26:37,173 [INFO] - Processando v�deo coronal: C:\Users\pichau\Downloads\tcc_analise_postural-main-final\tcc_analise_postural-main\reliability_videos\caminhada\coronal_2.mp4
+2025-11-02 14:26:51,062 [INFO] - Coronal processado. Confian�a: 0.889
+2025-11-02 14:26:51,062 [INFO] - Processando v�deo transversal: C:\Users\pichau\Downloads\tcc_analise_postural-main-final\tcc_analise_postural-main\reliability_videos\caminhada\transversal_2.mp4
+2025-11-02 14:27:07,043 [INFO] - Transversal processado. Confian�a: 0.747
+2025-11-02 14:27:07,049 [INFO] - 
+--- RELAT�RIO DE CONFIABILIDADE: CAMINHADA ---
+2025-11-02 14:27:07,058 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_ombro_esquerdo_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,064 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_ombro_esquerdo_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,069 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_ombro_esquerdo_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,077 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_ombro_direito_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,082 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_ombro_direito_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,088 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_ombro_direito_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,093 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_quadril_esquerdo_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,099 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_quadril_esquerdo_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,104 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_quadril_esquerdo_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,108 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_quadril_direito_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,114 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_quadril_direito_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,119 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_quadril_direito_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,125 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_joelho_esquerdo_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,130 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_joelho_esquerdo_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,135 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_joelho_esquerdo_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,141 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_joelho_direito_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,145 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_joelho_direito_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,151 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_joelho_direito_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,157 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_coluna_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,162 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_coluna_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,168 [WARNING] - N�o foi poss�vel calcular o ICC para 'angulo_coluna_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,173 [WARNING] - N�o foi poss�vel calcular o ICC para 'assimetria_ombros_vertical_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,179 [WARNING] - N�o foi poss�vel calcular o ICC para 'assimetria_ombros_vertical_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,184 [WARNING] - N�o foi poss�vel calcular o ICC para 'assimetria_ombros_vertical_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,190 [WARNING] - N�o foi poss�vel calcular o ICC para 'oscilacao_vertical_quadril_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,195 [WARNING] - N�o foi poss�vel calcular o ICC para 'oscilacao_vertical_quadril_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,200 [WARNING] - N�o foi poss�vel calcular o ICC para 'oscilacao_vertical_quadril_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,207 [WARNING] - N�o foi poss�vel calcular o ICC para 'oscilacao_horizontal_quadril_min': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,212 [WARNING] - N�o foi poss�vel calcular o ICC para 'oscilacao_horizontal_quadril_max': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,218 [WARNING] - N�o foi poss�vel calcular o ICC para 'oscilacao_horizontal_quadril_mean': Data must have at least 5 non-missing values.
+2025-11-02 14:27:07,221 [INFO] - 
+                          M�trica   M�dia  Desvio Padr�o (DP)  CV (%)  ICC Confiabilidade
+        angulo_ombro_esquerdo_min   0.034               0.024  68.747  NaN            N/A
+        angulo_ombro_esquerdo_max  15.593               1.361   8.727  NaN            N/A
+       angulo_ombro_esquerdo_mean   5.305               0.950  17.911  NaN            N/A
+         angulo_ombro_direito_min   0.002               0.000   1.933  NaN            N/A
+         angulo_ombro_direito_max  23.740               9.680  40.776  NaN            N/A
+        angulo_ombro_direito_mean   4.820               0.024   0.505  NaN            N/A
+      angulo_quadril_esquerdo_min 162.681               2.356   1.448  NaN            N/A
+      angulo_quadril_esquerdo_max 179.972               0.016   0.009  NaN            N/A
+     angulo_quadril_esquerdo_mean 173.293               0.648   0.374  NaN            N/A
+       angulo_quadril_direito_min 162.914               0.938   0.576  NaN            N/A
+       angulo_quadril_direito_max 179.964               0.048   0.027  NaN            N/A
+      angulo_quadril_direito_mean 173.804               0.759   0.437  NaN            N/A
+       angulo_joelho_esquerdo_min 127.583               3.619   2.836  NaN            N/A
+       angulo_joelho_esquerdo_max 179.994               0.006   0.003  NaN            N/A
+      angulo_joelho_esquerdo_mean 169.249               2.049   1.211  NaN            N/A
+        angulo_joelho_direito_min 133.657               2.096   1.568  NaN            N/A
+        angulo_joelho_direito_max 179.990               0.012   0.007  NaN            N/A
+       angulo_joelho_direito_mean 168.614               1.683   0.998  NaN            N/A
+                angulo_coluna_min 143.266               0.163   0.114  NaN            N/A
+                angulo_coluna_max 178.943               1.156   0.646  NaN            N/A
+               angulo_coluna_mean 154.472               1.743   1.129  NaN            N/A
+   assimetria_ombros_vertical_min   0.000               0.000  19.936  NaN            N/A
+   assimetria_ombros_vertical_max   0.009               0.001  11.986  NaN            N/A
+  assimetria_ombros_vertical_mean   0.004               0.001  29.038  NaN            N/A
+   oscilacao_vertical_quadril_min   0.437               0.026   5.844  NaN            N/A
+   oscilacao_vertical_quadril_max   0.564               0.068  11.973  NaN            N/A
+  oscilacao_vertical_quadril_mean   0.490               0.038   7.756  NaN            N/A
+ oscilacao_horizontal_quadril_min   0.492               0.016   3.288  NaN            N/A
+ oscilacao_horizontal_quadril_max   0.545               0.000   0.077  NaN            N/A
+oscilacao_horizontal_quadril_mean   0.523               0.009   1.651  NaN            N/A
+2025-11-02 14:27:07,224 [INFO] - 
+Dados de sum�rio de todos os testes salvos em: C:\Users\pichau\Downloads\tcc_analise_postural-main-final\tcc_analise_postural-main\validation_results\reliability_data.csv
+2025-11-02 14:27:07,227 [INFO] - Relat�rio de confiabilidade completo salvo em: C:\Users\pichau\Downloads\tcc_analise_postural-main-final\tcc_analise_postural-main\validation_results\reliability_report.txt
+2025-11-02 14:27:07,227 [INFO] - --- VALIDA��O DE CONFIABILIDADE CONCLU�DA ---
