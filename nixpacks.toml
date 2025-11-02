@@ -15,6 +15,6 @@ nixLibs = [
   "pkgs.mesa",
   "pkgs.opencv",
   "pkgs.ffmpeg",
-  "pkgs.stdenv.cc",
+  "pkgs.stdenv.cc.lib",
   "pkgs.glib"
 ]
