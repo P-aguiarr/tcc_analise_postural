@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "LD_LIBRARY_PATH=${pkgs.libGL}/lib:${pkgs.mesa}/lib:${pkgs.opencv}/lib:${pkgs.ffmpeg}/lib:${pkgs.stdenv.cc.lib}/lib:${pkgs.glib}/lib python site/api/app.py",
+    "startCommand": "LD_LIBRARY_PATH=/root/.nix-profile/lib cd site/api && gunicorn app:app -b 0.0.0.0:$PORT --log-file -",
     "restartPolicyType": "ON_FAILURE",
     "healthcheckPath": "/api/health"
   }
