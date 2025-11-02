@@ -1,4 +1,4 @@
-# Sistema Integrado para Análise Postural Biomecânica (TCC)
+# Desenvolvimento de um Sistema Integrado para Análise Postural: otimização de seções via aprendizado de máquina e visualização de dados em um dashboard web (TCC)
 
 Este repositório contém o código-fonte e os resultados da validação do meu Trabalho de Conclusão de Curso (TCC), intitulado: **"Desenvolvimento de um Sistema Integrado para Análise Postural: otimização de seções via aprendizado de máquina e visualização de dados em um dashboard web"**.
 
