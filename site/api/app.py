@@ -11,12 +11,20 @@ import mediapipe as mp
 from collections import defaultdict
 
 # Importações de Flask
-from flask import Flask, request, jsonify, send_from_directory, abort
+from flask import Flask, request, jsonify, send_from_directory, abort, make_response
 from flask_cors import CORS
+
+# Importações para Google SSO
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 # --- CONFIGURAÇÃO INICIAL ---
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# ATUALIZAÇÃO DE CORS: Permite todas as rotas (/*) vindas do seu frontend
+CORS(app, resources={
+    r"/*": {"origins": "https://ttc-analise-postural.vercel.app"}
+})
+
 
 # Diretórios para armazenamento temporário de vídeos e resultados
 BASE_DIR = tempfile.gettempdir()
@@ -374,6 +382,82 @@ def analyze_video(video_path, output_video_path):
 def api_health_check():
     """Endpoint simples para verificação de saúde (health check)."""
     return jsonify({"status": "ok", "message": "Servidor de análise no ar."})
+
+# --- NOVA ROTA DE AUTENTICAÇÃO ---
+
+@app.route('/auth/callback', methods=['POST', 'OPTIONS'])
+def auth_callback():
+    """
+    Processa o callback de login do Google SSO.
+    Substitui a lógica que antes estava no 'callback.js'.
+    """
+    
+    # Resposta para a requisição OPTIONS (preflight do CORS)
+    # Isso é necessário para o navegador permitir a requisição POST
+    if request.method == 'OPTIONS':
+        response = make_response()
+        # Permite o seu domínio do Vercel
+        response.headers.add("Access-Control-Allow-Origin", "https://ttc-analise-postural.vercel.app")
+        # Permite os headers que o frontend envia
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        # Permite os métodos
+        response.headers.add("Access-Control-Allow-Methods", "POST,OPTIONS")
+        return response
+
+    # Se for POST, processa o login
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            token = data.get('credential')
+            
+            if not token:
+                return jsonify({"success": False, "error": "Credencial não fornecida"}), 400
+
+            # --- Verificação do Token do Google ---
+            try:
+                # Você PRECISA configurar esta variável no Railway
+                CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID') 
+                if not CLIENT_ID:
+                    print("❌ ERRO GRAVE: A variável de ambiente GOOGLE_CLIENT_ID não está configurada.")
+                    raise ValueError("GOOGLE_CLIENT_ID não está configurado no servidor")
+                    
+                # Verifica o token com os servidores do Google
+                idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), CLIENT_ID)
+                
+                # Token é válido. 'idinfo' contém os dados do usuário
+                user_email = idinfo.get('email')
+                user_name = idinfo.get('name')
+                user_picture = idinfo.get('picture')
+
+                print(f"✅ Login SSO bem-sucedido para: {user_email}")
+
+                # (Futuramente, aqui você pode salvar o usuário no banco de dados
+                # ou criar um token de sessão JWT)
+
+                # Resposta de sucesso para o frontend
+                return jsonify({
+                    "success": True, 
+                    "message": "Login realizado com sucesso",
+                    "user": {
+                        "email": user_email,
+                        "name": user_name,
+                        "picture": user_picture
+                    }
+                }), 200
+
+            except ValueError as e:
+                # Token inválido ou CLIENT_ID errado
+                print(f"❌ Erro na verificação do token: {e}")
+                return jsonify({"success": False, "error": f"Token inválido: {e}"}), 401
+            except Exception as auth_error:
+                print(f"❌ Erro inesperado na autenticação: {auth_error}")
+                return jsonify({"success": False, "error": str(auth_error)}), 500
+        
+        except Exception as e:
+            print(f"❌ Erro ao processar o corpo da requisição: {e}")
+            return jsonify({"success": False, "error": "Requisição mal formatada"}), 400
+
+# --- ROTAS DE ANÁLISE (JÁ EXISTENTES) ---
 
 @app.route('/api/process-analysis', methods=['POST'])
 def process_analysis_route():
