@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "cd site/api && gunicorn app:app -b 0.0.0.0:$PORT --log-file -",
+    "startCommand": "LD_LIBRARY_PATH=/nix/var/nix/profiles/default/lib cd site/api && python app.py",
     "restartPolicyType": "ON_FAILURE",
     "healthcheckPath": "/api/health"
   }
