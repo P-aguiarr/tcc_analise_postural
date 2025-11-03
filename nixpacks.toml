@@ -1,11 +1,10 @@
 [phases.setup]
 nixPkgs = [
-  "pkgs.python311",
+  "pkgs.python311", 
   "pkgs.ffmpeg",
-  "pkgs.mesa",
-  "pkgs.stdenv.cc",
-  "pkgs.libGL",
+  "pkgs.stdenv.cc", 
   "pkgs.glib",
-  "pkgs.xorg.libSM",  # Correção aqui
-  "pkgs.xorg.libXext" # Correção aqui
+  "pkgs.xorg.libSM",
+  "pkgs.xorg.libXext",
+  "pkgs.libglvnd" 
 ]
