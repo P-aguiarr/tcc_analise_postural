@@ -6,5 +6,5 @@ nixPkgs = [
   "pkgs.glib",
   "pkgs.xorg.libSM",
   "pkgs.xorg.libXext",
-  "pkgs.libglvnd" 
+  "pkgs.libGL" 
 ]
