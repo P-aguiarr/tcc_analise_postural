@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "LD_LIBRARY_PATH=/nix/var/nix/profiles/default/lib cd site/api && python app.py",
+    "startCommand": "LD_LIBRARY_PATH=/root/.nix-profile/lib cd site/api && python app.py",
     "restartPolicyType": "ON_FAILURE",
     "healthcheckPath": "/api/health"
   }
